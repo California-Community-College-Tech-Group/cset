@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,10 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ConfigService } from './config.service';
 import { Demographic } from '../models/assessment-info.model';
-import { ExtendedDemographics } from '../models/demographics-extended.model';
+import { AuthenticationService } from './authentication.service';
+import { FileUploadClientService } from './file-client.service';
+import { AssessmentService } from './assessment.service';
+import { BehaviorSubject } from 'rxjs';
 
 
 const headers = {
@@ -37,8 +40,17 @@ const headers = {
 export class DemographicService {
   apiUrl: string;
   id: number;
+  shortLivedToken: any;
+  
 
-  constructor(private http: HttpClient, private configSvc: ConfigService) {
+  constructor(
+    private http: HttpClient,
+    private configSvc: ConfigService,
+    private authSvc: AuthenticationService,
+    public fileSvc: FileUploadClientService,
+    public assessSvc: AssessmentService
+  )
+  {
     this.apiUrl = this.configSvc.apiUrl + 'Demographics/';
   }
 
@@ -49,6 +61,10 @@ export class DemographicService {
 
   getAllAssetValues() {
     return this.http.get(this.apiUrl + 'AssetValues');
+  }
+
+  getAllStatesAndProvinces() {
+    return this.http.get(this.apiUrl + 'StatesAndProvinces');
   }
 
   getSizeValues() {
@@ -72,7 +88,29 @@ export class DemographicService {
    * @param demographic
    */
   updateDemographic(demographic: Demographic) {
+    this.assessSvc.assessment.sectorId = demographic.sectorId;
+    this.assessSvc.assessmentStateChanged$.next(126);
+    
     this.http.post(this.apiUrl, JSON.stringify(demographic), headers)
-    .subscribe();
+      .subscribe(() => {
+        if (this.configSvc.cisaAssessorWorkflow) {
+
+        }
+      });
   }
+
+  importDemographics(demographic: Demographic){
+    return this.http.post(this.apiUrl + 'import', JSON.stringify(demographic), headers)
+    .subscribe(() => {
+
+    });
+
+  }
+
+  exportDemographics(){
+    let token = localStorage.getItem('userToken')
+    let url = this.apiUrl + 'export' + "?token=" + token;
+    window.location.href = url;
+  }
+
 }

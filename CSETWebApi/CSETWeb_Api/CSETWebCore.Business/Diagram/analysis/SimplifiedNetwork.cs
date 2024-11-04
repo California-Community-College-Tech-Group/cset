@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -13,7 +13,7 @@ using System.Xml;
 
 namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
 {
-    
+
     /// <summary>
     /// this class is responsible for parsing the diagram xml
     /// and building the simplified network structure for the rules.
@@ -33,9 +33,10 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
         {
             get
             {
-                return nodes; 
+                return nodes;
             }
-            private set {
+            private set
+            {
             }
         }
 
@@ -44,7 +45,7 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
             get { return Links; }
         }
 
-        
+
 
 
         public SimplifiedNetwork(Dictionary<string, int> imageToTypePath, string defaultSAL)
@@ -70,11 +71,23 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
             //to extract minimal spanning tree(s)
             //then walk the tree to evaluate node rules
 
+            //for the XmlNodeLists, use the '/object' ones for diagram-orig, and '/UserObject' for the WIP diagram
             XmlNodeList objectNodes = xDoc.SelectNodes("/mxGraphModel/root/object[not(@redDot)]");
+            if (objectNodes.Count == 0)
+            {
+                objectNodes = xDoc.SelectNodes("/mxGraphModel/root/UserObject[not(@redDot)]");
+            }
+
             XmlNodeList zoneNodes = xDoc.SelectNodes("//*[@zone=\"1\"]");
+
             XmlNodeList mxCellLinkObjects = xDoc.SelectNodes("/mxGraphModel/root/object[mxCell/@edge='1']");
+            if (mxCellLinkObjects.Count == 0)
+            {
+                mxCellLinkObjects = xDoc.SelectNodes("/mxGraphModel/root/UserObject[mxCell/@edge='1']");
+            }
+
             XmlNodeList mxCellLinks = xDoc.SelectNodes("//*[@edge=\"1\"]");
-            
+
             XmlNodeList mxCellLayers = xDoc.SelectNodes("//*[@parent=\"0\" and @id]");
             foreach (XmlNode layer in mxCellLayers)
             {
@@ -126,7 +139,7 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
 
 
                 //do a little preprocessing to get the attribute values
-                var styleString = node.FirstChild.Attributes["style"].Value;
+                var styleString = node.FirstChild.Attributes["style"]?.Value ?? "";
 
 
                 // if it is a group then skip it
@@ -190,7 +203,7 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
                         Parent_id = layername,
                         Geometry = geometry
                     };
-                   
+
                     NetworkZone myzone;
                     if (zones.TryGetValue(layername, out myzone))
                     {
@@ -217,7 +230,7 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
                     link.SetValue(a.Name, a.Value);
                 }
                 Links.Add(link);
-                var childnode = ((XmlElement)xNode.FirstChild);                
+                var childnode = ((XmlElement)xNode.FirstChild);
                 //find each node
                 //add them to each other          
                 if (childnode.HasAttribute("source") && childnode.HasAttribute("target"))
@@ -227,34 +240,34 @@ namespace CSETWebCore.Business.BusinessManagers.Diagram.analysis
                     //map any other attributes
                     link.SourceComponent = start;
                     link.TargetComponent = target;
-                    start?.AddEdge(target,link);
-                    target?.AddEdge(start,link);
+                    start?.AddEdge(target, link);
+                    target?.AddEdge(start, link);
                 }
             }
             foreach (XmlNode node in mxCellLinks)
             {
                 XmlElement xNode = (XmlElement)node;
-                if (((XmlElement) xNode.ParentNode).Name=="object")
+                if (((XmlElement)xNode.ParentNode).Name == "object")
                 {
                     continue;//skip it
                 }
                 //find each node
                 //add them to each other          
-                if (xNode.HasAttribute("source") && xNode.HasAttribute("target"))
+                if (xNode.HasAttribute("source") && xNode.HasAttribute("target") && xNode.HasAttribute("id"))
                 {
                     NetworkComponent start = findNode(node.Attributes["source"].Value);
                     NetworkComponent target = findNode(node.Attributes["target"].Value);
                     //map any other attributes
                     var link = new NetworkLink();
-                    link.ID = xNode.Attributes["id"].Value;                    
+                    link.ID = xNode.Attributes["id"].Value;
                     link.SourceComponent = start;
-                    link.TargetComponent = target;                    
+                    link.TargetComponent = target;
                     Links.Add(link);
-                    start?.AddEdge(target,link);
+                    start?.AddEdge(target, link);
                     target?.AddEdge(start, link);
                 }
             }
-            this.nodes = PostProcessConnectors.RemoveConnectors(nodes);            
+            this.nodes = PostProcessConnectors.RemoveConnectors(nodes);
         }
 
         private NetworkComponent findNode(string id)

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import { AssessmentComponent } from './assessment/assessment.component';
 import { AssessmentInfoComponent } from './assessment/prepare/assessment-info/assessment-info.component';
 import { Assessment2InfoComponent } from './assessment/prepare/assessment-info/assessment2-info/assessment2-info.component';
 import { AssessmentInfoTsaComponent } from './assessment/prepare/assessment-info/assessment-info-tsa/assessment-info-tsa.component';
+import { AssessmentInfoNcuaComponent } from './assessment/prepare/assessment-info/assessment-info-ncua/assessment-info-ncua.component';
 import { FrameworkComponent } from './assessment/prepare/framework/framework.component';
 import { RequiredDocsComponent } from './assessment/prepare/required/required.component';
 import { IRPComponent } from './assessment/prepare/irp/irp.component';
@@ -61,7 +62,6 @@ import { ResourceLibraryComponent } from './resource-library/resource-library.co
 import { ImportComponent } from './import/import.component';
 import { AcetDetailComponent } from './assessment/results/acet-detail/acet-detail.component';
 import { AcetDashboardComponent } from './assessment/results/dashboard/acet-dashboard.component';
-import { AdminComponent } from './assessment/results/admin/admin.component';
 import { SetListComponent } from './builder/custom-set-list/custom-set-list.component';
 import { CustomSetComponent } from './builder/set-detail/set-detail.component';
 import { RequirementListComponent } from './builder/requirement-list/requirement-list.component';
@@ -73,7 +73,6 @@ import { RefDocumentComponent } from './builder/ref-document/ref-document.compon
 import { IrpSummaryComponent } from './assessment/prepare/irp-summary/irp-summary.component';
 import { DiagramComponent } from './assessment/diagram/diagram.component';
 import { DiagramInfoComponent } from './assessment/diagram/diagram-info/diagram-info.component';
-import { DiagramInventoryComponent } from './assessment/diagram/diagram-inventory/diagram-inventory.component';
 import { AggregationHomeComponent } from './aggregation/aggregation-home/aggregation-home.component';
 import { MergeComponent } from './aggregation/merge/merge.component';
 import { AliasAssessmentsComponent } from './aggregation/alias-assessments/alias-assessments.component';
@@ -86,7 +85,7 @@ import { ReportTestComponent } from './reports/report-test/report-test.component
 import { LayoutSwitcherComponent } from './layout/layout-switcher/layout-switcher.component';
 import { LayoutBlankComponent } from './layout/layout-blank/layout-blank.component';
 import { SiteDetailComponent } from './reports/site-detail/site-detail.component';
-import { DiscoveryTearoutsComponent } from './reports/discovery-tearouts/discovery-tearouts.component';
+import { ObservationTearoutsComponent } from './reports/observation-tearouts/observation-tearouts.component';
 import { ExecutiveSummaryComponent } from './reports/executive-summary/executive-summary.component';
 import { ExecutiveCMMCComponent } from './reports/cmmc/executive-cmmc/executive-cmmc.component';
 import { SitesummaryCMMCComponent } from './reports/cmmc/sitesummary-cmmc/sitesummary-cmmc.component';
@@ -129,7 +128,6 @@ import { RelationshipFormationComponent } from './assessment/results/edm/relatio
 import { RelationshipManagementComponent } from './assessment/results/edm/relationship-management/relationship-management.component';
 import { ServiceProtectionComponent } from './assessment/results/edm/service-protection/service-protection.component';
 import { MaturityIndicatorLevelsComponent } from './assessment/results/edm/maturity-indicator-levels/maturity-indicator-levels.component';
-import { EdmSummaryResultsComponent } from './reports/edm/edm-summary-results/edm-summary-results.component';
 import { SummaryResultsComponent } from './assessment/results/edm/summary-results/summary-results.component';
 import { CmmcDeficiencyComponent } from './reports/cmmc/cmmc-deficiency/cmmc-deficiency.component';
 import { CmmcCommentsMarkedComponent } from './reports/cmmc/cmmc-comments-marked/cmmc-comments-marked.component';
@@ -138,7 +136,7 @@ import { TutorialCrrComponent } from './assessment/prepare/maturity/tutorial-crr
 import { CrrReportComponent } from './reports/crr/crr-report/crr-report.component';
 import { CrrDeficiencyComponent } from './reports/crr/crr-deficiency/crr-deficiency.component';
 import { CrrCommentsMarkedComponent } from './reports/crr/crr-comments-marked/crr-comments-marked.component';
-import{TsaAnalyticsComponent} from './initial/tsa-analytics/tsa-analytics.component';
+import { AssessmentComparisonAnalyticsComponent } from './initial/assessmenet-comparison-analytics/assessment-comparison-analytics.component';
 
 import { RraReportComponent } from './reports/rra/rra-report/rra-report.component';
 import { RraDeficiencyComponent } from './reports/rra/rra-deficiency/rra-deficiency.component';
@@ -146,7 +144,6 @@ import { TutorialRraComponent } from './assessment/prepare/maturity/tutorial-rra
 import { RraGapsComponent } from './assessment/results/mat-rra/rra-gaps/rra-gaps.component';
 import { RraLevelResultsComponent } from './assessment/results/mat-rra/rra-level-results/rra-level-results.component';
 import { CommentsMfrComponent } from './reports/commentsmfr/commentsmfr.component';
-import { RraSummaryComponent } from './assessment/results/mat-rra/rra-summary/rra-summary.component';
 import { RraSummaryAllComponent } from './assessment/results/mat-rra/rra-summary-all/rra-summary-all.component';
 import { CrrResultsPage } from './assessment/results/crr/crr-results-page/crr-results-page.component';
 import { CrrSummaryResultsComponent } from './assessment/results/crr/crr-summary-results/crr-summary-results.component';
@@ -157,6 +154,8 @@ import { Cmmc2DomainResultsComponent } from './assessment/results/mat-cmmc2/cmmc
 import { ExecutiveCMMC2Component } from './reports/cmmc2/executive-cmmc2/executive-cmmc2.component';
 import { VadrDeficiencyComponent } from './reports/vadr/vadr-deficiency/vadr-deficiency.component';
 import { AssessmentInfo2TsaComponent } from './assessment/prepare/assessment-info/assessment-info2-tsa/assessment-info2-tsa.component';
+import { AssessmentConfigIodComponent } from './assessment/prepare/assessment-info/assessment-config-iod/assessment-config-iod.component';
+import { AssessmentDemogIodComponent } from './assessment/prepare/assessment-info/assessment-demog-iod/assessment-demog-iod.component';
 import { MaturityQuestionsNestedComponent } from './assessment/questions/maturity-questions/nested/maturity-questions-nested/maturity-questions-nested.component';
 import { TutorialCisComponent } from './assessment/prepare/maturity/tutorial-cis/tutorial-cis.component';
 import { VadrReportComponent } from './reports/vadr/vadr-report/vadr-report.component';
@@ -180,8 +179,6 @@ import { IseExaminationComponent } from './reports/ise-examination/ise-examinati
 import { IseExaminerComponent } from './reports/ise-examiner/ise-examiner.component';
 import { IseDataComponent } from './reports/ise-data/ise-data.component';
 import { AnalyticsCompareComponent } from './assessment/results/analytics-compare/analytics-compare.component';
-import { MvraGapsComponent } from './assessment/results/mat-mvra/mvra-gaps/mvra-gaps.component';
-import { MvraSummaryComponent } from './assessment/results/mat-mvra/mvra-summary/mvra-summary.component';
 import { MvraReportComponent } from './reports/mvra/mvra-report.component';
 import { MvraGapsPageComponent } from './assessment/results/mat-mvra/mvra-gaps-page/mvra-gaps-page.component';
 import { MvraSummaryPageComponent } from './assessment/results/mat-mvra/mvra-summary-page/mvra-summary-page.component';
@@ -200,7 +197,42 @@ import { HydroActionsComponent } from './assessment/results/hydro/hydro-actions/
 import { HydroActionItemsReportComponent } from './reports/hydro/hydro-action-items-report/hydro-action-items-report.component';
 import { SdAnswerSummaryComponent } from './assessment/results/sd/sd-answer-summary/sd-answer-summary.component';
 import { SdAnswerSummaryReportComponent } from './reports/sd/sd-answer-summary-report/sd-answer-summary-report.component';
-
+import { KeyReportComponent } from './assessment/results/reports/key-report/key-report.component';
+import { ImrReportComponent } from './reports/imr/imr-report/imr-report.component';
+import { TutorialImrComponent } from './assessment/prepare/maturity/tutorial-imr/tutorial-imr.component';
+import { TsaSdComponent } from './reports/tsa-sd/tsa-sd.component';
+import { OtherRemarksComponent } from './assessment/questions/other-remarks/other-remarks.component';
+import { GeneralDeficiencyComponent } from './reports/general-deficiency/general-deficiency.component';
+import { QuickFactsCieComponent } from './assessment/prepare/maturity/tutorial-cie/quick-facts-cie/quick-facts-cie.component';
+import { OverviewCieComponent } from './assessment/prepare/maturity/tutorial-cie/overview-cie/overview-cie.component';
+import { BackgroundCieComponent } from './assessment/prepare/maturity/tutorial-cie/background-cie/background-cie.component';
+import { PrinciplesCieComponent } from './assessment/prepare/maturity/tutorial-cie/principles-cie/principles-cie.component';
+import { LifecycleCieComponent } from './assessment/prepare/maturity/tutorial-cie/lifecycle-cie/lifecycle-cie.component';
+import { HowToUseCieComponent } from './assessment/prepare/maturity/tutorial-cie/how-to-use-cie/how-to-use-cie.component';
+import { TutorialCieComponent } from './assessment/prepare/maturity/tutorial-cie/tutorial-cie.component';
+import { QuestionBlockCieComponent } from './assessment/questions/question-block-cie/question-block-cie.component';
+import { PrincipleSummaryComponent } from './assessment/questions/principle-summary/principle-summary.component';
+import { MaturityQuestionsCieComponent } from './assessment/questions/maturity-questions/maturity-questions-cie/maturity-questions-cie.component';
+import { AssessmentConfigCieComponent } from './assessment/prepare/assessment-info/assessment-config-cie/assessment-config-cie.component';
+import { AssessmentDetailCieComponent } from './assessment/prepare/assessment-info/assessment-detail-cie/assessment-detail-cie.component';
+import { AssessmentInfoCieComponent } from './assessment/prepare/assessment-info/assessment-info-cie/assessment-info-cie.component';
+import { CieExampleComponent } from './assessment/prepare/maturity/cie-example/cie-example.component';
+import { CieBackgroundComponent } from './assessment/prepare/maturity/cie-example/cie-background/cie-background.component';
+import { CieAnalysisComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/cie-analysis.component';
+import { ApplyingCieComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/applying-cie/applying-cie.component';
+import { PrincipleAnalysisCieComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/principle-analysis-cie/principle-analysis-cie.component';
+import { CieAnalysisMatrixComponent } from './assessment/prepare/maturity/cie-example/cie-analysis-matrix/cie-analysis-matrix.component';
+import { MergeCieAnalysisComponent } from './assessment/merge/merge-cie-analysis/merge-cie-analysis.component';
+import { CieAllQuestionsComponent } from './reports/cie/cie-all-questions/cie-all-questions.component';
+import { CiePrincipleOnlyComponent } from './reports/cie/cie-principle-only/cie-principle-only.component';
+import { CiePrinciplePhaseComponent } from './reports/cie/cie-principle-phase/cie-principle-phase.component';
+import { CieNotApplicableComponent } from './reports/cie/cie-not-applicable/cie-not-applicable.component';
+import { SdOwnerDeficiencyComponent } from './reports/sd-owner/sd-owner-deficiency/sd-owner-deficiency.component';
+import { SdOwnerCommentsMfrComponent } from './reports/sd-owner/sd-owner-comments/sd-owner-comments-mfr.component';
+import { AnalyticsComponent } from './assessment/results/analytics/analytics.component';
+import { CieMfrReportComponent } from './reports/cie/cie-mfr-report/cie-mfr-report.component';
+import { TutorialCpgComponent } from './assessment/prepare/maturity/tutorial-cpg/tutorial-cpg.component';
+import { TutorialMvraComponent } from './assessment/prepare/maturity/tutorial-mvra/tutorial-mvra.component';
 
 const appRoutes: Routes = [
 
@@ -255,7 +287,7 @@ const appRoutes: Routes = [
       },
       { path: 'alias-assessments/:id', component: AliasAssessmentsComponent },
       { path: 'aggregation-detail/:id', component: AggregationDetailComponent },
-      { path: 'compare-analytics/:id', component: CompareAnalyticsComponent },
+      { path: 'compare-analytics/:id/:type', component: CompareAnalyticsComponent },
       { path: 'trend-analytics/:id', component: TrendAnalyticsComponent },
 
       { path: 'importModule', component: ImportComponent },
@@ -292,14 +324,20 @@ const appRoutes: Routes = [
         component: AddQuestionComponent
       },
       {
-        path:'tsa-analytics',
-        component:TsaAnalyticsComponent
+        path: 'assessment-comparison-analytics',
+        component: AssessmentComparisonAnalyticsComponent
       },
-      { path: 'resource-library',
-        component: ResourceLibraryComponent },
+      {
+        path: 'resource-library',
+        component: ResourceLibraryComponent
+      },
       {
         path: 'examination-merge',
         component: MergeExaminationsComponent
+      },
+      {
+        path: 'merge-cie-analysis',
+        component: MergeCieAnalysisComponent
       },
 
       {
@@ -318,13 +356,52 @@ const appRoutes: Routes = [
               { path: 'info2', component: Assessment2InfoComponent },
               { path: 'info-tsa', component: AssessmentInfoTsaComponent },
               { path: 'info2-tsa', component: AssessmentInfo2TsaComponent },
+              { path: 'info-demog-iod', component: AssessmentDemogIodComponent },
+              { path: 'info-config-iod', component: AssessmentConfigIodComponent },
+              { path: 'demographics', component: AssessmentInfoNcuaComponent },
               { path: 'model-select', component: ModelSelectComponent },
+              { path: 'assessment-detail-cie', component: AssessmentDetailCieComponent },
+              { path: 'assessment-info-cie', component: AssessmentInfoCieComponent },
+              { path: 'assessment-config-cie', component: AssessmentConfigCieComponent },
               { path: 'tutorial-cmmc', component: TutorialCmmcComponent },
               { path: 'tutorial-cmmc2', component: TutorialCmmc2Component },
               { path: 'tutorial-edm', component: TutorialEdmComponent },
               { path: 'tutorial-crr', component: TutorialCrrComponent },
+              { path: 'tutorial-imr', component: TutorialImrComponent },
               { path: 'tutorial-rra', component: TutorialRraComponent },
               { path: 'tutorial-cis', component: TutorialCisComponent },
+              { path: 'tutorial-cpg', component: TutorialCpgComponent },
+              { path: 'tutorial-mvra', component: TutorialMvraComponent },
+              {
+                path: 'tutorial-cie', component: TutorialCieComponent,
+                children: [
+                  { path: 'quick-facts-cie', component: QuickFactsCieComponent },
+                  { path: 'overview-cie', component: OverviewCieComponent },
+                  { path: 'background-cie', component: BackgroundCieComponent },
+                  { path: 'principles-cie', component: PrinciplesCieComponent },
+                  { path: 'lifecycle-cie', component: LifecycleCieComponent },
+                ]
+              },
+              {
+                path: 'cie-example',
+                component: CieExampleComponent,
+                canActivate: [AssessGuard],
+                canActivateChild: [AssessGuard],
+                children: [
+                  { path: 'cie-background', component: CieBackgroundComponent },
+                  {
+                    path: 'cie-analysis',
+                    component: CieAnalysisComponent,
+                    canActivate: [AssessGuard],
+                    canActivateChild: [AssessGuard],
+                    children: [
+                      { path: 'applying-cie', component: ApplyingCieComponent },
+                      { path: 'principle-analysis-cie/:pri', component: PrincipleAnalysisCieComponent }
+                    ]
+                  },
+                  { path: 'cie-analysis-matrix', component: CieAnalysisMatrixComponent },
+                ]
+              },
               { path: 'config-cis', component: ConfigCisComponent },
               { path: 'cmmc-levels', component: CmmcLevelsComponent },
               { path: 'csi', component: CsiComponent },
@@ -351,14 +428,19 @@ const appRoutes: Routes = [
               { path: '**', redirectTo: 'info1' }
             ]
           },
-
           { path: 'questions', component: QuestionsComponent },
           { path: 'placeholder-questions', component: PlaceholderQuestionsComponent },
           { path: 'maturity-questions', component: MaturityQuestionsComponent },
           { path: 'maturity-questions-acet', component: MaturityQuestionsAcetComponent },
           { path: 'maturity-questions-ise', component: MaturityQuestionsIseComponent },
+          { path: 'instructions-cie', component: HowToUseCieComponent },
+
+          { path: 'maturity-questions-cie/:sec', component: MaturityQuestionsCieComponent },
+          { path: 'question-block-cie/:sec', component: QuestionBlockCieComponent },
+          { path: 'principle-summary/:pri', component: PrincipleSummaryComponent },
           { path: 'maturity-questions/:grp', component: MaturityQuestionsComponent },
           { path: 'maturity-questions-nested/:sec', component: MaturityQuestionsNestedComponent },
+          { path: 'other-remarks', component: OtherRemarksComponent },
           { path: 'diagram-questions', component: DiagramQuestionsComponent },
 
           {
@@ -381,7 +463,6 @@ const appRoutes: Routes = [
               { path: 'mvra-summary-page', component: MvraSummaryPageComponent },
               { path: 'cpg-summary-page', component: CpgSummaryComponent },
               { path: 'cpg-practices-page', component: CpgPracticesComponent },
-
               { path: 'analysis', component: AnalysisComponent },
               { path: 'dashboard', component: DashboardComponent },
               { path: 'ranked-questions', component: RankedQuestionsComponent },
@@ -420,6 +501,7 @@ const appRoutes: Routes = [
               { path: 'overview', component: OverviewComponent },
               { path: 'reports', component: ReportsComponent },
               { path: 'analytics-compare', component: AnalyticsCompareComponent },
+              { path: 'analytics', component: AnalyticsComponent },
               { path: 'tsa-assessment-complete', component: TsaAssessmentCompleteComponent },
               { path: 'ranked-deficiency', component: RankedDeficiencyComponent },
               { path: 'section-scoring', component: SectionScoringComponent },
@@ -429,6 +511,7 @@ const appRoutes: Routes = [
               { path: 'hydro-feasibility', component: HydroFeasibilityComponent },
               { path: 'hydro-actions', component: HydroActionsComponent },
               { path: 'sd-answer-summary', component: SdAnswerSummaryComponent },
+
             ]
           },
 
@@ -443,7 +526,7 @@ const appRoutes: Routes = [
   {
     path: 'report', component: LayoutBlankComponent, children: [
       { path: 'detail', component: SiteDetailComponent },
-      { path: 'discoveries', component: DiscoveryTearoutsComponent },
+      { path: 'observations', component: ObservationTearoutsComponent },
       { path: 'executive', component: ExecutiveSummaryComponent },
       { path: 'securityplan', component: SecurityplanComponent },
       { path: 'sitesummary', component: SiteSummaryComponent },
@@ -459,6 +542,7 @@ const appRoutes: Routes = [
       { path: 'executivecmmc2', component: ExecutiveCMMC2Component },
       { path: 'edm', component: EdmComponent },
       { path: 'edmDeficiencyReport', component: EdmDeficiencyComponent },
+      { path: 'genDeficiencyReport', component: GeneralDeficiencyComponent },
       { path: 'edmCommentsmarked', component: EdmCommentsmarkedComponent },
       { path: 'cisCommentsmarked', component: CisCommentsmarkedComponent },
       { path: 'acetexecutive', component: AcetExecutiveComponent },
@@ -472,16 +556,22 @@ const appRoutes: Routes = [
       { path: 'isedonutchart', component: IseDonutChartComponent },
       { path: 'isemerit', component: IseMeritComponent },
       { path: 'isedata', component: IseDataComponent },
+      { path: 'cieAllQuestions', component: CieAllQuestionsComponent },
+      { path: 'ciePrincipleOnly', component: CiePrincipleOnlyComponent },
+      { path: 'ciePrinciplePhase', component: CiePrinciplePhaseComponent },
+      { path: 'cieNotApplicable', component: CieNotApplicableComponent },
+      { path: 'cieMfrReport', component: CieMfrReportComponent },
       { path: 'crrreport', component: CrrReportComponent },
       { path: 'crrDeficiencyReport', component: CrrDeficiencyComponent },
       { path: 'crrCommentsMarked', component: CrrCommentsMarkedComponent },
       { path: 'rrareport', component: RraReportComponent },
       { path: 'rraDeficiencyReport', component: RraDeficiencyComponent },
+      { path: 'imrreport', component: ImrReportComponent },
       { path: 'vadrDeficiencyReport', component: VadrDeficiencyComponent },
       { path: 'vadrOpenEndedReport', component: OpenEndedQuestionsComponent },
       { path: 'cisSurveyReport', component: CisSurveyComponent },
       { path: 'cisSectionScoringReport', component: CisSectionScoringComponent },
-      { path: 'cisRankedDeficiencyReport', component:CisRankedDeficiencyComponent },
+      { path: 'cisRankedDeficiencyReport', component: CisRankedDeficiencyComponent },
       { path: 'vadrReport', component: VadrReportComponent },
       { path: 'mvraReport', component: MvraReportComponent },
       { path: 'cpgReport', component: CpgReportComponent },
@@ -492,6 +582,11 @@ const appRoutes: Routes = [
       { path: 'hydroReport', component: HydroReportComponent },
       { path: 'hydroActionItemsReport', component: HydroActionItemsReportComponent },
       { path: 'sd-answer-summary', component: SdAnswerSummaryReportComponent },
+      { path: 'key-report', component: KeyReportComponent },
+      { path: 'sd-deficiency', component: TsaSdComponent },
+      { path: 'sdo-gap-report', component: SdOwnerDeficiencyComponent },
+      { path: 'sdo-comments-and-mfr', component: SdOwnerCommentsMfrComponent },
+      { path: 'appkeyreport', component: KeyReportComponent }
     ]
   },
   { path: '**', redirectTo: 'home' }

@@ -1,11 +1,12 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,7 +40,12 @@ namespace CSETWebCore.Model.Assessment
         public bool CompletedForNationalSpecialEvent { get; set; }
         public string CikrSector { get; set; }
         public string SubSector { get; set; }
+
+        public string CustomersCount { get; set; }
+
+        [DisplayName("IT ICS Staff Count")]
         public string ItIcsStaffCount { get; set; }
+        [DisplayName("Cybersecurity IT ICS Staff Count")]
         public string CybersecurityItIcsStaffCount { get; set; }
     }
 }

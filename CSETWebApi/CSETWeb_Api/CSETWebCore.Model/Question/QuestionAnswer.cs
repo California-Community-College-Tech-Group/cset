@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -53,12 +53,13 @@ namespace CSETWebCore.Model.Question
         /// This field was added for NCUA/ACET support.
         /// </summary>
         public bool Reviewed { get; set; }
+
         public bool HasComment { get; set; }
         public bool HasDocument { get; set; }
         public bool HasFeedback { get; set; }
         public int DocNum { get; set; }
-        public bool HasDiscovery { get; set; }
-        public int FindingNum { get; set; }
+        public bool HasObservation { get; set; }
+        public int ObservationNum { get; set; }
         public int? Answer_Id { get; set; }
 
         public int MaturityModelId { get; set; }
@@ -94,7 +95,17 @@ namespace CSETWebCore.Model.Question
         public List<string> CsfMappings { get; set; } = new List<string>();
 
         /// <summary>
-        /// 
+        /// CPG Practice description
+        /// </summary>
+        public string SecurityPractice {  get; set; }
+
+        /// <summary>
+        /// CPG Outcome
+        /// </summary>
+        public string Outcome { get; set; }
+
+        /// <summary>
+        /// CPG Scope
         /// </summary>
         public string Scope { get; set; }
 
@@ -117,6 +128,8 @@ namespace CSETWebCore.Model.Question
         /// Indicates free services or references.  Created for CPG support.
         /// </summary>
         public string Services { get; set; }
+
+        public string ImplementationGuides { get; set; }
 
         public bool Is_Maturity { get; set; }
         public bool Is_Component { get; set; }

@@ -18,7 +18,9 @@
         "showOrganizationName": true,
         "showBusinessAgencyName": true,
         "showCriticalService": true,
-        "additionalUserGuides": ["TSA"]
+        "additionalUserGuides": ["TSA"],
+        "showCisaAssessorWorkflowSwitch": false,
+        "showPostalCode": true
     }
 
 }

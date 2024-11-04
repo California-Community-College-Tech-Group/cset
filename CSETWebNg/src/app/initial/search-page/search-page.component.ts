@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import { SwiperOptions } from 'swiper';
 import Fuse from 'fuse.js';
 import { map } from 'lodash';
 import { ConfigService } from '../../services/config.service';
+import { NavigationService } from '../../services/navigation/navigation.service';
 
 @Component({
   selector: 'app-search-page',
@@ -49,7 +50,11 @@ export class SearchPageComponent implements OnInit, AfterViewInit {
   fuseResults: any[];
   options = {
     includeScore: true,
-    keys: ["title", "descriptions"]
+    includeMatches: true,
+    distance: 150,
+    threshold: 0.6,
+    keys: ['description', 'title'],
+    shouldSort: true
   };
 
   saveOldgalleryData: any[];
@@ -93,6 +98,7 @@ export class SearchPageComponent implements OnInit, AfterViewInit {
     public breakpointObserver: BreakpointObserver,
     public gallerySvc: GalleryService,
     public assessSvc: AssessmentService,
+    public navSvc: NavigationService,
     public configSvc: ConfigService) {
 
   }
@@ -144,6 +150,7 @@ export class SearchPageComponent implements OnInit, AfterViewInit {
           })
         }
         );
+
         this.fuse = new Fuse(this.galleryItemsTmp, this.options)
         this.galleryItemsTmp = map(this.galleryItemsTmp, (item, index) => ({
           item,
@@ -215,7 +222,6 @@ export class SearchPageComponent implements OnInit, AfterViewInit {
 
     if (this.searchQuery) {
       this.galleryItemsTmp = this.fuse.search(this.searchQuery);
-
       // de-dupe
       const set = [];
       this.galleryItemsTmp.forEach(x => {
@@ -223,10 +229,12 @@ export class SearchPageComponent implements OnInit, AfterViewInit {
           set.push(x);
         }
       });
+
       this.galleryItemsTmp = set;
     } else {
       this.galleryItemsTmp = [];
     }
+
 
     this.shuffleCards(this.cardsPerView);
   }

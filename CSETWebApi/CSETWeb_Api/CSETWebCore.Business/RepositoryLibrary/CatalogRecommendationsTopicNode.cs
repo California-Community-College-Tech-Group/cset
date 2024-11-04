@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -16,6 +16,8 @@ namespace CSETWebCore.Business.RepositoryLibrary
         public CatalogRecommendationsTopicNode(CATALOGRECOMMENDATIONSDATA recommTopicData)
             : base(recommTopicData)
         {
+            TinyMapper.Bind<CATALOGRECOMMENDATIONSDATA, CATALOGRECOMMENDATIONSDATA>();
+
             this.Data = TinyMapper.Map<CATALOGRECOMMENDATIONSDATA>(recommTopicData);
 
             this.HeadingTitle = this.Data.Topic_Name;

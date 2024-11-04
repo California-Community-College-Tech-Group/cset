@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -29,13 +29,19 @@ export interface ExtendedDemographics {
     sectorId?: number;
     subSectorId?: number;
 
+    hb7055?: string;
+    hb7055Party?: string;
+    hb7055Grant?: string;
+
+    infrastructureItOt?: string;
+
     employees?: string;
     customersSupported?: string;
     geographicScope?: string;
     cioExists?: string;
     cisoExists?: string;
     cyberTrainingProgramExists?: string;
-    cyberRiskService? :string;
+    cyberRiskService?: string;
 }
 
 export interface Sector {

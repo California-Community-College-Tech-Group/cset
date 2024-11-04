@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using CSETWebCore.Business.Reports;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Reports;
-using CSETWebCore.Business.Findings;
+using CSETWebCore.Business.Observations;
 using CSETWebCore.DataLayer.Model;
 using System.Linq;
 
@@ -46,7 +46,7 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetActionItemsReport([FromQuery] int Exam_Level)
         {
             int assessId = _token.AssessmentForUser();
-            FindingsManager fm = new FindingsManager(_context, assessId);
+            ObservationsManager fm = new ObservationsManager(_context, assessId);
 
             return Ok(fm.GetActionItemsReport(assessId, Exam_Level).Result);
         }
@@ -84,7 +84,7 @@ namespace CSETWebCore.Api.Controllers
             _report.SetReportsAssessmentId(assessmentId);
             MaturityBasicReportData data = new MaturityBasicReportData();
             data.MatAnsweredQuestions = _report.GetIseAnsweredQuestionList();
-            data.Information = _report.GetInformation();
+            data.Information = _report.GetIseInformation();
             return Ok(data);
         }
 
@@ -98,12 +98,12 @@ namespace CSETWebCore.Api.Controllers
             data.MatAnsweredQuestions = _report.GetIseAllQuestionList();
             data.Information = _report.GetInformation();
 
-            var assessInfo = _context.ASSESSMENTS.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
-            data.AssessmentGuid = assessInfo.Assessment_GUID.ToString();
+            data.AssessmentGuid = _report.GetAssessmentGuid(assessmentId);
+            data.CsetVersion = _report.GetCsetVersion();
             return Ok(data);
         }
 
-        
+
 
         [HttpGet]
         [Route("api/reports/acet/getIseSourceFiles")]

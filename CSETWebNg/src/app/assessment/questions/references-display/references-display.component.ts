@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,14 @@
 //
 ////////////////////////////////
 import { Component, Input, OnInit } from '@angular/core';
-import { group } from 'console';
 import { ConfigService } from '../../../services/config.service';
+import { ReferenceDocLink } from '../../../models/question-extras.model';
+import { ResourceLibraryService } from '../../../services/resource-library.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 /**
- * Displays references for a question in a more concise way than 
- * the old table.  
+ * Displays references for a question in a more concise way than
+ * the old table.
  */
 @Component({
   selector: 'app-references-display',
@@ -38,90 +40,75 @@ export class ReferencesDisplayComponent implements OnInit {
   @Input()
   tab: any;
 
-  sourceDocuments: any[] = [];
+  @Input('q')
+  question: any;
 
-  additionalDocuments: any[] = [];
+  sourceDocuments: ReferenceDocLink[] = [];
+
+  additionalDocuments: ReferenceDocLink[] = [];
 
   /**
-   * 
+   *
    */
   constructor(
-    public configSvc: ConfigService
+    public configSvc: ConfigService,
+    public tSvc: TranslocoService,
+    private resourceLibSvc: ResourceLibraryService
   ) { }
 
   /**
-   * 
+   *
    */
   ngOnInit(): void {
-    if (!this.tab) {
-      return;
-    }
-
-    // group section_Refs (bookmarks) with their documents
+    // group sectionRefs (bookmarks) with their documents
     this.sourceDocuments = this.groupDocumentBookmarks(this.tab.sourceDocumentsList);
     this.additionalDocuments = this.groupDocumentBookmarks(this.tab.additionalDocumentsList);
   }
 
   /**
    * Creates a list with one instance of each document.  The document instance
-   * has a collection of all of its bookmarks. 
+   * has a collection of all of its bookmarks.
    */
-  groupDocumentBookmarks(docList) {
-    const list = [];
+  groupDocumentBookmarks(docList): ReferenceDocLink[] {
+    const list: ReferenceDocLink[] = [];
 
     docList?.forEach(ref => {
-      let listDoc = list.find(d => d.fileName == ref.file_Name);
+      let listDoc: ReferenceDocLink = list.find(d => d.fileName == ref.fileName && d.title == ref.title);
       if (!listDoc) {
         listDoc = {
-          fileId: ref.file_Id,
-          fileName: ref.file_Name,
-          title: ref.title,
-          isUploaded: ref.is_Uploaded,
+          fileId: ref.fileId,
+          fileName: ref.fileName?.trim(),
+          title: ref.title.trim(),
+          url: ref.url?.trim(),
+          isUploaded: ref.isUploaded,
           bookmarks: []
         };
         list.push(listDoc);
       }
-    
-      listDoc.bookmarks.push(ref.section_Ref.trim());
+
+      listDoc.bookmarks.push(ref);
     });
 
     return list;
   }
 
   /**
-   * Formats a URL to the document.  Handles uploaded documents via the
-   * 'ReferenceDocument' endpoint as well as direct PDFs stored on the
-   * file system in the API.  
-   * Bookmarks to an actual section_Ref are appended to the URL.
-   */
-  documentUrl(doc: any, bookmark: string) {
-    var link = '';
-
-    if (doc.isUploaded) {
-      link = this.configSvc.apiUrl + 'ReferenceDocument/' + doc.fileId + '#' + bookmark;
-    } else {
-      link = this.configSvc.docUrl + doc.fileName + '#' + bookmark;
-    }
-    return link;
+    * Replaces all occurrences of the token {{ cset_refdoc_url }}
+    * with the library URL for the installation.
+    */
+  replaceRefDocUrl(s: string) {
+    return s.replaceAll("{{ cset_refdoc_url }}", this.configSvc.refDocUrl);
   }
 
   /**
-   * Formats the text of the bookmark link.  
-   */
-  bookmarkDisplay(bookmark: string) {
-    if (bookmark == '') {
-      return 'document';
-    } else {
-      return bookmark;
-    }
-  }
-
-  /**
-   * 
+   *
    */
   areNoReferenceDocumentsAvailable() {
     return (!this.tab?.referenceTextList || this.tab.referenceTextList.length === 0)
       && (!this.tab?.sourceDocumentsList || this.tab.sourceDocumentsList.length === 0)
       && (!this.tab?.additionalDocumentsList || this.tab.additionalDocumentsList.length === 0)
+      && (!this.question?.csfMappings || this.question.csfMappings.length == 0)
+      && (!this.question?.ttp || this.question.ttp.length == 0)
+      && (!this.question?.riskAddressed)
   }
 }

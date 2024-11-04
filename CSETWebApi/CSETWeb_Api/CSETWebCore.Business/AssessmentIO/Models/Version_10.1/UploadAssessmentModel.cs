@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -17,9 +17,10 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
     {
         public DateTime ExportDateTime { get; set; }
         public List<jCSET_VERSION> jCSET_VERSION { get; set; }
+        public List<jACCESS_KEY_ASSESSMENT> jACCESS_KEY_ASSESSMENT { get; set; }
         public List<jASSESSMENT_SELECTED_LEVELS> jASSESSMENT_SELECTED_LEVELS { get; set; }
         public List<jAVAILABLE_STANDARDS> jAVAILABLE_STANDARDS { get; set; }
-        
+
         public List<jCNSS_CIA_JUSTIFICATIONS> jCNSS_CIA_JUSTIFICATIONS { get; set; }
         public List<jASSESSMENTS> jASSESSMENTS { get; set; }
         public List<jCUSTOM_QUESTIONAIRES> jCUSTOM_QUESTIONAIRES { get; set; }
@@ -32,7 +33,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public List<jFRAMEWORK_TIER_TYPE_ANSWER> jFRAMEWORK_TIER_TYPE_ANSWER { get; set; }
         public List<jSUB_CATEGORY_ANSWERS> jSUB_CATEGORY_ANSWERS { get; set; }
         public List<jASSESSMENT_CONTACTS> jASSESSMENT_CONTACTS { get; set; }
-        
+
         public List<jFINDING> jFINDING { get; set; }
         public List<jISE_ACTIONS_FINDINGS> jISE_ACTIONS_FINDINGS { get; set; }
         public List<jHYDRO_DATA_ACTIONS> jHYDRO_DATA_ACTIONS { get; set; }
@@ -43,11 +44,12 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public List<jNIST_SAL_QUESTION_ANSWERS> jNIST_SAL_QUESTION_ANSWERS { get; set; }
         public List<jINFORMATION> jINFORMATION { get; set; }
         public List<jDEMOGRAPHICS> jDEMOGRAPHICS { get; set; }
+        public List<jDETAILS_DEMOGRAPHICS> jDETAILS_DEMOGRAPHICS { get; set; }
         public List<jPARAMETER_VALUES> jPARAMETER_VALUES { get; set; }
         public List<jPARAMETER_ASSESSMENT> jPARAMETER_ASSESSMENTs { get; set; }
-        
+
         public List<jFINDING_CONTACT> jFINDING_CONTACT { get; set; }
-		public List<jUSER_DETAIL_INFORMATION> jUSER_DETAIL_INFORMATION {get;set;}
+        public List<jUSER_DETAIL_INFORMATION> jUSER_DETAIL_INFORMATION { get; set; }
 
         public List<jFINANCIAL_HOURS> jFINANCIAL_HOURS { get; set; }
         public List<jFINANCIAL_ASSESSMENT_VALUES> jFINANCIAL_ASSESSMENT_VALUES { get; set; }
@@ -61,9 +63,40 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public List<string> CustomStandards { get; set; }
         public List<string> CustomStandardDocs { get; set; }
 
+        //Here I  is where i started adding the new items
+        public List<jANSWER_PROFILE> jANSWER_PROFILE { get; set; }
+        public List<jCIS_CSI_ORGANIZATION_DEMOGRAPHICS> jCIS_CSI_ORGANIZATION_DEMOGRAPHICS { get; set; }
+        public List<jCIS_CSI_SERVICE_COMPOSITION> jCIS_CSI_SERVICE_COMPOSITION { get; set; }
+        public List<jCIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS> jCIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS { get; set; }
+        public List<jCIS_CSI_SERVICE_DEMOGRAPHICS> jCIS_CSI_SERVICE_DEMOGRAPHICS { get; set; }
+        public List<jCIS_CSI_USER_COUNTS> jCIS_CSI_USER_COUNTS { get; set; }
+        public List<jCOUNTY_ANSWERS> jCOUNTY_ANSWERS { get; set; }
+        public List<jCSAF_FILE> jCSAF_FILE { get; set; }
+        public List<jDEMOGRAPHIC_ANSWERS> jDEMOGRAPHIC_ANSWERS { get; set; }
+        public List<jMETRO_ANSWERS> jMETRO_ANSWERS { get; set; }
+        public List<jNETWORK_WARNINGS> jNETWORK_WARNINGS { get; set; }
+        public List<jREGION_ANSWERS> jREGION_ANSWERS { get; set; }
+        public List<jREPORT_DETAIL_SECTION_SELECTION> jREPORT_DETAIL_SECTION_SELECTION { get; set; }
+        public List<jREPORT_OPTIONS_SELECTION> jREPORT_OPTIONS_SELECTION { get; set; }
         public UploadAssessmentModel()
         {
+            this.jREPORT_OPTIONS_SELECTION = new List<jREPORT_OPTIONS_SELECTION>();
+            this.jREPORT_DETAIL_SECTION_SELECTION = new List<jREPORT_DETAIL_SECTION_SELECTION>();
+            this.jREGION_ANSWERS = new List<jREGION_ANSWERS>();
+            this.jMETRO_ANSWERS = new List<jMETRO_ANSWERS>();
+            this.jDEMOGRAPHIC_ANSWERS = new List<jDEMOGRAPHIC_ANSWERS>();
+            this.jCSAF_FILE = new List<jCSAF_FILE>();
+            this.jCOUNTY_ANSWERS = new List<jCOUNTY_ANSWERS>();
+            this.jCIS_CSI_USER_COUNTS = new List<jCIS_CSI_USER_COUNTS>();
+            this.jCIS_CSI_SERVICE_DEMOGRAPHICS = new List<jCIS_CSI_SERVICE_DEMOGRAPHICS>();
+            this.jCIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS = new List<jCIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS>();
+            this.jCIS_CSI_SERVICE_COMPOSITION = new List<jCIS_CSI_SERVICE_COMPOSITION>();
+            this.jCIS_CSI_ORGANIZATION_DEMOGRAPHICS = new List<jCIS_CSI_ORGANIZATION_DEMOGRAPHICS>();
+            this.jANSWER_PROFILE = new List<jANSWER_PROFILE>();
+            //Here up is where i started adding the new items
+
             this.jADDRESS = new List<jADDRESS>();
+            this.jACCESS_KEY_ASSESSMENT = new List<jACCESS_KEY_ASSESSMENT>();
             this.jANSWER = new List<jANSWER>();
             this.jASSESSMENTS = new List<jASSESSMENTS>();
             this.jASSESSMENTS_REQUIRED_DOCUMENTATION = new List<jASSESSMENTS_REQUIRED_DOCUMENTATION>();
@@ -82,6 +115,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
             this.jCUSTOM_STANDARD_BASE_STANDARD = new List<jCUSTOM_STANDARD_BASE_STANDARD>();
             this.jDIAGRAM_CONTAINER = new List<jDIAGRAM_CONTAINER>();
             this.jDEMOGRAPHICS = new List<jDEMOGRAPHICS>();
+            this.jDETAILS_DEMOGRAPHICS = new List<jDETAILS_DEMOGRAPHICS>();
             this.jDOCUMENT_ANSWERS = new List<jDOCUMENT_ANSWERS>();
             this.jDOCUMENT_FILE = new List<jDOCUMENT_FILE>();
             this.jFINANCIAL_HOURS = new List<jFINANCIAL_HOURS>();
@@ -99,7 +133,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
             this.jPARAMETER_ASSESSMENTs = new List<jPARAMETER_ASSESSMENT>();
             this.jSTANDARD_SELECTION = new List<jSTANDARD_SELECTION>();
             this.jSUB_CATEGORY_ANSWERS = new List<jSUB_CATEGORY_ANSWERS>();
-			this.jUSER_DETAIL_INFORMATION = new List<jUSER_DETAIL_INFORMATION>();
+            this.jUSER_DETAIL_INFORMATION = new List<jUSER_DETAIL_INFORMATION>();
             this.CustomStandardDocs = new List<string>();
             this.CustomStandards = new List<string>();
         }

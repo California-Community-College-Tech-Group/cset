@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -32,6 +32,10 @@ namespace CSETWebCore.Business.RepositoryLibrary
         private string xpsDirectory;
         private string xlsxDirectory;
 
+
+        /// <summary>
+        /// CTOR
+        /// </summary>
         public ResourceLibraryRepository(CSETContext dbContext, ICSETGlobalProperties globalProperties)
         {
             this.dbContext = dbContext;
@@ -43,9 +47,10 @@ namespace CSETWebCore.Business.RepositoryLibrary
             CreateResourceLibraryData();
         }
 
+
         public List<SimpleNode> GetTreeNodes()
         {
-            return getNodes(this.TopNodes.ToList());
+            return GetNodes(this.TopNodes.ToList());
         }
 
 
@@ -55,7 +60,7 @@ namespace CSETWebCore.Business.RepositoryLibrary
         /// </summary>
         /// <param name="nodes"></param>
         /// <returns></returns>
-        private List<SimpleNode> getNodes(List<ResourceNode> nodes)
+        private List<SimpleNode> GetNodes(List<ResourceNode> nodes)
         {
             List<SimpleNode> rlist = new List<SimpleNode>();
 
@@ -63,7 +68,7 @@ namespace CSETWebCore.Business.RepositoryLibrary
 
             foreach (ResourceNode r in nodes)
             {
-                List<SimpleNode> schildren = getNodes(r.Nodes.ToList());
+                List<SimpleNode> schildren = GetNodes(r.Nodes.ToList());
 
                 // don't include structure/parent nodes without children
                 if (r is NoneNode && schildren.Count == 0)
@@ -73,6 +78,7 @@ namespace CSETWebCore.Business.RepositoryLibrary
 
                 s = new SimpleNode()
                 {
+                    DocId = r.ID.ToString(),
                     label = r.TreeTextNode,
                     value = r.FileName,
                     children = schildren,
@@ -93,6 +99,9 @@ namespace CSETWebCore.Business.RepositoryLibrary
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void CreateResourceLibraryData()
         {
             try
@@ -172,10 +181,13 @@ namespace CSETWebCore.Business.RepositoryLibrary
                 }
 
 
+                // Special node: Procurement Language
                 ResourceNode procTopicModel = new NoneNode("Cyber Security Procurement Language");
                 TopNodes.Add(procTopicModel);
 
                 Dictionary<int, List<PROCUREMENTLANGUAGEDATA>> dictionaryProcurementLanguageData = new Dictionary<int, List<PROCUREMENTLANGUAGEDATA>>();
+
+                TinyMapper.Bind<PROCUREMENT_LANGUAGE_DATA, PROCUREMENTLANGUAGEDATA>();
 
                 foreach (PROCUREMENT_LANGUAGE_DATA data in dbContext.PROCUREMENT_LANGUAGE_DATA.ToList())
                 {
@@ -202,10 +214,13 @@ namespace CSETWebCore.Business.RepositoryLibrary
                 }
 
 
+                // Special node: Catalog of Recommendations
                 ResourceNode recCatTopicModel = new NoneNode("Catalog of Recommendations");
                 TopNodes.Add(recCatTopicModel);
 
                 Dictionary<int, List<CATALOGRECOMMENDATIONSDATA>> dictionaryCatalogRecommendations = new Dictionary<int, List<CATALOGRECOMMENDATIONSDATA>>();
+
+                TinyMapper.Bind<CATALOG_RECOMMENDATIONS_DATA, CATALOGRECOMMENDATIONSDATA>();
 
                 foreach (CATALOG_RECOMMENDATIONS_DATA data in dbContext.CATALOG_RECOMMENDATIONS_DATA.ToList())
                 {
@@ -231,7 +246,6 @@ namespace CSETWebCore.Business.RepositoryLibrary
                         procHeadingModel.Nodes.Add(procModel);
                     }
                 }
-
             }
             catch (Exception exc)
             {
@@ -239,20 +253,24 @@ namespace CSETWebCore.Business.RepositoryLibrary
             }
         }
 
-        private PROCUREMENTLANGUAGEDATA GetProcurmentLanguage(int id)
+
+        private PROCUREMENTLANGUAGEDATA GetProcurementLanguage(int id)
         {
             return TinyMapper.Map<PROCUREMENTLANGUAGEDATA>(dbContext.PROCUREMENT_LANGUAGE_DATA.First(data => data.Procurement_Id == id));
         }
 
-        public ProcurementLanguageTopicNode GetProcurmentLanguageNode(int id)
+
+        public ProcurementLanguageTopicNode GetProcurementLanguageNode(int id)
         {
-            return new ProcurementLanguageTopicNode(GetProcurmentLanguage(id));
+            return new ProcurementLanguageTopicNode(GetProcurementLanguage(id));
         }
+
 
         private CATALOGRECOMMENDATIONSDATA GetCatalogRecommendations(int id)
         {
             return TinyMapper.Map<CATALOGRECOMMENDATIONSDATA>(dbContext.CATALOG_RECOMMENDATIONS_DATA.First(data => data.Data_Id == id));
         }
+
 
         public CatalogRecommendationsTopicNode GetCatalogRecommendationsNode(int id)
         {
@@ -265,9 +283,10 @@ namespace CSETWebCore.Business.RepositoryLibrary
             return GetCatalogRecommendations(id).Flow_Document;
         }
 
+
         public string GetProcurementFlowText(int id)
         {
-            return GetProcurmentLanguage(id).Flow_Document;
+            return GetProcurementLanguage(id).Flow_Document;
         }
     }
 }

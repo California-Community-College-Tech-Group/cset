@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -21,6 +21,7 @@ namespace CSETWebCore.Api.Controllers
         private readonly ITokenManager _token;
         private readonly IDataHandling _data;
         private readonly IMaturityBusiness _maturity;
+        private readonly IACETMaturityBusiness _acetMaturity;
         private readonly IACETDashboardBusiness _acet;
         private readonly IHttpContextAccessor _http;
         private CSETContext _context;
@@ -29,16 +30,17 @@ namespace CSETWebCore.Api.Controllers
         private string excelContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private string excelExtension = ".xlsx";
 
-        public ExcelExportController(ITokenManager token, IDataHandling data, IMaturityBusiness maturity,
+        public ExcelExportController(ITokenManager token, IDataHandling data, IACETMaturityBusiness acetMaturity, IMaturityBusiness maturity,
             IACETDashboardBusiness acet, IHttpContextAccessor http, CSETContext context)
         {
             _token = token;
             _data = data;
             _maturity = maturity;
+            _acetMaturity = acetMaturity;
             _acet = acet;
             _http = http;
             _context = context;
-            _exporter = new ExcelExporter(_context, _data, _maturity, _acet, _http);
+            _exporter = new ExcelExporter(_context, _data, _acetMaturity, _acet, _http);
         }
 
 
@@ -52,13 +54,13 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetExcelExport(string token)
         {
             int assessmentId = _token.AssessmentForUser(token);
-            string appCode = _token.Payload(Constants.Constants.Token_Scope);
+            string appName = _token.Payload(Constants.Constants.Token_Scope);
 
             var stream = _exporter.ExportToCSV(assessmentId);
             stream.Flush();
             stream.Seek(0, System.IO.SeekOrigin.Begin);
 
-            return File(stream, excelContentType, GetFilename(assessmentId, appCode));
+            return File(stream, excelContentType, GetFilename(assessmentId, appName));
         }
 
 
@@ -68,18 +70,18 @@ namespace CSETWebCore.Api.Controllers
         /// <param name="token"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("api/ExcelExportNCUA")]
-        public IActionResult GetExcelExportNCUA(string token)
+        [Route("api/ExcelExportISE")]
+        public IActionResult GetExcelExportISE(string token, string type = "ISE")
         {
             _token.SetToken(token);
             int assessmentId = _token.AssessmentForUser(token);
-            string appCode = _token.Payload(Constants.Constants.Token_Scope);
+            string appName = _token.Payload(Constants.Constants.Token_Scope);
 
-            var stream = _exporter.ExportToExcelNCUA(assessmentId);
+            var stream = _exporter.ExportToExcelISE(assessmentId, type);
             stream.Flush();
             stream.Seek(0, System.IO.SeekOrigin.Begin);
 
-            return File(stream, excelContentType, GetFilename(assessmentId, appCode));
+            return File(stream, excelContentType, GetFilename(assessmentId, appName));
         }
 
 
@@ -91,12 +93,12 @@ namespace CSETWebCore.Api.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("api/ExcelExportAllNCUA")]
-        public IActionResult GetExcelExportAllNCUA(string token)
+        public IActionResult GetExcelExportAllNCUA(string token, string type = "")
         {
             _token.SetToken(token);
             int currentUserId = (int)_token.PayloadInt(Constants.Constants.Token_UserId);
 
-            var stream = _exporter.ExportToExcelAllNCUA(currentUserId);
+            var stream = _exporter.ExportToExcelAllNCUA(currentUserId, type);
             stream.Flush();
             stream.Seek(0, System.IO.SeekOrigin.Begin);
 
@@ -109,14 +111,14 @@ namespace CSETWebCore.Api.Controllers
         /// </summary>
         /// <param name="assessmentId"></param>
         /// <returns></returns>
-        private string GetFilename(int assessmentId, string appCode)
+        private string GetFilename(int assessmentId, string appName)
         {
             string filename = $"ExcelExport{excelExtension}";
 
             var assessmentName = _context.INFORMATION.Where(x => x.Id == assessmentId).FirstOrDefault()?.Assessment_Name;
             if (!string.IsNullOrEmpty(assessmentName))
             {
-                filename = $"{appCode} Export - {assessmentName}{excelExtension}";
+                filename = $"{appName} Export - {assessmentName}{excelExtension}";
             }
 
             return filename;

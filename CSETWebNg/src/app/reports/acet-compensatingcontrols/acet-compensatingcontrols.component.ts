@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,13 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ReportAnalysisService } from '../../services/report-analysis.service';
 import { ReportService } from '../../services/report.service';
 import { QuestionsService } from './../../services/questions.service';
 import { ConfigService } from '../../services/config.service';
 import { Title } from '@angular/platform-browser';
-import { ACETService } from '../../services/acet.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'app-acet-compensatingcontrols',
@@ -42,15 +42,15 @@ export class AcetCompensatingcontrolsComponent implements OnInit {
     public reportSvc: ReportService,
     public questionsSvc: QuestionsService,
     public configSvc: ConfigService,
-    private titleService: Title
+    private titleService: Title,
+    private tSvc: TranslocoService
   ) { }
 
   ngOnInit(): void {
-    this.titleService.setTitle("Compensating Controls Report - ACET");
-
     this.reportSvc.getAltList().subscribe(
       (r: any) => {
         this.response = r;
+        this.titleService.setTitle(this.tSvc.translate('reports.acet.compensating controls.tab title'));
       },
       error => console.log('Compensating Controls Report Error: ' + (<Error>error).message)
     );

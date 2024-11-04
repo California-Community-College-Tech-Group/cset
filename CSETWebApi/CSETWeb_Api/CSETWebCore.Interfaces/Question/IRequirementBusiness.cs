@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -22,8 +22,6 @@ namespace CSETWebCore.Interfaces.Question
         CategoryContainer BuildDomainResponse(DomainAssessmentFactor domain);
         QuestionGroup BuildCategoryResponse();
         QuestionSubCategory BuildSubcategoryResponse();
-        QuestionResponse BuildResponseOLD(List<RequirementPlus> requirements,
-            List<FullAnswer> answers, List<DomainAssessmentFactor> domains);
         List<int> GetActiveAnswerIds();
         void LoadParametersList();
         public List<ParameterToken> GetTokensForRequirement(int reqId, int ansId);

@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -21,6 +21,7 @@ namespace CSETWebCore.Api.Controllers
     [ApiController]
     public class AggregationAnalysisController : ControllerBase
     {
+        private static object _myLockObject = new object();
         private readonly ITokenManager _tokenManager;
         private readonly ITrendDataProcessor _trendData;
         private CSETContext _context;
@@ -37,7 +38,7 @@ namespace CSETWebCore.Api.Controllers
         [Route("api/aggregation/analysis/overallcompliancescore")]
         public IActionResult OverallComplianceScore([FromBody] AggBody body)
         {
-            int aggregationID = body.AggregationID;   
+            int aggregationID = body.AggregationID;
             var assessmentList = _context.AGGREGATION_ASSESSMENT.Where(x => x.Aggregation_Id == aggregationID)
                 .Include(x => x.Assessment)
                 .Include(x => x.Assessment.STANDARD_SELECTION)
@@ -165,16 +166,19 @@ namespace CSETWebCore.Api.Controllers
                 row["Alias"] = a.Alias;
                 dt.Rows.Add(row);
 
-                var percentages = GetCategoryPercentages(a.Assessment_Id, _context);
-
-                foreach (usp_getStandardsResultsByCategory pct in percentages)
+                lock (_myLockObject)
                 {
-                    if (!dt.Columns.Contains(pct.Question_Group_Heading))
-                    {
-                        dt.Columns.Add(pct.Question_Group_Heading, typeof(float));
-                    }
+                    var percentages = GetCategoryPercentages(a.Assessment_Id, _context);
 
-                    row[pct.Question_Group_Heading] = pct.prc;
+                    foreach (usp_getStandardsResultsByCategory pct in percentages)
+                    {
+                        if (!dt.Columns.Contains(pct.Question_Group_Heading))
+                        {
+                            dt.Columns.Add(pct.Question_Group_Heading, typeof(float));
+                        }
+
+                        row[pct.Question_Group_Heading] = pct.prc;
+                    }
                 }
             }
 
@@ -221,18 +225,21 @@ namespace CSETWebCore.Api.Controllers
         {
             List<usp_getStandardsResultsByCategory> response = null;
 
-            db.LoadStoredProc("[usp_getStandardsResultsByCategory]")
-                        .WithSqlParam("assessment_Id", assessmentId)
-                        .ExecuteStoredProc((handler) =>
-                        {
-                            var result = handler.ReadToList<usp_getStandardsResultsByCategory>();
-                            var labels = (from usp_getStandardsResultsByCategory an in result
-                                          orderby an.Question_Group_Heading
-                                          select an.Question_Group_Heading).Distinct().ToList();
+            lock (_myLockObject)
+            {
+                db.LoadStoredProc("[usp_getStandardsResultsByCategory]")
+                            .WithSqlParam("assessment_Id", assessmentId)
+                            .ExecuteStoredProc((handler) =>
+                            {
+                                var result = handler.ReadToList<usp_getStandardsResultsByCategory>();
+                                var labels = (from usp_getStandardsResultsByCategory an in result
+                                              orderby an.Question_Group_Heading
+                                              select an.Question_Group_Heading).Distinct().ToList();
 
 
-                            response = (List<usp_getStandardsResultsByCategory>)result;
-                        });
+                                response = (List<usp_getStandardsResultsByCategory>)result;
+                            });
+            }
 
             return response;
         }
@@ -502,6 +509,48 @@ namespace CSETWebCore.Api.Controllers
 
 
         /// <summary>
+        /// Returns answer breakdown for all associated maturity-based assessments.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/aggregation/analysis/getmaturityanswertotals")]
+        public IActionResult GetMaturityAnswerTotals(int aggregationID)
+        {
+            var assessmentList = _context.AGGREGATION_ASSESSMENT.Where(x => x.Aggregation_Id == aggregationID)
+                .Include(x => x.Assessment).OrderBy(x => x.Assessment.Assessment_Date)
+                .ToList();
+
+            List<AnswerCounts> response = new List<AnswerCounts>();
+
+            foreach (var a in assessmentList)
+            {
+                _context.LoadStoredProc("[usp_getMaturitySummaryOverall]")
+                    .WithSqlParam("assessment_id", a.Assessment_Id)
+                    .ExecuteStoredProc((handler) =>
+                    {
+                        var results = (List<usp_getStandardSummaryOverall>)handler.ReadToList<usp_getStandardSummaryOverall>();
+
+                        var ansCount = new AnswerCounts()
+                        {
+                            AssessmentId = a.Assessment_Id,
+                            Alias = a.Alias,
+                            Total = results.Max(x => x.Total),
+                            Y = results.Where(x => x.Answer_Text == "Y").FirstOrDefault().qc,
+                            N = results.Where(x => x.Answer_Text == "N").FirstOrDefault().qc,
+                            A = results.Where(x => x.Answer_Text == "A").FirstOrDefault().qc,
+                            NA = results.Where(x => x.Answer_Text == "NA").FirstOrDefault().qc,
+                            U = results.Where(x => x.Answer_Text == "U").FirstOrDefault().qc
+                        };
+
+                        response.Add(ansCount);
+                    });
+            }
+
+            return Ok(response);
+        }
+
+
+        /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
@@ -673,8 +722,80 @@ namespace CSETWebCore.Api.Controllers
 
             return Ok(response);
         }
+
+
+        /// <summary>
+        /// Returns answer breakdown for all associated maturity assessments.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/aggregation/analysis/getmaturitybesttoworst")]
+        public IActionResult GetMaturityBestToWorst()
+        {
+            var aggregationID = _tokenManager.PayloadInt("aggreg");
+            if (aggregationID == null)
+            {
+                return Ok();
+            }
+
+            Dictionary<string, List<GetComparisonBestToWorst>> dict = new Dictionary<string, List<GetComparisonBestToWorst>>();
+
+            var assessmentList = _context.AGGREGATION_ASSESSMENT.Where(x => x.Aggregation_Id == aggregationID)
+                .Include(x => x.Assessment).OrderBy(x => x.Assessment.Assessment_Date)
+                .ToList();
+
+            var response = new List<BestToWorstCategory>();
+
+            foreach (var a in assessmentList)
+            {
+                _context.LoadStoredProc("[GetMaturityComparisonBestToWorst]")
+                        .WithSqlParam("assessment_id", a.Assessment_Id)
+                        .ExecuteStoredProc((handler) =>
+                        {
+                            var result = handler.ReadToList<GetComparisonBestToWorst>();
+                            foreach (var r in result)
+                            {
+                                r.AssessmentName = a.Alias;
+
+                                // tweak - make sure that rounding didn't end up with more than 100%
+                                var realAnswerPct = r.YesValue + r.NoValue + r.NaValue + r.AlternateValue;
+                                if (realAnswerPct + r.UnansweredValue > 100f)
+                                {
+                                    r.UnansweredValue = 100f - realAnswerPct;
+                                }
+
+
+                                if (!dict.ContainsKey(r.Name))
+                                {
+                                    dict[r.Name] = new List<GetComparisonBestToWorst>();
+                                }
+                                dict[r.Name].Add(r);
+                            }
+                        });
+            }
+
+            // repackage the data 
+            var keys = dict.Keys.ToList();
+            keys.Sort();
+            foreach (string k in keys)
+            {
+                var category = new BestToWorstCategory()
+                {
+                    Category = k,
+                    Assessments = dict[k]
+                };
+
+                // sort best to worst
+                category.Assessments.Sort((a, b) => (a.YesValue + a.AlternateValue).CompareTo(b.YesValue + b.AlternateValue));
+                category.Assessments.Reverse();
+                response.Add(category);
+            }
+
+            return Ok(response);
+        }
     }
 }
+
 
 public class AggBody
 {

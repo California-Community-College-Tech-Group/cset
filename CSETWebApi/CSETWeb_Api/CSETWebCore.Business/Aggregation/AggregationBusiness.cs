@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -68,7 +68,7 @@ namespace CSETWebCore.Business.Aggregation
                 myAllowedAggregIDs.Add(agg.AggregationID);
             }
 
-                return l.OrderBy(x => x.AggregationDate).ToList();
+            return l.OrderBy(x => x.AggregationDate).ToList();
         }
 
 
@@ -169,9 +169,9 @@ namespace CSETWebCore.Business.Aggregation
         /// <param name="aggregationId"></param>
         public void DeleteAggregation(int aggregationId)
         {
-           _context.AGGREGATION_ASSESSMENT.RemoveRange(
-                _context.AGGREGATION_ASSESSMENT.Where(x => x.Aggregation_Id == aggregationId)
-                );
+            _context.AGGREGATION_ASSESSMENT.RemoveRange(
+                 _context.AGGREGATION_ASSESSMENT.Where(x => x.Aggregation_Id == aggregationId)
+                 );
 
             _context.AGGREGATION_INFORMATION.RemoveRange(
                 _context.AGGREGATION_INFORMATION.Where(x => x.AggregationID == aggregationId)
@@ -217,7 +217,9 @@ namespace CSETWebCore.Business.Aggregation
                     AssessmentId = dbAA.Assessment_Id,
                     Alias = dbAA.Alias,
                     AssessmentName = dbAA.Assessment.INFORMATION.Assessment_Name,
-                    AssessmentDate = dbAA.Assessment.Assessment_Date
+                    AssessmentDate = dbAA.Assessment.Assessment_Date,
+                    useMaturity = dbAA.Assessment.UseMaturity,
+                    useStandard = dbAA.Assessment.UseStandard
                 };
 
                 l.Add(aa);
@@ -465,8 +467,8 @@ namespace CSETWebCore.Business.Aggregation
 
 
         /// <summary>
-        /// Returns a list of questions or requirements that are answered "N"
-        /// in every assessment in the comparison.  
+        /// Returns a list of questions or requirements that are answered "N" for no
+        /// or "U" for unanswered in every assessment in the comparison.  
         /// 
         /// Note that if the comparison has assessments in both
         /// Questions and Requirements mode, there will be no common "N" answers.
@@ -486,8 +488,8 @@ namespace CSETWebCore.Business.Aggregation
 
             foreach (int assessmentId in assessmentIds)
             {
-                var answeredNo = _context.Answer_Standards_InScope
-                    .Where(x => x.assessment_id == assessmentId && x.answer_text == "N").ToList();
+                var isNoOrUnanswered = _context.Answer_Standards_InScope
+                    .Where(x => x.assessment_id == assessmentId && (x.answer_text == "N" || x.answer_text == "U")).ToList();
 
                 // get the assessments 'mode'
                 var assessmentMode = _context.STANDARD_SELECTION
@@ -496,7 +498,7 @@ namespace CSETWebCore.Business.Aggregation
 
                 if (assessmentMode.StartsWith("Q"))
                 {
-                    questionsAnsweredNo.Add(answeredNo.Where(x => x.mode == "Q")
+                    questionsAnsweredNo.Add(isNoOrUnanswered.Where(x => x.mode == "Q")
                         .Select(x => x.question_or_requirement_id).ToList());
                     requirementsAnsweredNo.Add(new List<int>());
                 }
@@ -504,7 +506,7 @@ namespace CSETWebCore.Business.Aggregation
                 if (assessmentMode.StartsWith("R"))
                 {
                     questionsAnsweredNo.Add(new List<int>());
-                    requirementsAnsweredNo.Add(answeredNo.Where(x => x.mode == "R")
+                    requirementsAnsweredNo.Add(isNoOrUnanswered.Where(x => x.mode == "R")
                         .Select(x => x.question_or_requirement_id).ToList());
                 }
             }
@@ -518,24 +520,64 @@ namespace CSETWebCore.Business.Aggregation
 
 
         /// <summary>
-        /// Build a list of Questions with common "N" answers.
+        /// Returns a list of questions or requirements that are answered "N" for no
+        /// or "U" for unanswered in every assessment in the comparison.  
+        /// 
+        /// Note that if the comparison has assessments in both
+        /// Questions and Requirements mode, there will be no common "N" answers.
         /// </summary>
-        /// <param name="answeredNo"></param>
-        /// <param name="db"></param>
-        /// <returns></returns>
-        public List<MissedQuestion> BuildQList(List<List<int>> answeredNo)
+        /// <param name="aggregationId"></param>
+        public List<MissedQuestion> GetCommonlyMissedMaturityQuestions(int aggregationId)
         {
             var resp = new List<MissedQuestion>();
 
-            if (answeredNo.Count == 0)
+            // build lists of question IDs, then use LINQ to do the intersection
+            var questionsAnsweredNo = new List<List<int>>();
+            var requirementsAnsweredNo = new List<List<int>>();
+
+            var assessmentIds = _context.AGGREGATION_ASSESSMENT
+                .Where(x => x.Aggregation_Id == aggregationId).ToList().Select(x => x.Assessment_Id);
+
+
+            foreach (int assessmentId in assessmentIds)
+            {
+                var isNoOrUnanswered = _context.Answer_Maturity
+                    .Where(x => x.Assessment_Id == assessmentId && (x.Answer_Text == "N" || x.Answer_Text == "U")).ToList();
+
+                questionsAnsweredNo.Add(isNoOrUnanswered
+                    .Select(x => x.Question_Or_Requirement_Id).ToList());
+                requirementsAnsweredNo.Add(isNoOrUnanswered
+                    .Select(x => x.Question_Or_Requirement_Id).ToList());
+
+            }
+
+            // Now that the lists are built, analyze for common "N" answers
+            resp.AddRange(BuildQList(questionsAnsweredNo));
+            resp.AddRange(BuildRList(requirementsAnsweredNo));
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Build a list of Questions with common "N" answers.
+        /// </summary>
+        /// <param name="isNoOrUnanswered"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public List<MissedQuestion> BuildQList(List<List<int>> isNoOrUnanswered)
+        {
+            var resp = new List<MissedQuestion>();
+
+            if (isNoOrUnanswered.Count == 0)
             {
                 return resp;
             }
 
-            var intersectionQ = answeredNo
+            var intersectionQ = isNoOrUnanswered
             .Skip(1)
             .Aggregate(
-                new HashSet<int>(answeredNo.First()),
+                new HashSet<int>(isNoOrUnanswered.First()),
                 (h, e) => { h.IntersectWith(e); return h; }
             );
 
@@ -566,21 +608,21 @@ namespace CSETWebCore.Business.Aggregation
         /// <summary>
         /// Build a list of Requirements with common "N" answers.
         /// </summary>
-        /// <param name="answeredNo"></param>
+        /// <param name="isNoOrUnanswered"></param>
         /// <param name="db"></param>
         /// <returns></returns>
-        public List<MissedQuestion> BuildRList(List<List<int>> answeredNo)
+        public List<MissedQuestion> BuildRList(List<List<int>> isNoOrUnanswered)
         {
             var resp = new List<MissedQuestion>();
 
-            if (answeredNo.Count == 0)
+            if (isNoOrUnanswered.Count == 0)
             {
                 return resp;
             }
-            var intersectionR = answeredNo
+            var intersectionR = isNoOrUnanswered
                 .Skip(1)
                 .Aggregate(
-                    new HashSet<int>(answeredNo.First()),
+                    new HashSet<int>(isNoOrUnanswered.First()),
                     (h, e) => { h.IntersectWith(e); return h; }
                 );
 

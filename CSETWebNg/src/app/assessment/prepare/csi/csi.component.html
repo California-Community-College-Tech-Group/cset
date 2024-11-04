@@ -1,6 +1,6 @@
 <!---------------------- 
 
-   Copyright 2023 Battelle Energy Alliance, LLC  
+   Copyright 2024 Battelle Energy Alliance, LLC  
 
   Permission is hereby granted, free of charge, to any person obtaining a copy 
   of this software and associated documentation files (the "Software"), to deal 
@@ -20,13 +20,14 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
   SOFTWARE. 
 -------------------------->
-<h3 class="mb-3">Critical Service Information</h3>
+<ng-container *transloco="let t">
 
-<!-- This component includes a lot of redundant data already included in assessment info demographics section; commenting out for now -->
-<!-- <app-csi-organization-demographics></app-csi-organization-demographics> -->
+  <h3 class="mb-3">{{t('titles.critical service information')}}</h3>
 
-<app-csi-service-demographics></app-csi-service-demographics>
+  <app-csi-service-demographics></app-csi-service-demographics>
 
-<app-csi-service-composition></app-csi-service-composition>
+  <app-csi-service-composition></app-csi-service-composition>
 
-<app-nav-back-next [page]="'csi'"></app-nav-back-next>
+  <app-nav-back-next [page]="aliasId"></app-nav-back-next>
+
+</ng-container>

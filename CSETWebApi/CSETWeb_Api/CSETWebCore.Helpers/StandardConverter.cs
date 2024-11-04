@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -45,7 +45,8 @@ namespace CSETWebCore.Helpers
             var result = new ConverterResult<SETS>(logger);
             SETS_CATEGORY category;
             int? categoryOrder = 0;
-            var setname = Regex.Replace(externalStandard.shortName, @"\W", "_");
+            var setname = Regex.Replace(externalStandard.name, @"\W", "_");
+            
             try
             {
                 var documentImporter = new DocumentImporter(_context);
@@ -114,7 +115,7 @@ namespace CSETWebCore.Helpers
                                 NEW_QUESTION existingQuestion;
                                 if (questionDictionary.TryGetValue(question.Simple_Question, out existingQuestion))
                                 {
-                                    requirementResult.Result.REQUIREMENT_QUESTIONS.Remove(new REQUIREMENT_QUESTIONS() { Question_Id = question.Question_Id, Requirement_Id = requirementResult.Result.Requirement_Id });
+                                    requirementResult.Result.REQUIREMENT_QUESTIONS_SETS.Remove(new REQUIREMENT_QUESTIONS_SETS() { Question_Id = question.Question_Id, Requirement_Id = requirementResult.Result.Requirement_Id });
                                 }
                                 else
                                 {
@@ -195,7 +196,7 @@ new QuestionAndHeading() { Simple_Question = t.Simple_Question, Heading_Pair_Id 
             var reqReferences = reqs.Select(s => new
             {
                 s.Requirement_Id,
-                Resources = s.REQUIREMENT_REFERENCES.Select(t =>
+                Resources = s.REQUIREMENT_REFERENCES.Where(x => !x.Source).Select(t =>
                   new ExternalResource
                   {
                       destination = t.Destination_String,
@@ -208,7 +209,7 @@ new QuestionAndHeading() { Simple_Question = t.Simple_Question, Heading_Pair_Id 
             var reqSource = reqs.Select(s => new
             {
                 s.Requirement_Id,
-                Resource = s.REQUIREMENT_SOURCE_FILES.Select(t =>
+                Resource = s.REQUIREMENT_REFERENCES.Where(x => x.Source).Select(t =>
                                   new ExternalResource
                                   {
                                       destination = t.Destination_String,

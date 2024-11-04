@@ -6,14 +6,20 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace CSETWebCore.DataLayer.Model
+namespace CSETWebCore.DataLayer.Model;
+
+[PrimaryKey("Requirement_Id", "Sequence")]
+public partial class REQUIREMENT_REFERENCE_TEXT
 {
-    public partial class REQUIREMENT_REFERENCE_TEXT
-    {
-        [Key]
-        public int Requirement_Id { get; set; }
-        [Key]
-        public int Sequence { get; set; }
-        public string Reference_Text { get; set; }
-    }
+    [Key]
+    public int Requirement_Id { get; set; }
+
+    [Key]
+    public int Sequence { get; set; }
+
+    public string Reference_Text { get; set; }
+
+    [ForeignKey("Requirement_Id")]
+    [InverseProperty("REQUIREMENT_REFERENCE_TEXT")]
+    public virtual NEW_REQUIREMENT Requirement { get; set; }
 }

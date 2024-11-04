@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
 ////////////////////////////////
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { APP_INITIALIZER, NgModule} from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 // import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -49,52 +49,56 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 // import { MatSliderModule } from '@angular/material/slider';
 
 import { FlexLayoutModule } from '@angular/flex-layout';
-import {A11yModule} from '@angular/cdk/a11y';
-import {CdkAccordionModule} from '@angular/cdk/accordion';
-import {ClipboardModule} from '@angular/cdk/clipboard';
-import {DragDropModule} from '@angular/cdk/drag-drop';
-import {PortalModule} from '@angular/cdk/portal';
-import {ScrollingModule} from '@angular/cdk/scrolling';
-import {CdkStepperModule} from '@angular/cdk/stepper';
-import {CdkTableModule} from '@angular/cdk/table';
-import {CdkTreeModule} from '@angular/cdk/tree';
-import {MatAutocompleteModule} from '@angular/material/autocomplete';
-import {MatBadgeModule} from '@angular/material/badge';
-import {MatBottomSheetModule} from '@angular/material/bottom-sheet';
-import {MatButtonModule} from '@angular/material/button';
-import {MatButtonToggleModule} from '@angular/material/button-toggle';
-import {MatCardModule} from '@angular/material/card';
-import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatChipsModule} from '@angular/material/chips';
-import {MatStepperModule} from '@angular/material/stepper';
-import {MatDatepickerModule} from '@angular/material/datepicker';
-import {MatDialogModule} from '@angular/material/dialog';
-import {MatDividerModule} from '@angular/material/divider';
-import {MatExpansionModule} from '@angular/material/expansion';
-import {MatGridListModule} from '@angular/material/grid-list';
-import {MatIconModule} from '@angular/material/icon';
-import {MatInputModule} from '@angular/material/input';
-import {MatListModule} from '@angular/material/list';
-import {MatMenuModule} from '@angular/material/menu';
-import {MatNativeDateModule, MatRippleModule} from '@angular/material/core';
-import {MatPaginatorModule} from '@angular/material/paginator';
-import {MatProgressBarModule} from '@angular/material/progress-bar';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatRadioModule} from '@angular/material/radio';
-import {MatSelectModule} from '@angular/material/select';
-import {MatSidenavModule} from '@angular/material/sidenav';
-import {MatSliderModule} from '@angular/material/slider';
-import {MatSlideToggleModule} from '@angular/material/slide-toggle';
-import {MatSnackBarModule} from '@angular/material/snack-bar';
-import {MatSortModule} from '@angular/material/sort';
-import {MatTableModule} from '@angular/material/table';
-import {MatTabsModule} from '@angular/material/tabs';
-import {MatToolbarModule} from '@angular/material/toolbar';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatTreeModule} from '@angular/material/tree';
-import {OverlayModule} from '@angular/cdk/overlay';
+import { A11yModule } from '@angular/cdk/a11y';
+import { CdkAccordionModule } from '@angular/cdk/accordion';
+import { ClipboardModule } from '@angular/cdk/clipboard';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { PortalModule } from '@angular/cdk/portal';
+import { ScrollingModule } from '@angular/cdk/scrolling';
+import { CdkStepperModule } from '@angular/cdk/stepper';
+import { CdkTableModule } from '@angular/cdk/table';
+import { CdkTreeModule } from '@angular/cdk/tree';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatBottomSheetModule } from '@angular/material/bottom-sheet';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
+import {
+  MAT_DATE_LOCALE,
+  MatNativeDateModule,
+  MatRippleModule
+} from '@angular/material/core';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTreeModule } from '@angular/material/tree';
+import { OverlayModule } from '@angular/cdk/overlay';
 
-import { NgxSliderModule } from '@angular-slider/ngx-slider';
+import { NgxSliderModule } from 'ngx-slider-v2';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HotkeyModule } from 'angular2-hotkeys';
@@ -108,9 +112,11 @@ import { ContactItemComponent } from './assessment/prepare/assessment-info/asses
 // eslint-disable-next-line max-len
 import { AssessmentDemographicsComponent } from './assessment/prepare/assessment-info/assessment-demographics/assessment-demographics.component';
 import { AssessmentDetailComponent } from './assessment/prepare/assessment-info/assessment-detail/assessment-detail.component';
+import { AssessmentDetailTsaComponent } from './assessment/prepare/assessment-info/assessment-detail-tsa/assessment-detail-tsa.component';
 import { AssessmentInfoComponent } from './assessment/prepare/assessment-info/assessment-info.component';
 import { Assessment2InfoComponent } from './assessment/prepare/assessment-info/assessment2-info/assessment2-info.component';
 import { AssessmentInfoTsaComponent } from './assessment/prepare/assessment-info/assessment-info-tsa/assessment-info-tsa.component';
+import { AssessmentInfoNcuaComponent } from './assessment/prepare/assessment-info/assessment-info-ncua/assessment-info-ncua.component';
 import { AssessmentConfigComponent } from './assessment/prepare/assessment-info/assessment-config/assessment-config.component';
 import { FrameworkComponent } from './assessment/prepare/framework/framework.component';
 import { RequiredDocsComponent } from './assessment/prepare/required/required.component';
@@ -122,7 +128,7 @@ import { SalNistComponent } from './assessment/prepare/sals/sal-nist/sal-nist.co
 import { SalSimpleComponent } from './assessment/prepare/sals/sal-simple/sal-simple.component';
 import { SalsComponent } from './assessment/prepare/sals/sals.component';
 import { StandardsComponent } from './assessment/prepare/standards/standards.component';
-import { FindingsComponent } from './assessment/questions/findings/findings.component';
+import { ObservationsComponent } from './assessment/questions/observations/observations.component';
 import { QuestionBlockComponent } from './assessment/questions/question-block/question-block.component';
 import { QuestionExtrasComponent } from './assessment/questions/question-extras/question-extras.component';
 import { QuestionsComponent } from './assessment/questions/questions.component';
@@ -158,7 +164,9 @@ import { KeyboardShortcutsComponent } from './dialogs/keyboard-shortcuts/keyboar
 import { LicenseComponent } from './dialogs/license/license.component';
 import { OkayComponent } from './dialogs/okay/okay.component';
 import { QuestionFiltersComponent } from './dialogs/question-filters/question-filters.component';
+import { QuestionFiltersReportsComponent } from './dialogs/question-filters-reports/question-filters-reports.component';
 import { TermsOfUseComponent } from './dialogs/terms-of-use/terms-of-use.component';
+import { AccessibilityStatementComponent } from './dialogs/accessibility-statement/accessibility-statement.component';
 import { UploadExportComponent } from './dialogs/upload-export/upload-export.component';
 import { AssessGuard } from './guards/assess.guard';
 import { AuthGuard } from './guards/auth.guard';
@@ -173,7 +181,10 @@ import { JwtInterceptor } from './helpers/jwt.interceptor';
 import { ProgressComponent } from './helpers/progress/progress.component';
 import { SafePipe } from './helpers/safe.pipe';
 import { LinebreakPipe } from './helpers/linebreak.pipe';
+import { LinebreakPlaintextPipe } from './helpers/linebreakplain.pipe';
 import { NullishCoalescePipe } from './helpers/nullish-coalesce.pipe';
+import { CompletionCountPipe } from './helpers/completion-count.pipe';
+import { LocalizeDatePipe } from './helpers/date-localize.pipe';
 import { ImportComponent } from './import/import.component';
 import { InitialComponent } from './initial/initial.component';
 import { MyAssessmentsComponent } from './initial/my-assessments/my-assessments.component';
@@ -189,7 +200,7 @@ import { DemographicService } from './services/demographic.service';
 import { EmailService } from './services/email.service';
 import { EnableFeatureService } from './services/enable-feature.service';
 import { FileUploadClientService } from './services/file-client.service';
-import { FindingsService } from './services/findings.service';
+import { ObservationsService } from './services/observations.service';
 import { FrameworkService } from './services/framework.service';
 import { NavigationService } from './services/navigation/navigation.service';
 import { QuestionsService } from './services/questions.service';
@@ -231,6 +242,7 @@ import { TextComponent } from './assessment/diagram/diagram-inventory/text/text.
 import { ZonesComponent } from './assessment/diagram/diagram-inventory/zones/zones.component';
 import { DiagramService } from './services/diagram.service';
 import { ExcelExportComponent } from './dialogs/excel-export/excel-export.component';
+import { NcuaExcelExportComponent } from './dialogs/excel-export/ncua-export/ncua-excel-export.component';
 import { MergeComponent } from './aggregation/merge/merge.component';
 import { AggregationService } from './services/aggregation.service';
 import { MergeQuestionDetailComponent } from './dialogs/merge-question-detail/merge-question-detail.component';
@@ -239,10 +251,13 @@ import { AliasAssessmentsComponent } from './aggregation/alias-assessments/alias
 import { AggregationDetailComponent } from './aggregation/aggregation-detail/aggregation-detail.component';
 import { TrendAnalyticsComponent } from './aggregation/trend-analytics/trend-analytics.component';
 import { CompareAnalyticsComponent } from './aggregation/compare-analytics/compare-analytics.component';
-import { CompareSummaryComponent } from './aggregation/compare-analytics/compare-summary/compare-summary.component';
-import { CompareMissedComponent } from './aggregation/compare-analytics/compare-missed/compare-missed.component';
-import { CompareIndividualComponent } from './aggregation/compare-analytics/compare-individual/compare-individual.component';
-import { CompareBestworstComponent } from './aggregation/compare-analytics/compare-bestworst/compare-bestworst.component';
+import { CompareSummaryComponent } from './aggregation/compare-analytics/standards-based/compare-summary/compare-summary.component';
+import { CompareMissedComponent } from './aggregation/compare-analytics/standards-based/compare-missed/compare-missed.component';
+import { CompareIndividualComponent } from './aggregation/compare-analytics/standards-based/compare-individual/compare-individual.component';
+import { CompareBestworstComponent } from './aggregation/compare-analytics/standards-based/compare-bestworst/compare-bestworst.component';
+import { CompareMaturityMissedComponent } from './aggregation/compare-analytics/maturity-based/compare-missed/compare-missed.component';
+import { CompareMaturityIndividualComponent } from './aggregation/compare-analytics/maturity-based/compare-individual/compare-individual.component';
+import { CompareMaturityBestworstComponent } from './aggregation/compare-analytics/maturity-based/compare-bestworst/compare-bestworst.component';
 import { SelectAssessmentsComponent } from './dialogs/select-assessments/select-assessments.component';
 import { ChartService } from './services/chart.service';
 import { ChartColors } from './services/chart.service';
@@ -252,9 +267,10 @@ import { LayoutMainComponent } from './layout/layout-main/layout-main.component'
 import { AcetLayoutMainComponent } from './layout/acet-layout-main/acet-layout-main.component';
 import { TsaLayoutMainComponent } from './layout/tsa-layout-main/tsa-layout-main.component';
 import { RraLayoutMainComponent } from './layout/rra-layout-main/rra-layout-main.component';
+import { IodLayoutComponent } from './layout/iod-layout/iod-layout.component';
 import { ReportTestComponent } from './reports/report-test/report-test.component';
 import { SiteDetailComponent } from './reports/site-detail/site-detail.component';
-import { DiscoveryTearoutsComponent } from './reports/discovery-tearouts/discovery-tearouts.component';
+import { ObservationTearoutsComponent } from './reports/observation-tearouts/observation-tearouts.component';
 import { EvalAgainstStandardsComponent } from './reports/eval-against-standards/eval-against-standards.component';
 import { ExecutiveSummaryComponent } from './reports/executive-summary/executive-summary.component';
 import { SecurityplanComponent } from './reports/securityplan/securityplan.component';
@@ -306,13 +322,15 @@ import { GroupingBlockComponent } from './assessment/questions/grouping-block/gr
 import { QuestionBlockMaturityComponent } from './assessment/questions/question-block-maturity/question-block-maturity.component';
 import { QuestionBlockIseComponent } from './assessment/questions/question-block-ise/question-block-ise.component';
 import { EdmDeficiencyComponent } from './reports/edm-deficiency/edm-deficiency.component';
+import { GeneralDeficiencyComponent } from './reports/general-deficiency/general-deficiency.component';
 import { EdmCommentsmarkedComponent } from './reports/edm-commentsmarked/edm-commentsmarked.component';
 import { CisCommentsmarkedComponent } from './reports/cis-commentsmarked/cis-commentsmarked.component';
 import { MaturityQuestionsAcetComponent } from './assessment/questions/maturity-questions/maturity-questions-acet.component';
 import { MaturityQuestionsIseComponent } from './assessment/questions/maturity-questions/maturity-questions-ise.component';
 import { EdmComponent } from './reports/edm/edm.component';
-import { TooltipModule } from 'ng2-tooltip-directive-ngfix';
+import { TooltipModule } from '@cloudfactorydk/ng2-tooltip-directive';
 import { QuestionTextComponent } from './assessment/questions/question-text/question-text.component';
+import { QuestionTextCpgComponent } from './assessment/questions/question-text/question-text-cpg/question-text-cpg.component';
 import { AcetFilteringService } from './services/filtering/maturity-filtering/acet-filtering.service';
 import { CmmcFilteringService } from './services/filtering/maturity-filtering/cmmc-filtering.service';
 import { EdmFilteringService } from './services/filtering/maturity-filtering/edm-filtering.service';
@@ -332,8 +350,8 @@ import { RelationshipFormationComponent } from './assessment/results/edm/relatio
 import { RelationshipManagementComponent } from './assessment/results/edm/relationship-management/relationship-management.component';
 import { ServiceProtectionComponent } from './assessment/results/edm/service-protection/service-protection.component';
 import { MaturityIndicatorLevelsComponent } from './assessment/results/edm/maturity-indicator-levels/maturity-indicator-levels.component';
-import { EDMHorizontalBarChart } from './reports/edm/horizontal-bar-chart/horizontal-bar-chart.component'
-import { EDMTripleBarChart } from './reports/edm/triple-bar-chart/triple-bar-chart.component'
+import { EDMHorizontalBarChart } from './reports/edm/horizontal-bar-chart/horizontal-bar-chart.component';
+import { EDMTripleBarChart } from './reports/edm/triple-bar-chart/triple-bar-chart.component';
 import { EDMBarChartLegend } from './reports/edm/edm-bar-chart-legend/edm-bar-chart-legend.component';
 import { EDMFrameworkSummary } from './reports/edm/edm-framework-summ/edm-framework-summ.component';
 import { ModuleAddCloneComponent } from './builder/module-add-clone/module-add-clone.component';
@@ -357,6 +375,8 @@ import { TutorialCrrComponent } from './assessment/prepare/maturity/tutorial-crr
 import { CrrDeficiencyComponent } from './reports/crr/crr-deficiency/crr-deficiency.component';
 import { CrrCommentsMarkedComponent } from './reports/crr/crr-comments-marked/crr-comments-marked.component';
 import { TutorialRraComponent } from './assessment/prepare/maturity/tutorial-rra/tutorial-rra.component';
+import { TutorialCpgComponent } from './assessment/prepare/maturity/tutorial-cpg/tutorial-cpg.component';
+import { TutorialMvraComponent } from './assessment/prepare/maturity/tutorial-mvra/tutorial-mvra.component';
 import { RraLevelResultsComponent } from './assessment/results/mat-rra/rra-level-results/rra-level-results.component';
 import { RraGapsComponent } from './assessment/results/mat-rra/rra-gaps/rra-gaps.component';
 import { RraDeficiencyComponent } from './reports/rra/rra-deficiency/rra-deficiency.component';
@@ -378,7 +398,7 @@ import { CrrSummaryResultsComponent } from './assessment/results/crr/crr-summary
 import { CrrResultsPage } from './assessment/results/crr/crr-results-page/crr-results-page.component';
 import { CrrResultsDetailComponent } from './assessment/results/crr/crr-results-detail/crr-results-detail.component';
 import { CrrHeatmapComponent } from './assessment/results/crr/crr-heatmap/crr-heatmap.component';
-import { CrrService } from './services/crr.service';
+import { CmuService } from './services/cmu.service';
 import { Utilities } from './services/utilities.service';
 import { NCUAService } from './services/ncua.service';
 
@@ -405,7 +425,7 @@ import { CsiServiceDemographicsComponent } from './assessment/prepare/csi/csi-se
 import { CsiServiceCompositionComponent } from './assessment/prepare/csi/csi-service-composition/csi-service-composition.component';
 import { AssessmentInfo2TsaComponent } from './assessment/prepare/assessment-info/assessment-info2-tsa/assessment-info2-tsa.component';
 import { AssessmentDemographicsTsaComponent } from './assessment/prepare/assessment-info/assessment-demographics-tsa/assessment-demographics-tsa.component';
-import { TsaAnalyticsComponent } from './initial/tsa-analytics/tsa-analytics.component';
+import { AssessmentComparisonAnalyticsComponent } from './initial/assessmenet-comparison-analytics/assessment-comparison-analytics.component';
 import { MaturityQuestionsNestedComponent } from './assessment/questions/maturity-questions/nested/maturity-questions-nested/maturity-questions-nested.component';
 import { QuestionBlockNestedComponent } from './assessment/questions/maturity-questions/nested/question-block-nested/question-block-nested.component';
 import { GroupingBlockNestedComponent } from './assessment/questions/maturity-questions/nested/grouping-block-nested/grouping-block-nested.component';
@@ -474,7 +494,9 @@ import { CrrContactInformationComponent } from './reports/crr/crr-report/crr-con
 import { CrrAppendixACoverComponent } from './reports/crr/crr-report/crr-appendix-a-cover/crr-appendix-a-cover.component';
 import { CrrPerformanceAppendixAComponent } from './reports/crr/crr-report/crr-performance-appendix-a/crr-performance-appendix-a.component';
 import { CrrNistCsfCatSummaryComponent } from './reports/crr/crr-report/crr-nist-csf-cat-summary/crr-nist-csf-cat-summary.component';
+import { CmuNistCsfCatSummaryComponent } from './reports/cmu/cmu-nist-csf-cat-summary/cmu-nist-csf-cat-summary.component';
 import { CrrNistCsfCatPerformanceComponent } from './reports/crr/crr-report/crr-nist-csf-cat-performance/crr-nist-csf-cat-performance.component';
+import { CmuNistCsfCatPerformanceComponent } from './reports/cmu/cmu-nist-csf-cat-performance/cmu-nist-csf-cat-performance.component';
 import { CrrSideTocComponent } from './reports/crr/crr-report/crr-side-toc/crr-side-toc.component';
 import { CrrMainTocComponent } from './reports/crr/crr-report/crr-main-toc/crr-main-toc.component';
 import { Cmmc2CommentsMarkedComponent } from './reports/cmmc2/cmmc2-comments-marked/cmmc2-comments-marked.component';
@@ -577,602 +599,777 @@ import { HydroProgressTotalsComponent } from './assessment/results/hydro/hydro-a
 import { HydroActionItemsReportComponent } from './reports/hydro/hydro-action-items-report/hydro-action-items-report.component';
 import { SdAnswerSummaryComponent } from './assessment/results/sd/sd-answer-summary/sd-answer-summary.component';
 import { SdAnswerSummaryReportComponent } from './reports/sd/sd-answer-summary-report/sd-answer-summary-report.component';
+import { KeyReportComponent } from './assessment/results/reports/key-report/key-report.component';
+import { ImrReportComponent } from './reports/imr/imr-report/imr-report.component';
+import { CmuPerformanceComponent } from './reports/cmu/cmu-performance/cmu-performance.component';
+import { CmuGoalPerfStackedBarComponent } from './reports/cmu/cmu-goal-perf-stacked-bar/cmu-goal-perf-stacked-bar.component';
+import { CmuResultsDetailComponent } from './reports/cmu/cmu-domain-detail-table/cmu-domain-detail-table.component';
+import { CmuNistCsfSummaryComponent } from './reports/cmu/cmu-nist-csf-summary/cmu-nist-csf-summary.component';
+import { AssessmentConfigIodComponent } from './assessment/prepare/assessment-info/assessment-config-iod/assessment-config-iod.component';
+import { AssessmentDemogIodComponent } from './assessment/prepare/assessment-info/assessment-demog-iod/assessment-demog-iod.component';
+import { DemographicsIodComponent } from './assessment/prepare/assessment-info/demographics-iod/demographics-iod.component';
+import { TutorialImrComponent } from './assessment/prepare/maturity/tutorial-imr/tutorial-imr.component';
+import { ImrCoverSheetComponent } from './reports/imr/imr-cover-sheet/imr-cover-sheet.component';
+import { ImrIntroAboutComponent } from './reports/imr/imr-intro-about/imr-intro-about.component';
+import { ImrResourcesComponent } from './reports/imr/imr-resources/imr-resources.component';
+import { CmuDomainComplianceComponent } from './reports/cmu/cmu-domain-compliance/cmu-domain-compliance.component';
+import { TsaSdComponent } from './reports/tsa-sd/tsa-sd.component';
+import { ImrSideTocComponent } from './reports/imr/imr-side-toc/imr-side-toc.component';
+import { CmuAppendixCoverComponent } from './reports/cmu/cmu-appendix-cover/cmu-appendix-cover.component';
+import { OtherRemarksComponent } from './assessment/questions/other-remarks/other-remarks.component';
+import { CmuOtherRemarksComponent } from './reports/cmu/cmu-other-remarks/cmu-other-remarks.component';
+import { TranslocoRootModule } from './transloco-root.module';
+import { TranslocoService } from '@ngneat/transloco';
+import { UserLanguageComponent } from './dialogs/user-language/user-language.component';
+import { MalcolmUploadErrorComponent } from './dialogs/malcolm/malcolm-upload-error.component';
+import { FooterService } from './services/footer.service';
+import { AssessmentConvertCfComponent } from './assessment/prepare/assessment-info/assessment-convert-cf/assessment-convert-cf.component';
+import { IseWarningsComponent } from './assessment/results/reports/ise-warnings/ise-warnings.component';
+//   import {DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE} from '@angular/material/core';
+import { TrendCompareCompatibilityComponent } from './aggregation/trend-analytics/trend-compare-compatibility/trend-compare-compatibility.component';
+import { QuestionBlockCieComponent } from './assessment/questions/question-block-cie/question-block-cie.component';
+import { PrincipleSummaryComponent } from './assessment/questions/principle-summary/principle-summary.component';
+import { TutorialCieComponent } from './assessment/prepare/maturity/tutorial-cie/tutorial-cie.component';
+import { QuickFactsCieComponent } from './assessment/prepare/maturity/tutorial-cie/quick-facts-cie/quick-facts-cie.component';
+import { OverviewCieComponent } from './assessment/prepare/maturity/tutorial-cie/overview-cie/overview-cie.component';
+import { BackgroundCieComponent } from './assessment/prepare/maturity/tutorial-cie/background-cie/background-cie.component';
+import { PrinciplesCieComponent } from './assessment/prepare/maturity/tutorial-cie/principles-cie/principles-cie.component';
+import { LifecycleCieComponent } from './assessment/prepare/maturity/tutorial-cie/lifecycle-cie/lifecycle-cie.component';
+import { HowToUseCieComponent } from './assessment/prepare/maturity/tutorial-cie/how-to-use-cie/how-to-use-cie.component';
+import { MalcolmAnswerDefaultComponent } from './assessment/questions/malcolm-answer/malcolm-answer-default/malcolm-answer-default.component';
+import { MalcolmAnswerNestedComponent } from './assessment/questions/malcolm-answer/malcolm-answer-nested/malcolm-answer-nested.component';
+import { MalcolmInstructionsComponent } from './dialogs/malcolm/malcolm-instructions/malcolm-instructions.component';
+import { MaturityQuestionsCieComponent } from './assessment/questions/maturity-questions/maturity-questions-cie/maturity-questions-cie.component';
+import { AssessmentInfoCieComponent } from './assessment/prepare/assessment-info/assessment-info-cie/assessment-info-cie.component';
+import { AssessmentConfigCieComponent } from './assessment/prepare/assessment-info/assessment-config-cie/assessment-config-cie.component';
+import { AssessmentDetailCieComponent } from './assessment/prepare/assessment-info/assessment-detail-cie/assessment-detail-cie.component';
+import { CieLayoutMainComponent } from './layout/cie-layout-main/cie-layout-main.component';
+import { AboutCieComponent } from './dialogs/about-cie/about-cie.component';
+import { ApplyingCieComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/applying-cie/applying-cie.component';
+import { CieExampleComponent } from './assessment/prepare/maturity/cie-example/cie-example.component';
+import { CieBackgroundComponent } from './assessment/prepare/maturity/cie-example/cie-background/cie-background.component';
+import { CieAnalysisComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/cie-analysis.component';
+import { PrincipleAnalysisCieComponent } from './assessment/prepare/maturity/cie-example/cie-analysis/principle-analysis-cie/principle-analysis-cie.component';
+import { CieAnalysisMatrixComponent } from './assessment/prepare/maturity/cie-example/cie-analysis-matrix/cie-analysis-matrix.component';
+import { MergeCieAnalysisComponent } from './assessment/merge/merge-cie-analysis/merge-cie-analysis.component';
+import { CieAllQuestionsComponent } from './reports/cie/cie-all-questions/cie-all-questions.component';
+import { CiePrincipleOnlyComponent } from './reports/cie/cie-principle-only/cie-principle-only.component';
+import { CiePrinciplePhaseComponent } from './reports/cie/cie-principle-phase/cie-principle-phase.component';
+import { CieNotApplicableComponent } from './reports/cie/cie-not-applicable/cie-not-applicable.component';
+import { SdOwnerDeficiencyComponent } from './reports/sd-owner/sd-owner-deficiency/sd-owner-deficiency.component';
+import { SdOwnerCommentsMfrComponent } from './reports/sd-owner/sd-owner-comments/sd-owner-comments-mfr.component';
 
+import { ReferencesSectionComponent } from './assessment/questions/references-section/references-section.component';
+import { CisaWorkflowWarningsComponent } from './assessment/results/reports/cisa-workflow-warnings/cisa-workflow-warnings.component';
+import { AnalyticsComponent } from './assessment/results/analytics/analytics.component';
+import { AnalyticsloginComponent } from './assessment/results/analysis/analytics-login/analytics-login.component';
+import { AnalyticsService } from './services/analytics.service';
+import { UploadDemographicsComponent } from './dialogs/import demographics/import-demographics.component';
+import { CieMfrReportComponent } from './reports/cie/cie-mfr-report/cie-mfr-report.component';
+import { ReportListComponent } from './assessment/results/reports/report-list/report-list.component';
+import { ReportListCommonComponent } from './assessment/results/reports/report-list/report-list-common.component';
 
 
 @NgModule({
-    imports: [
-        BrowserModule,
-        BrowserAnimationsModule,
-        FormsModule,
-        HttpClientModule,
-        CommonModule,
-        AppRoutingModule,
-        // Material
-        A11yModule,
-        CdkAccordionModule,
-        ClipboardModule,
-        CdkStepperModule,
-        CdkTableModule,
-        CdkTreeModule,
-        DragDropModule,
-        MatAutocompleteModule,
-        MatBadgeModule,
-        MatBottomSheetModule,
-        MatButtonModule,
-        MatButtonToggleModule,
-        MatCardModule,
-        MatCheckboxModule,
-        MatChipsModule,
-        MatStepperModule,
-        MatDatepickerModule,
-        MatDialogModule,
-        MatDividerModule,
-        MatExpansionModule,
-        MatGridListModule,
-        MatIconModule,
-        MatInputModule,
-        MatListModule,
-        MatMenuModule,
-        MatNativeDateModule,
-        MatPaginatorModule,
-        MatProgressBarModule,
-        MatProgressSpinnerModule,
-        MatRadioModule,
-        MatRippleModule,
-        MatSelectModule,
-        MatSidenavModule,
-        MatSliderModule,
-        MatSlideToggleModule,
-        MatSnackBarModule,
-        MatSortModule,
-        MatTableModule,
-        MatTabsModule,
-        MatToolbarModule,
-        MatTooltipModule,
-        MatTreeModule,
-        OverlayModule,
-        PortalModule,
-        ScrollingModule,
-        // NgChartsModule,
-        // MatButtonModule,
-        // MatToolbarModule,
-        // MatChipsModule,
-        // MatSlideToggleModule,
-        // MatInputModule,
-        // MatCardModule,
-        // MatSliderModule,
-        // MatDatepickerModule,
-        // MatNativeDateModule,
-        // MatFormFieldModule,
-        // MatSortModule,
-        // MatExpansionModule,
-        // MatAutocompleteModule,
-        // MatDialogModule,
-        // MatTooltipModule,
-        // MatSnackBarModule,
-        // MatSidenavModule,
-        // MatTreeModule,
-        // MatIconModule,
-        // MatDividerModule,
-        // MatProgressSpinnerModule,
-        // MatProgressBarModule,
-        // MatListModule,
-        // MatMenuModule,
-        // MatTabsModule,
-        FlexLayoutModule,
-        ReactiveFormsModule,
-        NgxSliderModule,
-        FileUploadModule,
-        AngularEditorModule,
-        RouterModule,
-        CurrencyMaskModule,
-        NgbModule,
-        NgxChartsModule,
-        TooltipModule,
-        SwiperModule,
-        EllipsisModule,
-        HotkeyModule.forRoot(),
-        CodeEditorModule.forRoot({
-            typingsWorkerUrl: 'assets/workers/typings-worker.js',
-            baseUrl: 'assets/monaco'
-        }),
-    ],
-    declarations: [
-        AppComponent,
-        InitialComponent,
-        LoginComponent,
-        MyAssessmentsComponent,
-        AssessmentComponent,
-        ContactItemComponent,
-        PrepareComponent,
-        AssessmentInfoComponent,
-        AssessmentDetailComponent,
-        AssessmentContactsComponent,
-        AssessmentDemographicsComponent,
-        AssessmentDetailNcuaComponent,
-        ResultsComponent,
-        SalSimpleComponent,
-        StandardsComponent,
-        ResetPassComponent,
-        EmailComponent,
-        ConfirmEqualValidatorDirective,
-        EmailValidatorDirective,
-        FocusDirective,
-        ZipCodeDirective,
-        AutoSizeDirective,
-        DigitsOnlyDirective,
-        RunScriptsDirective,
-        SalGenComponent,
-        SalNistComponent,
-        SalsComponent,
-        RegisterComponent,
-        EjectionComponent,
-        ChangePasswordComponent,
-        EditUserComponent,
-        AlertComponent,
-        ConfirmComponent,
-        FrameworkComponent,
-        RequiredDocsComponent,
-        IRPComponent,
-        ExamProfileComponent,
-        DiagramComponent,
-        AcetDetailComponent,
-        AboutComponent,
-        AdvisoryComponent,
-        QuestionsComponent,
-        QuestionBlockComponent,
-        QuestionExtrasComponent,
-        ResourceLibraryComponent,
-        OkayComponent,
-        FindingsComponent,
-        IssuesComponent,
-        MeritCheckComponent,
-        SafePipe,
-        LinebreakPipe,
-        NullishCoalescePipe,
-        StatusCreateComponent,
-        ProgressComponent,
-        InViewComponent,
-        AnalysisComponent,
-        ReportsComponent,
-        OverviewComponent,
-        StandardsSummaryComponent,
-        StandardsRankedComponent,
-        StandardsResultsComponent,
-        ComponentsSummaryComponent,
-        ComponentsRankedComponent,
-        ComponentsResultsComponent,
-        ComponentsTypesComponent,
-        ComponentsWarningsComponent,
-        DashboardComponent,
-        RankedQuestionsComponent,
-        FeedbackComponent,
-        EnableProtectedComponent,
-        TermsOfUseComponent,
-        QuestionFiltersComponent,
-        AssessmentDocumentsComponent,
-        InlineParameterComponent,
-        GlobalParametersComponent,
-        ImportComponent,
-        UploadExportComponent,
-        KeyboardShortcutsComponent,
-        LicenseComponent,
-        AcetDashboardComponent,
-        AdminComponent,
-        SetListComponent,
-        CustomSetComponent,
-        RequirementListComponent,
-        QuestionListComponent,
-        BuilderBreadcrumbsComponent,
-        AddQuestionComponent,
-        RequirementDetailComponent,
-        AddRequirementComponent,
-        StandardDocumentsComponent,
-        RefDocumentComponent,
-        DomainMaturityFilterComponent,
-        IrpSummaryComponent,
-        ExamProfileSummaryComponent,
-        DiagramInventoryComponent,
-        DiagramInfoComponent,
-        DiagramComponentsComponent,
-        LinksComponent,
-        NetworkWarningsComponent,
-        ShapesComponent,
-        TextComponent,
-        ZonesComponent,
-        ExcelExportComponent,
-        MergeComponent,
-        MergeQuestionDetailComponent,
-        AggregationHomeComponent,
-        AliasAssessmentsComponent,
-        AggregationDetailComponent,
-        TrendAnalyticsComponent,
-        CompareAnalyticsComponent,
-        SelectAssessmentsComponent,
-        CompareSummaryComponent,
-        CompareMissedComponent,
-        CompareIndividualComponent,
-        CompareBestworstComponent,
-        ComponentOverrideComponent,
-        ExcelExportComponent,
-        LayoutBlankComponent,
-        LayoutSwitcherComponent,
-        LayoutMainComponent,
-        AcetLayoutMainComponent,
-        ReportTestComponent,
-        SiteDetailComponent,
-        DiscoveryTearoutsComponent,
-        EvalAgainstStandardsComponent,
-        ExecutiveSummaryComponent,
-        SecurityplanComponent,
-        SiteSummaryComponent,
-        TrendReportComponent,
-        CompareReportComponent,
-        Assessment2InfoComponent,
-        ModelSelectComponent,
-        AssessmentConfigComponent,
-        CmmcAComponent,
-        CmmcLevelsComponent,
-        CmmcLevelResultsComponent,
-        CmmcLevelDrilldownComponent,
-        CmmcComplianceComponent,
-        CmmcGapsComponent,
-        Cmmc2LevelResultsComponent,
-        Cmmc2DomainResultsComponent,
-        SprsScoreComponent,
-        ComplianceScoreComponent,
-        ModelSelectComponent,
-        CategoryBlockComponent,
-        AskQuestionsComponent,
-        MaturityQuestionsComponent,
-        MaturityQuestionsAcetComponent,
-        MaturityQuestionsIseComponent,
-        AwwaStandardComponent,
-        DiagramQuestionsComponent,
-        SitesummaryCMMCComponent,
-        ExecutiveCMMCComponent,
-        ExecutiveCMMC2Component,
-        NavBackNextComponent,
-        CsetOriginComponent,
-        InherentRiskProfileComponent,
-        IrpSectionComponent,
-        AcetDonutChartComponent,
-        AcetExecutiveComponent,
-        AcetDeficencyComponent,
-        AcetCommentsmarkedComponent,
-        AcetAnsweredQuestionsComponent,
-        AcetCompensatingcontrolsComponent,
-        IseAnsweredQuestionsComponent,
-        IseMeritComponent,
-        IseExaminationComponent,
-        IseExaminerComponent,
-        IseDonutChartComponent,
-        IseDataComponent,
-        TutorialCmmcComponent,
-        TutorialEdmComponent,
-        TutorialRraComponent,
-        TutorialCrrComponent,
-        LoginAcetComponent,
-        LoginCsetComponent,
-        LoginRraComponent,
-        AboutCsetComponent,
-        AboutAcetComponent,
-        AcetOriginComponent,
-        GroupingBlockComponent,
-        QuestionBlockMaturityComponent,
-        QuestionBlockIseComponent,
-        EdmComponent,
-        EdmDeficiencyComponent,
-        EdmCommentsmarkedComponent,
-        CisCommentsmarkedComponent,
-        QuestionTextComponent,
-        GlossaryTermComponent,
-        PlaceholderQuestionsComponent,
-        FeatureOptionComponent,
-        EdmRelationshipComponent,
-        EdmGlossaryComponent,
-        EdmIntroTextComponent,
-        EdmTocComponent,
-        EdmAcronymsComponent,
-        EdmSourceReferencesComponent,
-        EdmDomainDetailComponent,
-        RelationshipFormationComponent,
-        RelationshipManagementComponent,
-        ServiceProtectionComponent,
-        MaturityIndicatorLevelsComponent,
-        EDMTripleBarChart,
-        EDMHorizontalBarChart,
-        EDMBarChartLegend,
-        ModuleAddCloneComponent,
-        EdmPerfSummMil1Component,
-        EdmPerfSummAllMilComponent,
-        EDMFrameworkSummary,
-        EDMAppendixASectionOne,
-        EDMAppendixASectionTwo,
-        EdmBlocksCompactComponent,
-        EdmSummaryResultsComponent,
-        EdmBlocksCompactComponent,
-        EdmLegendSubquestionsComponent,
-        EdmPerfMil1Component,
-        EdmQBlocksHorizontalComponent,
-        EDMGoalQuestionSummary,
-        GroupingDescriptionComponent,
-        SummaryResultsComponent,
-        EDMGoalQuestionLegend,
-        CmmcDeficiencyComponent,
-        CmmcCommentsMarkedComponent,
-        CmmcAltJustificationsComponent,
-        CrrDeficiencyComponent,
-        CrrCommentsMarkedComponent,
-        RraGapsComponent,
-        RraLevelResultsComponent,
-        RraReportComponent,
-        RraDeficiencyComponent,
-        RraSummaryAllComponent,
-        RraSummaryComponent,
-        CommentsMfrComponent,
-        ReportDisclaimerComponent,
-        ReportAdvisoryComponent,
-        RraLevelsComponent,
-        RraAnswerCountsComponent,
-        RraAnswerDistributionComponent,
-        RraAnswerComplianceComponent,
-        RraQuestionsScoringComponent,
-        RraMiniUserGuideComponent,
-        IrpTabsComponent,
-        CrrSummaryResultsComponent,
-        CrrResultsPage,
-        CrrResultsDetailComponent,
-        CrrHeatmapComponent,
-        MatCommentsComponent,
-        AssessmentInfoTsaComponent,
-        TsaLayoutMainComponent,
-        TsaAssessmentCompleteComponent,
-        LoginTsaComponent,
-        AssessmentConfigTsaComponent,
-        FeatureOptionTsaComponent,
-        AboutTsaComponent,
-        TutorialCmmc2Component,
-        TopMenusComponent,
-        RraLayoutMainComponent,
-        AboutRraComponent,
-        LogoRraComponent,
-        LogoCsetComponent,
-        TopMenusComponent,
-        LogoForReportsComponent,
-        LogoForReportsComponent,
-        QuestionBlockVadrComponent,
-        VadrDeficiencyComponent,
-        CsiComponent,
-        CsiOrganizationDemographicsComponent,
-        CsiServiceDemographicsComponent,
-        CsiServiceCompositionComponent,
-        AssessmentInfo2TsaComponent,
-        AssessmentDemographicsTsaComponent,
-        TsaAnalyticsComponent,
-        MaturityQuestionsNestedComponent,
-        QuestionBlockNestedComponent,
-        GroupingBlockNestedComponent,
-        OptionBlockNestedComponent,
-        ModuleContentComponent,
-        ModuleContentLaunchComponent,
-        TutorialCisComponent,
-        QuestionExtrasDialogComponent,
-        VadrReportComponent,
-        VadrAnswerComplianceComponent,
-        VadrAnswerCountsComponent,
-        VadrAnswerDistributionComponent,
-        VadrGapsComponent,
-        VadrLevelResultsComponent,
-        VadrLevelsComponent,
-        VadrQuestionsScoringComponent,
-        VadrSummaryComponent,
-        VadrSummaryAllComponent,
-        OpenEndedQuestionsComponent,
-        CisSurveyComponent,
-        GroupingBlockNestedReportComponent,
-        QuestionBlockNestedReportComponent,
-        OptionBlockNestedReportComponent,
-        AssessmentConfigNcuaComponent,
-        FeatureOptionNcuaComponent,
-        CoverSheetAComponent,
-        DisclaimerBlurbAComponent,
-        ConfigCisComponent,
-        CisRankedDeficiencyComponent,
-        RankedDeficienctyChartComponent,
-        CisCommentsmarkedComponent,
-        RankedDeficiencyComponent,
-        CisSectionScoringComponent,
-        CisScoringChartComponent,
-        SectionScoringComponent,
-        MergeExaminationsComponent,
-        CharterMismatchComponent,
-        DigitsOnlyNotZeroDirective,
-        LandingPageTabsComponent,
-        NewAssessmentComponent,
-        ModuleContentStandardComponent,
-        ModuleContentModelComponent,
-        McGroupingComponent,
-        McQuestionComponent,
-        McOptionComponent,
-        GuidanceBlockComponent,
-        ReferencesBlockComponent,
-        CrrReportComponent,
-        CrrCoverSheetComponent,
-        CrrCoverSheet2Component,
-        CrrIntroAboutComponent,
-        CrrMil1PerformanceSummaryComponent,
-        CrrPerformanceSummaryComponent,
-        CrrNistCsfSummaryComponent,
-        CrrMil1PerformanceComponent,
-        CrrResultsSummaryComponent,
-        CrrPercentageOfPracticesComponent,
-        CrrDomainDetailComponent,
-        CrrResourcesComponent,
-        CrrContactInformationComponent,
-        CrrAppendixACoverComponent,
-        CrrPerformanceAppendixAComponent,
-        CrrNistCsfCatSummaryComponent,
-        CrrNistCsfCatPerformanceComponent,
-        CrrSideTocComponent,
-        ReferencesBlockComponent,
-        NewAssessmentDialogComponent,
-        CrrMainTocComponent,
-        Cmmc2CommentsMarkedComponent,
-        Cmmc2DeficiencyComponent,
-        PrivacyWarningComponent,
-        PrivacyWarningRejectComponent,
-        SearchPageComponent,
-        LogoTsaComponent,
-        CfLayoutMainComponent,
-        RenewLayoutMainComponent,
-        OptionBlockComponent,
-        DemographicsExtendedComponent,
-        SectorHelpComponent,
-        AnalyticsCompareComponent,
-        AssessmentDetailCfComponent,
-        LoginCfComponent,
-        LoginRenewComponent,
-        MvraGapsComponent,
-        MvraSummaryComponent,
-        MvraAnswerFunctionsComponent,
-        MvraAnswerDomainsComponent,
-        MvraReportComponent,
-        AboutCfComponent,
-        MvraSummaryPageComponent,
-        MvraGapsPageComponent,
-        LoginAccessKeyComponent,
-        RelatedQBlockComponent,
-        CpgReportComponent,
-        CpgPracticeTableComponent,
-        RelatedQBlockComponent,
-        LogoutComponent,
-        CpgDomainSummaryComponent,
-        CpgCostImpactComplexityComponent,
-        CpgSummaryComponent,
-        CpgPracticesComponent,
-        OnlineDisclaimerComponent,
-        GlobalConfigurationComponent,
-        ReferencesTableComponent,
-        ReferencesDisplayComponent,
-        DiagramVulnerabilitiesDialogComponent,
-        DiagramVulnerabilitiesComponent,
-        AnalysisNetworkComponentsComponent,
-        SalSectionComponent,
-        AltJustificationCommentsComponent,
-        QuestionCommentsComponent,
-        QuestionsMarkedForReviewComponent,
-        StandardsComplianceComponent,
-        ComponentComplianceComponent,
-        OverallComplianceComponent,
-        RankedSubjectAreasComponent,
-        ComponentQuestionListComponent,
-        C2m2ReportComponent,
-        C2m2CoverSheetComponent,
-        C2m2IntroductionComponent,
-        C2m2ModelArchitectureComponent,
-        C2m2SummaryResultsComponent,
-        C2m2DetailedResultsComponent,
-        C2m2UsingSelfEvaluationResultsComponent,
-        C2m2SelfEvaluationNotesComponent,
-        C2m2ListOfPartiallyImplementedAndNotImplementedPracticesComponent,
-        C2m2SideTocComponent,
-        C2m2DonutComponent,
-        C2m2ObjectiveTableComponent,
-        CpgDomainSummaryTableComponent,
-        CpgDeficiencyComponent,
-        C2m2DomainMilBarChartComponent,
-        PdfReportsComponent,
-        InfoBlockComponent,
-        SiteInformationComponent,
-        AboutRenewComponent,
-        LogoCyberShieldComponent,
-        ExportPasswordComponent,
-        ImportPasswordComponent,
-        HydroDeficiencyComponent,
-        HydroDonutComponent,
-        HydroBarChartComponent,
-        HydroReportComponent,
-        HydroSideTocComponent,
-        HydroAcronymsComponent,
-        HydroExecutiveSummaryComponent,
-        HydroImportanceOfCybersecurityComponent,
-        HydroResultsSummaryComponent,
-        HydroConsequencesComponent,
-        HydroImpactCategoryComponent,
-        HydroFeasibilityReportComponent,
-        HydroBarVerticalComponent,
-        HydroImpactComponent,
-        HydroFeasibilityComponent,
-        HydroActionsComponent,
-        HydroActionItemComponent,
-        HydroProgressTotalsComponent,
-        HydroActionItemsReportComponent,
-        SdAnswerSummaryReportComponent,
-        SdAnswerSummaryComponent,
-    ],
-    providers: [
-        ConfigService,
-        AuthenticationService,
-        {
-            provide: APP_INITIALIZER,
-            useFactory: (configSvc: ConfigService, authSvc: AuthenticationService) => {
-                return () => {
-                    return configSvc.loadConfig().then(() => {
-                        return authSvc.checkLocal();
-                    });
-                };
-            },
-            deps: [ConfigService, AuthenticationService],
-            multi: true
-        },
-        {
-            provide: HTTP_INTERCEPTORS,
-            useClass: JwtInterceptor,
-            multi: true
-        },
-        DatePipe,
-        AuthGuard,
-        AssessGuard,
-        AggregationGuard,
-        DemographicService,
-        DemographicExtendedService,
-        AssessmentService,
-        EmailService,
-        QuestionsService,
-        SalService,
-        StandardService,
-        FrameworkService,
-        RequiredDocumentService,
-        IRPService,
-        FindingsService,
-        NavigationService,
-        FileUploadClientService,
-        AnalysisService,
-        EnableFeatureService,
-        SetBuilderService,
-        ACETService,
-        ResourceLibraryService,
-        DiagramService,
-        AggregationService,
-        ChartService,
-        ChartColors,
-        ReportService,
-        ReportAnalysisService,
-        LocalStoreManager,
-        CmmcStyleService,
-        AcetFilteringService,
-        CmmcFilteringService,
-        EdmFilteringService,
-        CrrFilteringService,
-        RraFilteringService,
-        CrrService,
-        Utilities,
-        NCUAService,
-        GalleryService
-    ],
-    bootstrap: [AppComponent]
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    FormsModule,
+    HttpClientModule,
+    CommonModule,
+    AppRoutingModule,
+    // Material
+    A11yModule,
+    CdkAccordionModule,
+    ClipboardModule,
+    CdkStepperModule,
+    CdkTableModule,
+    CdkTreeModule,
+    DragDropModule,
+    MatAutocompleteModule,
+    MatBadgeModule,
+    MatBottomSheetModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatCardModule,
+    MatCheckboxModule,
+    MatChipsModule,
+    MatStepperModule,
+    MatDatepickerModule,
+    MatDialogModule,
+    MatDividerModule,
+    MatExpansionModule,
+    MatGridListModule,
+    MatIconModule,
+    MatInputModule,
+    MatListModule,
+    MatMenuModule,
+    MatNativeDateModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatRadioModule,
+    MatRippleModule,
+    MatSelectModule,
+    MatSidenavModule,
+    MatSliderModule,
+    MatSlideToggleModule,
+    MatSnackBarModule,
+    MatSortModule,
+    MatTableModule,
+    MatTabsModule,
+    MatToolbarModule,
+    MatTooltipModule,
+    MatTreeModule,
+    OverlayModule,
+    PortalModule,
+    ScrollingModule,
+    // AutosizeModule,
+    // NgChartsModule,
+    // MatButtonModule,
+    // MatToolbarModule,
+    // MatChipsModule,
+    // MatSlideToggleModule,
+    // MatInputModule,
+    // MatCardModule,
+    // MatSliderModule,
+    // MatDatepickerModule,
+    // MatNativeDateModule,
+    // MatFormFieldModule,
+    // MatSortModule,
+    // MatExpansionModule,
+    // MatAutocompleteModule,
+    // MatDialogModule,
+    // MatTooltipModule,
+    // MatSnackBarModule,
+    // MatSidenavModule,
+    // MatTreeModule,
+    // MatIconModule,
+    // MatDividerModule,
+    // MatProgressSpinnerModule,
+    // MatProgressBarModule,
+    // MatListModule,
+    // MatMenuModule,
+    // MatTabsModule,
+    FlexLayoutModule,
+    ReactiveFormsModule,
+    NgxSliderModule,
+    // TextareaAutosizeModule,
+    FileUploadModule,
+    AngularEditorModule,
+    RouterModule,
+    CurrencyMaskModule,
+    TranslocoRootModule,
+    NgbModule,
+    NgxChartsModule,
+    TooltipModule,
+    SwiperModule,
+    EllipsisModule,
+    HotkeyModule.forRoot(),
+    CodeEditorModule.forRoot({
+      typingsWorkerUrl: 'assets/workers/typings-worker.js',
+      baseUrl: 'assets/monaco'
+    })
+  ],
+  declarations: [
+    AppComponent,
+    InitialComponent,
+    LoginComponent,
+    MyAssessmentsComponent,
+    AssessmentComponent,
+    ContactItemComponent,
+    PrepareComponent,
+    AssessmentInfoComponent,
+    AssessmentDetailComponent,
+    AssessmentContactsComponent,
+    AssessmentDemographicsComponent,
+    AssessmentInfoNcuaComponent,
+    AssessmentDetailTsaComponent,
+    AssessmentDetailNcuaComponent,
+    ResultsComponent,
+    SalSimpleComponent,
+    StandardsComponent,
+    ResetPassComponent,
+    EmailComponent,
+    ConfirmEqualValidatorDirective,
+    EmailValidatorDirective,
+    FocusDirective,
+    ZipCodeDirective,
+    AutoSizeDirective,
+    DigitsOnlyDirective,
+    RunScriptsDirective,
+    SalGenComponent,
+    SalNistComponent,
+    SalsComponent,
+    RegisterComponent,
+    EjectionComponent,
+    ChangePasswordComponent,
+    EditUserComponent,
+    AlertComponent,
+    ConfirmComponent,
+    FrameworkComponent,
+    RequiredDocsComponent,
+    IRPComponent,
+    ExamProfileComponent,
+    DiagramComponent,
+    AcetDetailComponent,
+    AboutComponent,
+    AdvisoryComponent,
+    QuestionsComponent,
+    QuestionBlockComponent,
+    QuestionExtrasComponent,
+    ResourceLibraryComponent,
+    OkayComponent,
+    ObservationsComponent,
+    IssuesComponent,
+    MeritCheckComponent,
+    SafePipe,
+    LinebreakPipe,
+    CompletionCountPipe,
+    LocalizeDatePipe,
+    LinebreakPlaintextPipe,
+    NullishCoalescePipe,
+    StatusCreateComponent,
+    ProgressComponent,
+    InViewComponent,
+    AnalysisComponent,
+    ReportsComponent,
+    OverviewComponent,
+    StandardsSummaryComponent,
+    StandardsRankedComponent,
+    StandardsResultsComponent,
+    ComponentsSummaryComponent,
+    ComponentsRankedComponent,
+    ComponentsResultsComponent,
+    ComponentsTypesComponent,
+    ComponentsWarningsComponent,
+    DashboardComponent,
+    RankedQuestionsComponent,
+    FeedbackComponent,
+    EnableProtectedComponent,
+    TermsOfUseComponent,
+    AccessibilityStatementComponent,
+    QuestionFiltersComponent,
+    QuestionFiltersReportsComponent,
+    AssessmentDocumentsComponent,
+    InlineParameterComponent,
+    GlobalParametersComponent,
+    ImportComponent,
+    UploadExportComponent,
+    UploadDemographicsComponent,
+    KeyboardShortcutsComponent,
+    LicenseComponent,
+    AcetDashboardComponent,
+    AdminComponent,
+    SetListComponent,
+    CustomSetComponent,
+    RequirementListComponent,
+    QuestionListComponent,
+    BuilderBreadcrumbsComponent,
+    AddQuestionComponent,
+    RequirementDetailComponent,
+    AddRequirementComponent,
+    StandardDocumentsComponent,
+    RefDocumentComponent,
+    DomainMaturityFilterComponent,
+    IrpSummaryComponent,
+    ExamProfileSummaryComponent,
+    DiagramInventoryComponent,
+    DiagramInfoComponent,
+    DiagramComponentsComponent,
+    LinksComponent,
+    NetworkWarningsComponent,
+    ShapesComponent,
+    TextComponent,
+    ZonesComponent,
+    ExcelExportComponent,
+    NcuaExcelExportComponent,
+    MergeComponent,
+    MergeQuestionDetailComponent,
+    AggregationHomeComponent,
+    AliasAssessmentsComponent,
+    AggregationDetailComponent,
+    TrendAnalyticsComponent,
+    CompareAnalyticsComponent,
+    SelectAssessmentsComponent,
+    CompareSummaryComponent,
+    CompareMissedComponent,
+    CompareIndividualComponent,
+    CompareBestworstComponent,
+    CompareMaturityMissedComponent,
+    CompareMaturityIndividualComponent,
+    CompareMaturityBestworstComponent,
+    ComponentOverrideComponent,
+    ExcelExportComponent,
+    LayoutBlankComponent,
+    LayoutSwitcherComponent,
+    LayoutMainComponent,
+    AcetLayoutMainComponent,
+    ReportTestComponent,
+    SiteDetailComponent,
+    ObservationTearoutsComponent,
+    EvalAgainstStandardsComponent,
+    ExecutiveSummaryComponent,
+    SecurityplanComponent,
+    SiteSummaryComponent,
+    TrendReportComponent,
+    TrendCompareCompatibilityComponent,
+    CompareReportComponent,
+    Assessment2InfoComponent,
+    ModelSelectComponent,
+    AssessmentConfigComponent,
+    CmmcAComponent,
+    CmmcLevelsComponent,
+    CmmcLevelResultsComponent,
+    CmmcLevelDrilldownComponent,
+    CmmcComplianceComponent,
+    CmmcGapsComponent,
+    Cmmc2LevelResultsComponent,
+    Cmmc2DomainResultsComponent,
+    SprsScoreComponent,
+    ComplianceScoreComponent,
+    ModelSelectComponent,
+    CategoryBlockComponent,
+    AskQuestionsComponent,
+    MaturityQuestionsComponent,
+    MaturityQuestionsAcetComponent,
+    MaturityQuestionsIseComponent,
+    AwwaStandardComponent,
+    DiagramQuestionsComponent,
+    SitesummaryCMMCComponent,
+    ExecutiveCMMCComponent,
+    ExecutiveCMMC2Component,
+    NavBackNextComponent,
+    CsetOriginComponent,
+    InherentRiskProfileComponent,
+    IrpSectionComponent,
+    AcetDonutChartComponent,
+    AcetExecutiveComponent,
+    AcetDeficencyComponent,
+    AcetCommentsmarkedComponent,
+    AcetAnsweredQuestionsComponent,
+    AcetCompensatingcontrolsComponent,
+    IseAnsweredQuestionsComponent,
+    IseMeritComponent,
+    IseExaminationComponent,
+    IseExaminerComponent,
+    IseDonutChartComponent,
+    IseDataComponent,
+    TutorialCmmcComponent,
+    TutorialEdmComponent,
+    TutorialRraComponent,
+    TutorialCrrComponent,
+    TutorialCpgComponent,
+    TutorialMvraComponent,
+    LoginAcetComponent,
+    LoginCsetComponent,
+    LoginRraComponent,
+    AboutCsetComponent,
+    AboutAcetComponent,
+    AcetOriginComponent,
+    GroupingBlockComponent,
+    QuestionBlockMaturityComponent,
+    QuestionBlockIseComponent,
+    EdmComponent,
+    EdmDeficiencyComponent,
+    GeneralDeficiencyComponent,
+    EdmCommentsmarkedComponent,
+    CisCommentsmarkedComponent,
+    QuestionTextComponent,
+    QuestionTextCpgComponent,
+    GlossaryTermComponent,
+    PlaceholderQuestionsComponent,
+    FeatureOptionComponent,
+    EdmRelationshipComponent,
+    EdmGlossaryComponent,
+    EdmIntroTextComponent,
+    EdmTocComponent,
+    EdmAcronymsComponent,
+    EdmSourceReferencesComponent,
+    EdmDomainDetailComponent,
+    RelationshipFormationComponent,
+    RelationshipManagementComponent,
+    ServiceProtectionComponent,
+    MaturityIndicatorLevelsComponent,
+    EDMTripleBarChart,
+    EDMHorizontalBarChart,
+    EDMBarChartLegend,
+    ModuleAddCloneComponent,
+    EdmPerfSummMil1Component,
+    EdmPerfSummAllMilComponent,
+    EDMFrameworkSummary,
+    EDMAppendixASectionOne,
+    EDMAppendixASectionTwo,
+    EdmBlocksCompactComponent,
+    EdmSummaryResultsComponent,
+    EdmBlocksCompactComponent,
+    EdmLegendSubquestionsComponent,
+    EdmPerfMil1Component,
+    EdmQBlocksHorizontalComponent,
+    EDMGoalQuestionSummary,
+    GroupingDescriptionComponent,
+    SummaryResultsComponent,
+    EDMGoalQuestionLegend,
+    CmmcDeficiencyComponent,
+    CmmcCommentsMarkedComponent,
+    CmmcAltJustificationsComponent,
+    CrrDeficiencyComponent,
+    CrrCommentsMarkedComponent,
+    RraGapsComponent,
+    RraLevelResultsComponent,
+    RraReportComponent,
+    RraDeficiencyComponent,
+    RraSummaryAllComponent,
+    RraSummaryComponent,
+    CommentsMfrComponent,
+    ReportDisclaimerComponent,
+    ReportAdvisoryComponent,
+    RraLevelsComponent,
+    RraAnswerCountsComponent,
+    RraAnswerDistributionComponent,
+    RraAnswerComplianceComponent,
+    RraQuestionsScoringComponent,
+    RraMiniUserGuideComponent,
+    IrpTabsComponent,
+    CrrSummaryResultsComponent,
+    CrrResultsPage,
+    CrrResultsDetailComponent,
+    CrrHeatmapComponent,
+    MatCommentsComponent,
+    AssessmentInfoTsaComponent,
+    TsaLayoutMainComponent,
+    TsaAssessmentCompleteComponent,
+    LoginTsaComponent,
+    AssessmentConfigTsaComponent,
+    FeatureOptionTsaComponent,
+    AboutTsaComponent,
+    TutorialCmmc2Component,
+    TopMenusComponent,
+    RraLayoutMainComponent,
+    AboutRraComponent,
+    LogoRraComponent,
+    IodLayoutComponent,
+    LogoCsetComponent,
+    TopMenusComponent,
+    LogoForReportsComponent,
+    LogoForReportsComponent,
+    QuestionBlockVadrComponent,
+    VadrDeficiencyComponent,
+    CsiComponent,
+    CsiOrganizationDemographicsComponent,
+    CsiServiceDemographicsComponent,
+    CsiServiceCompositionComponent,
+    AssessmentInfo2TsaComponent,
+    AssessmentDemographicsTsaComponent,
+    AssessmentComparisonAnalyticsComponent,
+    MaturityQuestionsNestedComponent,
+    QuestionBlockNestedComponent,
+    GroupingBlockNestedComponent,
+    OptionBlockNestedComponent,
+    ModuleContentComponent,
+    ModuleContentLaunchComponent,
+    TutorialCisComponent,
+    QuestionExtrasDialogComponent,
+    VadrReportComponent,
+    VadrAnswerComplianceComponent,
+    VadrAnswerCountsComponent,
+    VadrAnswerDistributionComponent,
+    VadrGapsComponent,
+    VadrLevelResultsComponent,
+    VadrLevelsComponent,
+    VadrQuestionsScoringComponent,
+    VadrSummaryComponent,
+    VadrSummaryAllComponent,
+    OpenEndedQuestionsComponent,
+    CisSurveyComponent,
+    GroupingBlockNestedReportComponent,
+    QuestionBlockNestedReportComponent,
+    OptionBlockNestedReportComponent,
+    AssessmentConfigNcuaComponent,
+    FeatureOptionNcuaComponent,
+    CoverSheetAComponent,
+    DisclaimerBlurbAComponent,
+    ConfigCisComponent,
+    CisRankedDeficiencyComponent,
+    RankedDeficienctyChartComponent,
+    CisCommentsmarkedComponent,
+    RankedDeficiencyComponent,
+    CisSectionScoringComponent,
+    CisScoringChartComponent,
+    SectionScoringComponent,
+    MergeExaminationsComponent,
+    CharterMismatchComponent,
+    DigitsOnlyNotZeroDirective,
+    LandingPageTabsComponent,
+    NewAssessmentComponent,
+    ModuleContentStandardComponent,
+    ModuleContentModelComponent,
+    McGroupingComponent,
+    McQuestionComponent,
+    McOptionComponent,
+    GuidanceBlockComponent,
+    ReferencesBlockComponent,
+    CrrReportComponent,
+    CrrCoverSheetComponent,
+    CrrCoverSheet2Component,
+    CrrIntroAboutComponent,
+    CrrMil1PerformanceSummaryComponent,
+    CrrPerformanceSummaryComponent,
+    CrrNistCsfSummaryComponent,
+    CrrMil1PerformanceComponent,
+    CrrResultsSummaryComponent,
+    CrrPercentageOfPracticesComponent,
+    CrrDomainDetailComponent,
+    CrrResourcesComponent,
+    CrrContactInformationComponent,
+    CrrAppendixACoverComponent,
+    CrrPerformanceAppendixAComponent,
+    CrrNistCsfCatSummaryComponent,
+    CrrNistCsfCatPerformanceComponent,
+    CmuNistCsfCatPerformanceComponent,
+    CrrSideTocComponent,
+    CmuPerformanceComponent,
+    CmuNistCsfCatSummaryComponent,
+    ImrReportComponent,
+    ReferencesBlockComponent,
+    NewAssessmentDialogComponent,
+    CrrMainTocComponent,
+    Cmmc2CommentsMarkedComponent,
+    Cmmc2DeficiencyComponent,
+    PrivacyWarningComponent,
+    PrivacyWarningRejectComponent,
+    SearchPageComponent,
+    LogoTsaComponent,
+    CfLayoutMainComponent,
+    RenewLayoutMainComponent,
+    OptionBlockComponent,
+    DemographicsExtendedComponent,
+    SectorHelpComponent,
+    AnalyticsCompareComponent,
+    AssessmentDetailCfComponent,
+    LoginCfComponent,
+    LoginRenewComponent,
+    MvraGapsComponent,
+    MvraSummaryComponent,
+    MvraAnswerFunctionsComponent,
+    MvraAnswerDomainsComponent,
+    MvraReportComponent,
+    AboutCfComponent,
+    MvraSummaryPageComponent,
+    MvraGapsPageComponent,
+    LoginAccessKeyComponent,
+    RelatedQBlockComponent,
+    CpgReportComponent,
+    CpgPracticeTableComponent,
+    RelatedQBlockComponent,
+    LogoutComponent,
+    CpgDomainSummaryComponent,
+    CpgCostImpactComplexityComponent,
+    CpgSummaryComponent,
+    CpgPracticesComponent,
+    OnlineDisclaimerComponent,
+    GlobalConfigurationComponent,
+    ReferencesTableComponent,
+    ReferencesDisplayComponent,
+    DiagramVulnerabilitiesDialogComponent,
+    DiagramVulnerabilitiesComponent,
+    AnalysisNetworkComponentsComponent,
+    SalSectionComponent,
+    AltJustificationCommentsComponent,
+    QuestionCommentsComponent,
+    QuestionsMarkedForReviewComponent,
+    StandardsComplianceComponent,
+    ComponentComplianceComponent,
+    OverallComplianceComponent,
+    RankedSubjectAreasComponent,
+    ComponentQuestionListComponent,
+    C2m2ReportComponent,
+    C2m2CoverSheetComponent,
+    C2m2IntroductionComponent,
+    C2m2ModelArchitectureComponent,
+    C2m2SummaryResultsComponent,
+    C2m2DetailedResultsComponent,
+    C2m2UsingSelfEvaluationResultsComponent,
+    C2m2SelfEvaluationNotesComponent,
+    C2m2ListOfPartiallyImplementedAndNotImplementedPracticesComponent,
+    C2m2SideTocComponent,
+    C2m2DonutComponent,
+    C2m2ObjectiveTableComponent,
+    CpgDomainSummaryTableComponent,
+    CpgDeficiencyComponent,
+    C2m2DomainMilBarChartComponent,
+    PdfReportsComponent,
+    InfoBlockComponent,
+    SiteInformationComponent,
+    AboutRenewComponent,
+    LogoCyberShieldComponent,
+    ExportPasswordComponent,
+    ImportPasswordComponent,
+    HydroDeficiencyComponent,
+    HydroDonutComponent,
+    HydroBarChartComponent,
+    HydroReportComponent,
+    HydroSideTocComponent,
+    HydroAcronymsComponent,
+    HydroExecutiveSummaryComponent,
+    HydroImportanceOfCybersecurityComponent,
+    HydroResultsSummaryComponent,
+    HydroConsequencesComponent,
+    HydroImpactCategoryComponent,
+    HydroFeasibilityReportComponent,
+    HydroBarVerticalComponent,
+    HydroImpactComponent,
+    HydroFeasibilityComponent,
+    HydroActionsComponent,
+    HydroActionItemComponent,
+    HydroProgressTotalsComponent,
+    HydroActionItemsReportComponent,
+    SdAnswerSummaryReportComponent,
+    SdAnswerSummaryComponent,
+    KeyReportComponent,
+    CmuGoalPerfStackedBarComponent,
+    CmuResultsDetailComponent,
+    CmuNistCsfSummaryComponent,
+    AssessmentConfigIodComponent,
+    AssessmentDemogIodComponent,
+    DemographicsIodComponent,
+    TutorialImrComponent,
+    ImrCoverSheetComponent,
+    ImrIntroAboutComponent,
+    ImrResourcesComponent,
+    CmuDomainComplianceComponent,
+    TsaSdComponent,
+    ImrSideTocComponent,
+    CmuAppendixCoverComponent,
+    OtherRemarksComponent,
+    CmuOtherRemarksComponent,
+    UserLanguageComponent,
+    MalcolmUploadErrorComponent,
+    AssessmentConvertCfComponent,
+    IseWarningsComponent,
+    TrendAnalyticsComponent,
+    QuestionBlockCieComponent,
+    PrincipleSummaryComponent,
+    TutorialCieComponent,
+    QuickFactsCieComponent,
+    OverviewCieComponent,
+    BackgroundCieComponent,
+    PrinciplesCieComponent,
+    LifecycleCieComponent,
+    HowToUseCieComponent,
+    MalcolmAnswerDefaultComponent,
+    MalcolmAnswerNestedComponent,
+    MalcolmInstructionsComponent,
+    MaturityQuestionsCieComponent,
+    AssessmentInfoCieComponent,
+    AssessmentConfigCieComponent,
+    AssessmentDetailCieComponent,
+    CieLayoutMainComponent,
+    AboutCieComponent,
+    ApplyingCieComponent,
+    CieExampleComponent,
+    CieBackgroundComponent,
+    CieAnalysisComponent,
+    PrincipleAnalysisCieComponent,
+    CieAnalysisMatrixComponent,
+    MergeCieAnalysisComponent,
+    CieAllQuestionsComponent,
+    CiePrincipleOnlyComponent,
+    CiePrinciplePhaseComponent,
+    CieNotApplicableComponent,
+    CieMfrReportComponent,
+    AboutCieComponent, 
+    AnalyticsComponent, 
+    SdOwnerDeficiencyComponent,
+    SdOwnerCommentsMfrComponent,
+    AboutCieComponent,
+    AnalyticsComponent,
+    ReferencesSectionComponent,
+    CisaWorkflowWarningsComponent,
+    AnalyticsloginComponent,
+    ReportListComponent, 
+    ReportListCommonComponent
+  ],
+  providers: [
+    TranslocoService,
+    ConfigService,
+    AuthenticationService,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (configSvc: ConfigService, authSvc: AuthenticationService, tSvc: TranslocoService) => {
+        return () => {
+          return configSvc.loadConfig().then(() => {
+            // Load and set the language based on config
+            return tSvc
+              .load(configSvc.config.defaultLang)
+              .toPromise()
+              .then(() => {
+                tSvc.setActiveLang(configSvc.config.defaultLang);
+                return authSvc.checkLocal();
+              });
+          });
+        };
+      },
+      deps: [ConfigService, AuthenticationService, TranslocoService],
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: JwtInterceptor,
+      multi: true
+    },
+    DatePipe,
+    {
+      provide: MAT_DATE_LOCALE,
+      useFactory: (tSvc: TranslocoService) => {
+        // get the language based on config
+        return tSvc.getActiveLang();
+      },
+      deps: [TranslocoService],
+      multi: true
+    },
+    AuthGuard,
+    AssessGuard,
+    AggregationGuard,
+    DemographicService,
+    DemographicExtendedService,
+    AssessmentService,
+    EmailService,
+    QuestionsService,
+    SalService,
+    StandardService,
+    FrameworkService,
+    RequiredDocumentService,
+    IRPService,
+    ObservationsService,
+    NavigationService,
+    FileUploadClientService,
+    AnalysisService,
+    EnableFeatureService,
+    SetBuilderService,
+    ACETService,
+    ResourceLibraryService,
+    DiagramService,
+    AggregationService,
+    ChartService,
+    ChartColors,
+    ReportService,
+    ReportAnalysisService,
+    LocalStoreManager,
+    CmmcStyleService,
+    AcetFilteringService,
+    CmmcFilteringService,
+    EdmFilteringService,
+    CrrFilteringService,
+    RraFilteringService,
+    CmuService,
+    CmuService,
+    Utilities,
+    NCUAService,
+    GalleryService,
+    FooterService,
+    AnalyticsService
+  ],
+  bootstrap: [AppComponent]
 })
-
 export class AppModule { }

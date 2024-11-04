@@ -110,6 +110,9 @@
 <loc>http://change_password.htm</loc>
 </url>
 <url>
+<loc>http://user_language.htm</loc>
+</url>
+<url>
 <loc>http://help_menu.htm</loc>
 </url>
 <url>
@@ -135,9 +138,6 @@
 </url>
 <url>
 <loc>http://assessments_menu.htm</loc>
-</url>
-<url>
-<loc>http://diagram.htm</loc>
 </url>
 <url>
 <loc>http://results_menu.htm</loc>
@@ -195,12 +195,6 @@
 </url>
 <url>
 <loc>http://sal_window_fips_selection.htm</loc>
-</url>
-<url>
-<loc>http://cybersecurity_framework_description.htm</loc>
-</url>
-<url>
-<loc>http://framework_implementation_tiers.htm</loc>
 </url>
 <url>
 <loc>http://prepare_mode_selection.htm</loc>

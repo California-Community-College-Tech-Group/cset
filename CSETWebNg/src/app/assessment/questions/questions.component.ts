@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, ViewChild, AfterViewChecked, OnInit, AfterViewInit } from '@angular/core';
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { QuestionFiltersComponent } from "../../dialogs/question-filters/question-filters.component";
 import { QuestionResponse, Category } from '../../models/questions.model';
@@ -31,7 +31,8 @@ import { NavigationService } from '../../services/navigation/navigation.service'
 import { QuestionFilterService } from '../../services/filtering/question-filter.service';
 import { ConfigService } from '../../services/config.service';
 import { CompletionService } from '../../services/completion.service';
-import { ɵNullViewportScroller } from '@angular/common';
+import { ACETService } from '../../services/acet.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'app-questions',
@@ -39,7 +40,7 @@ import { ɵNullViewportScroller } from '@angular/common';
   // eslint-disable-next-line
   host: { class: 'd-flex flex-column flex-11a' }
 })
-export class QuestionsComponent implements AfterViewChecked {
+export class QuestionsComponent implements AfterViewChecked, OnInit, AfterViewInit {
   @ViewChild('questionBlock') questionBlock;
 
   categories: Category[] = null;
@@ -60,6 +61,8 @@ export class QuestionsComponent implements AfterViewChecked {
 
   scrollComplete = false;
 
+  msgUnansweredEqualsNo = '';
+
 
   /**
    *
@@ -71,7 +74,9 @@ export class QuestionsComponent implements AfterViewChecked {
     private configSvc: ConfigService,
     public filterSvc: QuestionFilterService,
     public navSvc: NavigationService,
-    private dialog: MatDialog
+    public tSvc: TranslocoService,
+    private dialog: MatDialog,
+    public acetSvc: ACETService
   ) {
     const magic = this.navSvc.getMagic();
 
@@ -103,6 +108,15 @@ export class QuestionsComponent implements AfterViewChecked {
       );
     localStorage.setItem("questionSet", this.assessSvc.applicationMode == 'R' ? "Requirement" : "Question");
     this.assessSvc.currentTab = 'questions';
+
+    // refresh the page in case of language change
+    this.tSvc.langChanges$.subscribe((event) => {
+      this.loadQuestions();
+    });
+
+  }
+  ngOnInit(): void {
+    this.configSvc.checkOnlineStatusFromConfig();
   }
 
   updateComponentsOverride() {
@@ -116,6 +130,12 @@ export class QuestionsComponent implements AfterViewChecked {
     this.questionsSvc.getQuestionListOverridesOnly().subscribe((data: QuestionResponse) => {
       this.refreshQuestionVisibility();
     });
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.scrollToResumeQuestionsTarget();
+    }, 500);
   }
 
   /**
@@ -145,6 +165,54 @@ export class QuestionsComponent implements AfterViewChecked {
   }
 
   /**
+   * NOT YET OPERATIONAL
+   * 
+   * If a "resume questions" target is defined, attempt to
+   * scroll to it.
+   */
+  scrollToResumeQuestionsTarget() {
+    // scroll to the target question if we have one
+    const scrollTarget = this.navSvc.resumeQuestionsTarget;
+    this.navSvc.resumeQuestionsTarget = null;
+    if (!scrollTarget) {
+      return;
+    }
+
+    var r = scrollTarget.split(',').find(x => x.startsWith('R:'))?.replace('R:', '');
+    let q = scrollTarget.split(',').find(x => x.startsWith('Q:'))?.replace('Q:', '');
+
+    // NEED TO DETERMINE WHICH GROUP TO EXPAND
+      // // expand the question's group
+      // var groupToExpand = this.findGroupingById(Number(g), this.groupings);
+      // if (!!groupToExpand) {
+      //   groupToExpand.expanded = true;
+      // }
+
+
+    // scroll to the question
+    let qqElement = document.getElementById(`qq${q}`);
+    if (!!qqElement) {
+      setTimeout(() => {
+        qqElement.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }, 1000);
+    }
+  }
+
+  /**
+   * Recurse grouping tree, looking for the ID
+   */
+  findGroupingById(id: number, groupings: any[]) {
+    var grp = groupings.find(x => x.groupingID == id);
+    if (!!grp) {
+      return grp;
+    }
+    for (var i = 0; i < groupings.length; i++) {
+      return this.findGroupingById(id, groupings[i].subGroupings);
+    }
+  }
+
+  /**
    * Re-evaluates the visibility of all questions/subcategories/categories
    * based on the current filter settings.
    * Also re-draws the sidenav category tree, skipping categories
@@ -158,9 +226,10 @@ export class QuestionsComponent implements AfterViewChecked {
    * Changes the application mode of the assessment
    */
   setMode(mode: string) {
+    this.assessSvc.applicationMode = mode;
     this.questionsSvc.setMode(mode).subscribe(() => {
       this.loadQuestions();
-      this.navSvc.setQuestionsTree();
+      this.navSvc.buildTree();
     });
     localStorage.setItem("questionSet", mode == 'R' ? "Requirement" : "Question");
   }
@@ -224,6 +293,9 @@ export class QuestionsComponent implements AfterViewChecked {
    * Retrieves the complete list of questions
    */
   loadQuestions() {
+    // set the message with the current "no" answer value.  
+    this.msgUnansweredEqualsNo = this.tSvc.translate('questions.unanswered equals no', { 'no-ans': this.questionsSvc.answerButtonLabel('', 'N') });
+
     this.completionSvc.reset();
 
     this.questionsSvc.getQuestionsList().subscribe(

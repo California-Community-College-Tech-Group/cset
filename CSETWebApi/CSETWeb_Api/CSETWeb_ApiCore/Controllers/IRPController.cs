@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -25,6 +25,7 @@ namespace CSETWebCore.Api.Controllers
         private readonly IAssessmentUtil _assessmentUtil;
         private CSETContext _context;
 
+
         public IRPController(ITokenManager token, IAssessmentUtil assessmentUtil, IIRPBusiness irp, CSETContext context)
         {
             _token = token;
@@ -32,6 +33,7 @@ namespace CSETWebCore.Api.Controllers
             _irp = irp;
             _context = context;
         }
+
 
         /// <summary>
         /// Returns a list of all available documentation.
@@ -42,8 +44,11 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetIRPList()
         {
             int assessmentId = _token.AssessmentForUser();
-            return Ok(_irp.GetIRPList(assessmentId));
+            var lang = _token.GetCurrentLanguage();
+
+            return Ok(_irp.GetIRPList(assessmentId, lang));
         }
+
 
         /// <summary>
         /// Persists the selected required docs value to the database.

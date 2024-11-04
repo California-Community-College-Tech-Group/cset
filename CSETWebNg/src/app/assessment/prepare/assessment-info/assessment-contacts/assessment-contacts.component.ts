@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,21 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit, ViewChildren, Output, EventEmitter } from "@angular/core";
+import { Component, EventEmitter, OnInit, Output, ViewChildren } from "@angular/core";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { TranslocoService } from "@ngneat/transloco";
 import { AlertComponent } from "../../../../dialogs/alert/alert.component";
 import { ConfirmComponent } from "../../../../dialogs/confirm/confirm.component";
 import { EmailComponent } from "../../../../dialogs/email/email.component";
 import { AssessmentContactsResponse } from "../../../../models/assessment-info.model";
+import { EditableUser } from "../../../../models/editable-user.model";
 import { User } from "../../../../models/user.model";
 import { AssessmentService } from "../../../../services/assessment.service";
 import { AuthenticationService } from "../../../../services/authentication.service";
 import { ConfigService } from "../../../../services/config.service";
 import { EmailService } from "../../../../services/email.service";
-import { EditableUser } from "../../../../models/editable-user.model";
-import { ContactItemComponent } from "./contact-item/contact-item.component";
-import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
 import { LayoutService } from "../../../../services/layout.service";
+import { ContactItemComponent } from "./contact-item/contact-item.component";
 
 @Component({
   selector: "app-assessment-contacts",
@@ -63,7 +63,8 @@ export class AssessmentContactsComponent implements OnInit {
     private emailSvc: EmailService,
     private auth: AuthenticationService,
     private dialog: MatDialog,
-    public layoutSvc: LayoutService
+    public layoutSvc: LayoutService,
+    private tSvc: TranslocoService
   ) { }
 
   ngOnInit() {
@@ -180,11 +181,13 @@ export class AssessmentContactsComponent implements OnInit {
 
     const dialogRef = this.dialog.open(ConfirmComponent);
     dialogRef.componentInstance.confirmMessage =
-      "Are you sure you want to remove " +
-      contact.firstName +
-      " " +
-      contact.lastName +
-      " from this assessment?";
+      // "Are you sure you want to remove " +
+      // contact.firstName +
+      // " " +
+      // contact.lastName +
+      // " from this assessment?";
+
+      this.tSvc.translate('dialogs.remove contact', { firstName: contact.firstName, lastName: contact.lastName });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
@@ -238,7 +241,7 @@ export class AssessmentContactsComponent implements OnInit {
       (response: { ContactList: User[] }) => { this.changeOccurred(); },
       error => {
         this.dialog
-          .open(AlertComponent, { data: {title: "Error removing assessment contact" }})
+          .open(AlertComponent, { data: { title: "Error removing assessment contact" } })
           .afterClosed()
           .subscribe();
         console.log(

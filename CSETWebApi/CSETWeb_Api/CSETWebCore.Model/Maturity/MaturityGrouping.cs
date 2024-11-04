@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -32,6 +32,11 @@ namespace CSETWebCore.Model.Maturity
         /// An optional description.  Usually displayed below the title.
         /// </summary>
         public string Description { get; set; }
+
+        /// <summary>
+        /// An optional description.  Usually displayed below the title.
+        /// </summary>
+        public string Description_Extended { get; set; }
 
         /// <summary>
         /// an optional remark for each domain in the model

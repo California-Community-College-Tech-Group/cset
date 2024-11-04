@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ export class AutoSizeDirective implements OnInit {
     }
 
     ngOnInit(): void {
-        setTimeout(() => this.adjust());
+        setTimeout(() => this.adjust(), 300);
     }
 
     adjust(): void {

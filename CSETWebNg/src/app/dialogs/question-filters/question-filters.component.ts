@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, Inject, Output, EventEmitter, Input, OnInit } from '@angular/core';
+import { Component, Inject, Output, EventEmitter, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AssessmentService } from '../../services/assessment.service';
 import { ConfigService } from '../../services/config.service';
@@ -40,8 +40,11 @@ export class QuestionFiltersComponent implements OnInit {
 
   @Output() filterChanged = new EventEmitter<any>();
 
-  question = "Question";
-  questions = "questions";
+
+  /**
+   * Holds the word "questions" or "statements"
+   */
+  skin = "core";
   observations = "observations";
   comments = "comments";
   answerOptions: any[];
@@ -71,11 +74,15 @@ export class QuestionFiltersComponent implements OnInit {
    */
   ngOnInit(): any {
     if (this.configSvc.installationMode === 'ACET') {
-      this.question = "Statement";
-      this.questions = "statements";
+      this.skin = "acet";
       if (this.assessSvc.isISE()) {
+        this.skin = "ise";
         this.observations = "issues";
         this.comments = "notes";
+      }
+      else {
+        this.observations = "observations";
+        this.comments = "comments";
       }
     }
     this.refreshAnswerOptions();
@@ -87,19 +94,18 @@ export class QuestionFiltersComponent implements OnInit {
   refreshAnswerOptions() {
     this.answerOptions = [];
     this.filterSvc.answerOptions.filter(x => x != 'U').forEach(o => {
-      if(this.assessSvc.isISE()) {
-        this.answerOptions.push({ 
-          value: o, 
-          text: this.questionsSvc.answerButtonLabel(this.filterSvc.maturityModelId, o) 
+      if (this.assessSvc.isISE()) {
+        this.answerOptions.push({
+          value: o,
+          text: this.questionsSvc.answerButtonLabel(this.filterSvc.maturityModelName, o)
         });
       } else {
-        this.answerOptions.push({ 
-          value: o, 
-          text: this.questionsSvc.answerDisplayLabel(this.filterSvc.maturityModelId, o) 
+        this.answerOptions.push({
+          value: o,
+          text: this.questionsSvc.answerDisplayLabel(this.filterSvc.maturityModelName, o)
         });
       }
     });
-
     if (this.assessSvc.isISE()) {
       // Remove 'N/A' and 'Compensating Control' from ISE filters menu.
       this.answerOptions = this.answerOptions.slice(0, 2);

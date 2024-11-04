@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -13,6 +13,8 @@ using CSETWebCore.Interfaces.Helpers;
 using Microsoft.EntityFrameworkCore;
 using CSETWebCore.Business.Authorization;
 using CSETWebCore.Model.Acet;
+using CSETWebCore.Helpers;
+
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -22,13 +24,17 @@ namespace CSETWebCore.Api.Controllers
         private readonly CSETContext _context;
         private readonly ITokenManager _tokenManager;
         private readonly IAssessmentUtil _assessmentUtil;
+        private readonly TranslationOverlay _overlay;
 
         public ACETFilterController(CSETContext context, IAssessmentUtil assessmentUtil, ITokenManager tokenManager)
         {
             _context = context;
             _assessmentUtil = assessmentUtil;
             _tokenManager = tokenManager;
+
+            _overlay = new TranslationOverlay();
         }
+
 
         [HttpGet]
         [Route("api/IsAcetOnly")]
@@ -78,16 +84,41 @@ namespace CSETWebCore.Api.Controllers
         [Route("api/ACETDomains")]
         public IActionResult GetAcetDomains()
         {
-            List<ACETDomain> domains = new List<ACETDomain>();
-            foreach (var domain in _context.FINANCIAL_DOMAINS.ToList())
+            var userId = _tokenManager.GetCurrentUserId();
+            var lang = _tokenManager.GetCurrentLanguage();
+
+            try
             {
-                domains.Add(new ACETDomain()
+                List<ACETDomain> domains = new List<ACETDomain>();
+                foreach (var domain in _context.FINANCIAL_DOMAINS.ToList())
                 {
-                    DomainName = domain.Domain,
-                    DomainId = domain.DomainId
-                });
+                    domains.Add(new ACETDomain()
+                    {
+                        DomainName = domain.Domain,
+                        DomainId = domain.DomainId
+                    });
+                }
+
+
+                // overlay
+                foreach (var d in domains)
+                {
+                    var o = _overlay.GetMaturityGrouping(d.DomainId, lang);
+                    if (o != null)
+                    {
+                        d.DomainName = o.Title;
+                    }
+                }
+
+
+                return Ok(domains);
             }
-            return Ok(domains);
+            catch (Exception ex1)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex1);
+            }
+
+            return Ok();
         }
 
 
@@ -105,12 +136,14 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetACETFilters()
         {
             int assessmentId = _tokenManager.AssessmentForUser();
+            var lang = _tokenManager.GetCurrentLanguage();
+
             List<ACETFilter> filters = new List<ACETFilter>();
 
             //full cross join
             //select DomainId, financial_level_id from FINANCIAL_DOMAINS, FINANCIAL_MATURITY
             var crossJoin = from b in _context.FINANCIAL_DOMAINS
-                            from c in _context.FINANCIAL_MATURITY                            
+                            from c in _context.FINANCIAL_MATURITY
                             select new { b.DomainId, c.Financial_Level_Id, b.Domain };
 
             var tmpFilters = (from c in crossJoin
@@ -118,13 +151,25 @@ namespace CSETWebCore.Api.Controllers
                               into myFilters
                               from subfilter in myFilters.DefaultIfEmpty()
                               where subfilter.Assessment_Id == assessmentId
-                              select new
+                              select new ACETDomainFilterSetting()
                               {
                                   DomainId = c.DomainId,
                                   DomainName = c.Domain,
                                   Financial_Level_Id = c.Financial_Level_Id,
                                   IsOn = subfilter.IsOn
                               }).ToList();
+
+
+            // language overlay
+            foreach (var f in tmpFilters)
+            {
+                var o = _overlay.GetValue("FINANCIAL_DOMAINS", f.DomainId.ToString(), lang);
+                if (o != null)
+                {
+                    f.DomainName = o.Value;
+                }
+            }
+
 
             var groups = tmpFilters.GroupBy(d => d.DomainId, d => d, (key, g) => new { DomainId = key, DomainName = g.First().DomainName, Tiers = g.ToList() }).ToList();
 

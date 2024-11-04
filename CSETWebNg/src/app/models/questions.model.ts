@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -66,6 +66,7 @@ export interface QuestionGrouping {
     prefix: string;
     title: string;
     description: string;
+    description_Extended: string;
     groupingID: number;
     groupingType: string;
     questions: Question[];
@@ -150,7 +151,7 @@ export interface Question {
     answerMemo?: string;
     comment: string;
     feedback: string;
-    hasDiscovery: boolean;
+    hasObservation: boolean;
     hasDocument: boolean;
     documentIds: number[];
     markForReview: boolean;
@@ -162,6 +163,11 @@ export interface Question {
     is_Requirement: boolean;
     is_Maturity: boolean;
     extrasExpanded: boolean;
+
+    // CPG fields
+    scope: string;
+    recommendedAction: string;
+    services: string;
 
     // parent questions aren't answered directly and have subparts that are answered.
     isParentQuestion: boolean;
@@ -211,15 +217,15 @@ export interface Option {
 }
 
 export interface IntegrityCheckOption {
-  optionId: number;
-  selected: boolean;
-  parentQuestionText: string;
-  inconsistentOptions: InconsistentOption[];
+    optionId: number;
+    selected: boolean;
+    parentQuestionText: string;
+    inconsistentOptions: InconsistentOption[];
 }
 
 export interface InconsistentOption {
-  optionId: number;
-  parentQuestionText: string;
+    optionId: number;
+    parentQuestionText: string;
 }
 
 export class SubToken {

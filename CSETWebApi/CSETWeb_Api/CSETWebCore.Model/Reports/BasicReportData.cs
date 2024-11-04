@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -20,7 +20,7 @@ namespace CSETWebCore.Business.Reports
         public string ApplicationMode { get; set; }
         public List<usp_GetOverallRankedCategoriesPage_Result> top5Categories;
 
-        public INFORMATION information { get; set; }      
+        public INFORMATION information { get; set; }
 
         public OverallSALTable salTable { get; set; }
         public GenSALTable genSalTable { get; set; }
@@ -40,11 +40,13 @@ namespace CSETWebCore.Business.Reports
         public List<usp_getFinancialQuestions_Result> FinancialQuestionsTable { get; set; }
         public List<ComponentQuestion> ComponentQuestions { get; set; }
         public List<List<DiagramZones>> Zones { get; set; }
+        public List<CieQuestionAnswerPairing> QuestionAnswerPairings { get; set; }
+
 
         public class INFORMATION
         {
             public string Assessment_Name { get; set; }
-            public string Assessment_Date { get; set; }
+            public DateTime? Assessment_Date { get; set; }
             public string Assessor_Name { get; set; }
             public string Facility_Name { get; set; }
             public string City_Or_Site_Name { get; set; }
@@ -64,8 +66,9 @@ namespace CSETWebCore.Business.Reports
             public string Credit_Union_Name { get; set; }
             public string Charter { get; set; }
             public long Assets { get; set; }
-            public string Assessment_Effective_Date { get; set; }
-            public string Assessment_Creation_Date { get; set; }
+            public DateTime? Assessment_Effective_Date { get; set; }
+            public DateTime? Assessment_Creation_Date { get; set; }
+            public int Region_Code { get; set; }
 
 
             // Maturity Properties
@@ -111,13 +114,13 @@ namespace CSETWebCore.Business.Reports
         }
     }
 
-    public class Findings
+    public class Observations
     {
-        public string Finding { get; set; }
+        public string Observation { get; set; }
         public string QuestionIdentifier { get; set; }
         public string QuestionText { get; set; }
         public string Importance { get; set; }
-        public string ResolutionDate { get; set; }
+        public DateTime? ResolutionDate { get; set; }
         public string Issue { get; set; }
         public string Impact { get; set; }
         public string Recommendations { get; set; }
@@ -210,7 +213,7 @@ namespace CSETWebCore.Business.Reports
         public bool Reviewed { get; set; }
 
 
-       
+
 
         /// <summary>
         /// Constructor
@@ -228,21 +231,21 @@ namespace CSETWebCore.Business.Reports
         {
             List<RelevantAnswers> answers = new List<RelevantAnswers>();
 
-                context.LoadStoredProc("[RelevantAnswers]")
-                    .WithSqlParam("assessment_id", assessmentID)
-                    .ExecuteStoredProc((handler) =>
-                    {
-                        answers = handler.ReadToList<RelevantAnswers>().ToList();
-                    });
+            context.LoadStoredProc("[RelevantAnswers]")
+                .WithSqlParam("assessment_id", assessmentID)
+                .ExecuteStoredProc((handler) =>
+                {
+                    answers = handler.ReadToList<RelevantAnswers>().ToList();
+                });
 
-                return answers;                       
+            return answers;
         }
     }
 
     public class Individual
     {
         public string INDIVIDUALFULLNAME { get; set; }
-        public List<Findings> Findings { get; set; }
+        public List<Observations> Observations { get; set; }
     }
 
     public class QuestionsWithAltJust
@@ -291,6 +294,14 @@ namespace CSETWebCore.Business.Reports
             return (string)props[Name].GetValue(this);
         }
     }
+
+    public class CieQuestionAnswerPairing
+    {
+        public CieQuestionAnswerPairing() { }
+        public MATURITY_QUESTIONS Question { get; set; }
+        public ANSWER Answer { get; set; }
+    }
+
 }
 
 

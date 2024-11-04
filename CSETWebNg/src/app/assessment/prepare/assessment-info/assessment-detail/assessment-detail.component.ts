@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,14 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { AssessmentService } from '../../../../services/assessment.service';
-import { AssessmentDetail } from '../../../../models/assessment-info.model';
-import { NavigationService } from '../../../../services/navigation/navigation.service';
-import { ConfigService } from '../../../../services/config.service';
-import { AwwaStandardComponent } from '../../standards/awwa-standard/awwa-standard.component';
+import { Component, OnInit } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { AssessmentDetail } from '../../../../models/assessment-info.model';
+import { AssessmentService } from '../../../../services/assessment.service';
+import { ConfigService } from '../../../../services/config.service';
+import { NavigationService } from '../../../../services/navigation/navigation.service';
+import { AwwaStandardComponent } from '../../standards/awwa-standard/awwa-standard.component';
 
 
 @Component({
@@ -40,7 +39,9 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 })
 export class AssessmentDetailComponent implements OnInit {
 
-  assessment: AssessmentDetail = {};
+  assessment: AssessmentDetail = {
+    assessmentName: ''
+  };
 
   dialogRefAwwa: MatDialogRef<AwwaStandardComponent>;
   isAwwa = false;
@@ -68,7 +69,7 @@ export class AssessmentDetailComponent implements OnInit {
    */
   getAssessmentDetail() {
     this.assessment = this.assessSvc.assessment;
-
+ 
     // a few things for a brand new assessment
     if (this.assessSvc.isBrandNew) {
       // RRA install presets the maturity model

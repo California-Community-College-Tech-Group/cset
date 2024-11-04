@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import { AssessmentService } from '../../../services/assessment.service';
 import { ACETService } from '../../../services/acet.service';
 import { AcetDashboard } from '../../../models/acet-dashboard.model';
 import { NavigationService } from '../../../services/navigation/navigation.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
     selector: 'app-acet-dashboard',
@@ -38,22 +39,28 @@ export class AcetDashboardComponent implements OnInit {
 
     overrideLabel: string;
     overriddenLabel: string;
-    sortDomainListKey: string[] = ["Cyber Risk Management & Oversight",
-        "Threat Intelligence & Collaboration",
-        "Cybersecurity Controls",
-        "External Dependency Management",
-        "Cyber Incident Management and Resilience"];
+    sortDomainListKey: string[] = [];
 
     sortedDomainList: any = [];
 
     constructor(private router: Router,
         public assessSvc: AssessmentService,
         public navSvc: NavigationService,
-        public acetSvc: ACETService
+        public acetSvc: ACETService,
+        private tSvc: TranslocoService
     ) { }
 
     ngOnInit() {
-        this.loadDashboard();
+        this.tSvc.langChanges$.subscribe((event) => {
+            this.sortDomainListKey = [];
+            if (this.tSvc.getActiveLang() == "es") {
+                this.sortDomainListKey = this.acetSvc.spanishSortDomainListKey;
+            }
+            else {
+                this.sortDomainListKey = this.acetSvc.englishSortDomainListKey;
+            }
+            this.loadDashboard();
+        });
     }
 
     loadDashboard() {
@@ -67,7 +74,7 @@ export class AcetDashboardComponent implements OnInit {
                 let acetRisk = this.acetDashboard.sumRisk;
                 let result = acetRisk.map((item, index) => item - iseRisk[index]);
                 this.acetDashboard.sumRisk = result;
-                
+
                 let highest = Math.max(...this.acetDashboard.sumRisk);
                 let index = this.acetDashboard.sumRisk.indexOf(highest);
                 this.acetDashboard.sumRiskLevel = (index + 1);
@@ -84,6 +91,9 @@ export class AcetDashboardComponent implements OnInit {
                     })
                 })
                 this.acetDashboard.domains = this.sortedDomainList;
+
+                // clearing the list so it doesn't keep building on old data
+                this.sortedDomainList = [];
 
                 this.acetDashboard.domains.forEach(d => {
                     d.levelDisplay = this.acetSvc.translateMaturity(d.maturity);
@@ -112,12 +122,12 @@ export class AcetDashboardComponent implements OnInit {
             this.acetDashboard.overrideReason = '';
         }
 
-        this.acetSvc.postSelection(this.acetDashboard).subscribe((data:any)=>{
+        this.acetSvc.postSelection(this.acetDashboard).subscribe((data: any) => {
             this.loadDashboard();
-        }, 
-        error => {
-            console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-            console.log('Error getting all documents: ' + (<Error>error).stack);
-        });
+        },
+            error => {
+                console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+                console.log('Error getting all documents: ' + (<Error>error).stack);
+            });
     }
 }

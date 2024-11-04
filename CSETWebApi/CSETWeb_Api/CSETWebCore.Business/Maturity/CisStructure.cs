@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Model.Nested;
+using CSETWebCore.Helpers;
 using Microsoft.EntityFrameworkCore;
 using CSETWebCore.Model.Assessment;
 
@@ -46,6 +47,9 @@ namespace CSETWebCore.Business.Maturity
         public NestedQuestions MyModel { get => _myModel; }
 
 
+        private AdditionalSupplemental _addSup;
+
+
         /// <summary>
         /// 
         /// </summary>
@@ -56,7 +60,9 @@ namespace CSETWebCore.Business.Maturity
         {
             this._context = context;
             this._assessmentId = assessmentId;
-            
+
+            this._addSup = new AdditionalSupplemental(context);
+
 
             // Get the baseline assessment if one is assigned
             var info = _context.INFORMATION.Where(x => x.Id == assessmentId).FirstOrDefault();
@@ -219,6 +225,14 @@ namespace CSETWebCore.Business.Maturity
                         DocumentIds = GetDocumentIds(answer?.Answer_Id)
                     };
 
+                    question.TTP = _addSup.GetTTPReferenceList(question.QuestionId);
+                    question.CSF = _addSup.GetCsfMappings(question.QuestionId, "maturity");
+
+                    if (answer != null)
+                    {
+                        question.HasObservation = _context.FINDING.Any(x => x.Answer_Id == answer.Answer_Id);
+                    }
+
 
                     // Include the corresponding baseline selection if it exists
                     var baselineAnswer = baselineAllAnswers
@@ -278,6 +292,14 @@ namespace CSETWebCore.Business.Maturity
                     MarkForReview = answer?.Mark_For_Review ?? false,
                     DocumentIds = GetDocumentIds(answer?.Answer_Id)
                 };
+
+                question.TTP = _addSup.GetTTPReferenceList(question.QuestionId);
+                question.CSF = _addSup.GetCsfMappings(question.QuestionId, "maturity");
+
+                if (answer != null)
+                {
+                    question.HasObservation = _context.FINDING.Any(x => x.Answer_Id == answer.Answer_Id);
+                }
 
 
                 // Include the corresponding baseline selection if it exists
@@ -378,6 +400,14 @@ namespace CSETWebCore.Business.Maturity
                         DocumentIds = GetDocumentIds(answer?.Answer_Id)
                     };
 
+                    question.TTP = _addSup.GetTTPReferenceList(question.QuestionId);
+                    question.CSF = _addSup.GetCsfMappings(question.QuestionId, "maturity");
+
+                    if (answer != null)
+                    {
+                        question.HasObservation = _context.FINDING.Any(x => x.Answer_Id == answer.Answer_Id);
+                    }
+
 
                     // Include the corresponding baseline selection if it exists
                     baselineAnswer = baselineAllAnswers
@@ -424,22 +454,22 @@ namespace CSETWebCore.Business.Maturity
         /// </summary>
         /// <param name="answers"></param>
         /// <param name="answer"></param>
-        private void ConsolidateAnswers(List<ANSWER> answers, out ANSWER answer) 
+        private void ConsolidateAnswers(List<ANSWER> answers, out ANSWER answer)
         {
-            if (answers.Count == 0) 
-            { 
+            if (answers.Count == 0)
+            {
                 answer = null;
                 return;
             }
 
             answer = answers[0];
 
-            if (answers.Count == 1) 
+            if (answers.Count == 1)
             {
                 return;
             }
 
-            foreach (ANSWER a in answers) 
+            foreach (ANSWER a in answers)
             {
                 // Want the selection status
                 //if (a.Answer_Text == "S" || a.Answer_Text == "") 
@@ -463,7 +493,7 @@ namespace CSETWebCore.Business.Maturity
                     answer.FeedBack = a.FeedBack;
                 }
 
-                if (a.Mark_For_Review != null) 
+                if (a.Mark_For_Review != null)
                 {
                     answer.Mark_For_Review = a.Mark_For_Review;
                 }

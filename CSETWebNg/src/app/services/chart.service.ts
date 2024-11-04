@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@ import { Injectable } from '@angular/core';
 import { ConfigService } from './config.service';
 import { Utilities } from './utilities.service';
 import Chart from 'chart.js/auto';
-import { debug } from 'console';
 import { QuestionsService } from './questions.service';
 
 
@@ -128,7 +127,7 @@ export class ChartService {
  * @param canvasId
  * @param x
  */
-  buildHorizBarChart(canvasId: string, x: any, showLegend: boolean, zeroHundred: boolean, opts: any = {}, isPercent:boolean=true) {
+  buildHorizBarChart(canvasId: string, x: any, showLegend: boolean, zeroHundred: boolean, opts: any = {}, isPercent: boolean = true) {
     if (!x.labels) {
       x.labels = [];
     }
@@ -146,7 +145,7 @@ export class ChartService {
     if (tempChart) {
       tempChart.destroy();
     }
-    let percent = isPercent?'%':' ';
+    let percent = isPercent ? '%' : ' ';
 
     var myOptions: any = {
       indexAxis: 'y',
@@ -158,7 +157,7 @@ export class ChartService {
           callbacks: {
             label: ((context) =>
               context.dataset.label + (!!context.dataset.label ? ': ' : ' ')
-              + (<Number>context.dataset.data[context.dataIndex]).toFixed() + percent )
+              + (<Number>context.dataset.data[context.dataIndex]).toFixed() + percent)
           }
         },
 
@@ -200,7 +199,7 @@ export class ChartService {
     let segmentLabels = [];
     x.labels.forEach(element => {
       segmentColors.push(this.segmentColor(element));
-      segmentLabels.push(this.questionsSvc.answerDisplayLabel(0, element));
+      segmentLabels.push(this.questionsSvc.answerDisplayLabel('', element));
     });
 
 
@@ -345,23 +344,28 @@ export class ChartService {
   /**
    *
    */
-  buildStackedHorizBarChart(canvasId: string, x: any) {
-    let tempChart = Chart.getChart(canvasId);
+  buildStackedHorizBarChart(canvasId: string, chartConfig: any) {
+    const tempChart = Chart.getChart(canvasId);
     if (tempChart) {
       tempChart.destroy();
     }
     return new Chart(canvasId, {
       type: 'bar',
       data: {
-        labels: x.labels,
-        datasets: x.datasets
+        labels: chartConfig.labels,
+        datasets: chartConfig.datasets
       },
       options: {
         indexAxis: 'y',
         animation: { duration: 100 }, // general animation time
         scales: {
           x: {
-            stacked: true
+            stacked: true,
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              stepSize: 20
+            }
           },
           y: {
             stacked: true
@@ -460,7 +464,7 @@ export class ChartService {
   * @param x
   */
   calcHbcHeightPixels(x): string {
-    // calculate the number of bars in the graph
+    // calculate the number of bars in the chart
     let maxDatasetLength = x.datasets[0].data.length;
     // calculate a good height for the chart's container
     let h = maxDatasetLength * x.datasets.length * 20;

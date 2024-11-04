@@ -1,12 +1,13 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,32 +15,36 @@ using System.Threading.Tasks;
 
 namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 {
+    public class jACCESS_KEY
+    {
+        [Required]
+        public String AccessKey { get; set; }
+    }
 
 
-    /// <summary>
-    /// HUGE WARNING !!!!! THIS FILE MUST BE 
-    /// SYNCHRONIZED WITH THE IDENTICAL FILE 
-    /// IN THE LegacyCSETImport project under 
-    /// the stand alone
-    /// </summary>
+
+
+
+  
+
+    public class jACCESS_KEY_ASSESSMENT
+    {
+        [Required]
+        public String AccessKey { get; set; }
+        [Required]
+        public Int32 Assessment_Id { get; set; }
+    }
+
     public class jCSET_VERSION
     {
         [Required]
         public Int32 Id { get; set; }
-
-        [Required]
-        public Decimal Version_Id { get; set; }
-
         [Required]
         [MaxLength(50)]
-        public String Cset_Version { get; set; }
-
+        public String Cset_Version1 { get; set; }
         [MaxLength(500)]
         public String Build_Number { get; set; }
-
     }
-
-
     public class jASSESSMENT_SELECTED_LEVELS
     {
         [Required]
@@ -101,7 +106,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public Int32 AssessmentCreatorId { get; set; }
 
         public DateTime LastAccessedDate { get; set; }
-        
+
         public DateTime AssessmentEffectiveDate { get; set; }
 
         [MaxLength(50)]
@@ -111,28 +116,33 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public Guid Assessment_GUID { get; set; }
 
         [StringLength(100)]
-        public string CreditUnionName { get; set; }
+        public String CreditUnionName { get; set; }
 
         [StringLength(100)]
-        public string Charter { get; set; }
+        public String Charter { get; set; }
 
         [StringLength(100)]
-        public string Assets { get; set; }
+        public String Assets { get; set; }
         public int? IRPTotalOverride { get; set; }
-        public string IRPTotalOverrideReason { get; set; }
+        public String IRPTotalOverrideReason { get; set; }
         public bool? MatDetail_targetBandOnly { get; set; }
 
-        public string Diagram_Markup { get; set; }
+        public String Diagram_Markup { get; set; }
 
         public int LastUsedComponentNumber { get; set; }
 
-        public string Diagram_Image { get; set; }
+        public String Diagram_Image { get; set; }
         public bool AnalyzeDiagram { get; set; }
         public bool UseDiagram { get; set; }
         public bool UseStandard { get; set; }
         public bool UseMaturity { get; set; }
         public Guid GalleryItemGuid { get; set; }
         public Boolean ISE_StateLed { get; set; }
+
+        public bool Is_PCII { get; set; }
+
+        [StringLength(50)]
+        public String PCII_Number { get; set; }
     }
 
     public class jvQUESTION_HEADINGS
@@ -202,7 +212,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public Boolean Is_Advanced { get; set; }
 
         [MaxLength(100)]
-        public String? Hidden_Screens { get; set;}
+        public String Hidden_Screens { get; set; }
 
     }
 
@@ -332,8 +342,8 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         [Required]
         [MaxLength(50)]
         public String Answer_Text { get; set; }
-        public string Question_Group_Heading { get; set; }
-        public string Universal_Sub_Category { get; set; }
+        public String Question_Group_Heading { get; set; }
+        public String Universal_Sub_Category { get; set; }
         public int Question_Group_Heading_Id { get; set; }
         public int Universal_Sub_Category_Id { get; set; }
 
@@ -459,7 +469,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         [MaxLength(50)]
         public String Answer_Text { get; set; }
 
-        public string Question_Type { get; set; }
+        public String Question_Type { get; set; }
 
         [Required]
         public Boolean Is_Component { get; set; }
@@ -472,7 +482,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 
         public int Old_Answer_Id { get; internal set; }
 
-        public string FeedBack { get; set; }
+        public String FeedBack { get; set; }
 
         public bool Is_Maturity { get; set; }
 
@@ -482,9 +492,9 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
     }
 
     public class jAVAILABLE_MATURITY_MODELS
-    {   
+    {
         public int Assessment_Id { get; set; }
-        public bool Selected { get; set; }        
+        public bool Selected { get; set; }
         public int model_id { get; set; }
     }
 
@@ -608,9 +618,9 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 
         [MaxLength(4000)]
         public String Assessment_Description { get; set; }
-        
+
         [MaxLength(100)]
-        public string Workflow { get; set; }
+        public String Workflow { get; set; }
 
         [MaxLength(4000)]
         public String Additional_Notes_And_Comments { get; set; }
@@ -635,7 +645,9 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 
         public bool? IsAcetOnly { get; set; }
 
+        public bool? Ise_Submitted { get; set; }
 
+        public DateTime? Submitted_Date { get; set; }
     }
 
 
@@ -674,6 +686,28 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public Nullable<Int32> PointOfContact { get; set; }
 
         public Nullable<Boolean> IsScoped { get; set; }
+
+        [MaxLength(100)]
+        public String CriticalService { get; set; }
+    }
+
+    public class jDETAILS_DEMOGRAPHICS
+    {
+        [Required]
+        public Int32 Assessment_Id { get; set; }
+
+        public String DataItemName { get; set; }
+
+        public String StringValue { get; set; }
+
+        public Nullable<Int32> IntValue { get; set; }
+
+        public Nullable<Double> FloatValue { get; set; }
+
+        public Nullable<Boolean> BoolValue { get; set; }
+
+        public Nullable<DateTime> DateTimeValue { get; set; }
+
     }
 
     public class jPARAMETER_ASSESSMENT
@@ -724,6 +758,9 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         {
             jADDRESSes = new List<jADDRESS>();
         }
+        public List<jADDRESS> jADDRESSes { get; set; }
+
+
         [Required]
         public Guid Id { get; set; }
 
@@ -758,8 +795,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public String PrimaryEmail { get; set; }
 
         [MaxLength(150)]
-        public String SecondaryEmail { get; set; }
-        public List<jADDRESS> jADDRESSes { get; set; }
+        public String SecondaryEmail { get; set; }        
 
     }
 
@@ -767,12 +803,12 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
     {
         public int Assessment_Id { get; set; }
         [StringLength(50)]
-        public string Component { get; set; }
+        public String Component { get; set; }
         [StringLength(50)]
-        public string ReviewType { get; set; }
+        public String ReviewType { get; set; }
         public decimal Hours { get; set; }
         [StringLength(512)]
-        public string OtherSpecifyValue { get; set; }
+        public String OtherSpecifyValue { get; set; }
     }
 
     public class jFINANCIAL_ASSESSMENT_VALUES
@@ -780,10 +816,10 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public int Assessment_Id { get; set; }
 
         [StringLength(250)]
-        public string AttributeName { get; set; }
+        public String AttributeName { get; set; }
 
         [StringLength(50)]
-        public string AttributeValue { get; set; }
+        public String AttributeValue { get; set; }
     }
 
     public class jASSESSMENTS_REQUIRED_DOCUMENTATION
@@ -794,9 +830,9 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 
         [Required]
         [StringLength(50)]
-        public string Answer { get; set; }
+        public String Answer { get; set; }
 
-        public string Comment { get; set; }
+        public String Comment { get; set; }
     }
 
     public class jASSESSMENT_IRP_HEADER
@@ -809,7 +845,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
 
         public int HEADER_RISK_LEVEL_ID { get; set; }
 
-        public string COMMENT { get; set; }
+        public String COMMENT { get; set; }
     }
 
     public class jASSESSMENT_IRP
@@ -823,7 +859,7 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public int? Response { get; set; }
 
         [StringLength(500)]
-        public string Comment { get; set; }
+        public String Comment { get; set; }
     }
 
     public class jDIAGRAM_CONTAINER
@@ -831,24 +867,24 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public int Container_Id { get; set; }
 
         [StringLength(50)]
-        public string ContainerType { get; set; }
+        public String ContainerType { get; set; }
 
         [StringLength(250)]
-        public string Name { get; set; }
+        public String Name { get; set; }
 
         public bool Visible { get; set; }
 
         [StringLength(50)]
-        public string DrawIO_id { get; set; }
+        public String DrawIO_id { get; set; }
 
         public int Assessment_Id { get; set; }
 
-        public string Universal_Sal_Level { get; set; }
+        public String Universal_Sal_Level { get; set; }
 
         public int Parent_Id { get; set; }
 
         [StringLength(50)]
-        public string Parent_Draw_IO_Id { get; set; }
+        public String Parent_Draw_IO_Id { get; set; }
     }
 
     public class jASSESSMENT_DIAGRAM_COMPONENTS
@@ -860,18 +896,218 @@ namespace CSETWebCore.Business.ImportAssessment.Models.Version_10_1
         public int Component_Symbol_Id { get; set; }
 
         [StringLength(200)]
-        public string label { get; set; }
+        public String label { get; set; }
 
         [StringLength(50)]
-        public string DrawIO_id { get; set; }
+        public String DrawIO_id { get; set; }
 
         public Nullable<int> Zone_Id { get; set; }
 
         public Nullable<int> Layer_Id { get; set; }
 
         [StringLength(50)]
-        public string Parent_DrawIO_Id { get; set; }
+        public String Parent_DrawIO_Id { get; set; }
+    }
+    //start here new tables
+    public class jANSWER_PROFILE
+    {
+        [Required]
+        public int Profile_Id { get; set; }
+
+        public String ProfileName { get; set; }
+
+        public DateTime Profile_Date { get; set; }
+    }
+    public class jCIS_CSI_ORGANIZATION_DEMOGRAPHICS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        public bool Motivation_CRR { get; set; }
+
+        public String Motivation_CRR_Description { get; set; }
+        public bool Motivation_RRAP { get; set; }
+
+        public String Motivation_RRAP_Description { get; set; }
+        public bool Motivation_Organization_Request { get; set; }
+
+        public String Motivation_Organization_Request_Description { get; set; }
+        public bool Motivation_Law_Enforcement_Request { get; set; }
+
+        public String Motivation_Law_Enforcement_Description { get; set; }
+        public bool Motivation_Direct_Threats { get; set; }
+
+        public String Motivation_Direct_Threats_Description { get; set; }
+        public bool Motivation_Special_Event { get; set; }
+        public String Motivation_Special_Event_Description { get; set; }
+        public bool Motivation_Other { get; set; }
+        public String Motivation_Other_Description { get; set; }
+        public String Parent_Organization { get; set; }
+        public String Organization_Name { get; set; }
+        public String Site_Name { get; set; }
+        public String Street_Address { get; set; }
+        public DateTime? Visit_Date { get; set; }
+        public bool Completed_For_SLTT { get; set; }
+        public bool Completed_For_Federal { get; set; }
+        public bool Completed_For_National_Special_Event { get; set; }
+        public String CIKR_Sector { get; set; }
+        public String Sub_Sector { get; set; }
+        public String IT_ICS_Staff_Count { get; set; }
+        public String Cybersecurity_IT_ICS_Staff_Count { get; set; }
+
+    }
+    public class jCIS_CSI_SERVICE_COMPOSITION
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [StringLength(400)]
+        public String Networks_Description { get; set; }
+        [StringLength(400)]
+        public String Services_Description { get; set; }
+        [StringLength(400)]
+        public String Applications_Description { get; set; }
+        [StringLength(400)]
+        public String Connections_Description { get; set; }
+        [StringLength(400)]
+        public String Personnel_Description { get; set; }
+        [StringLength(400)]
+        public String Other_Defining_System_Description { get; set; }
+        public int? Primary_Defining_System { get; set; }
+    }
+    public class jCIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        public int Defining_System_Id { get; set; }
+        [StringLength(400)]
+        public String Networks_Description { get; set; }
+        [StringLength(400)]
+        public String Services_Description { get; set; }
+        [StringLength(400)]
+        public String Applications_Description { get; set; }
+        [StringLength(400)]
+        public String Connections_Description { get; set; }
+        [StringLength(400)]
+        public String Personnel_Description { get; set; }
+        [StringLength(400)]
+        public String Other_Defining_System_Description { get; set; }
+        public int? Primary_Defining_System { get; set; }
+    }
+    public class jCIS_CSI_SERVICE_DEMOGRAPHICS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [StringLength(50)]
+        public String Critical_Service_Name { get; set; }
+        [StringLength(150)]
+        public String Critical_Service_Description { get; set; }
+        [StringLength(50)]
+        public String IT_ICS_Name { get; set; }
+        public bool Multi_Site { get; set; }
+        [StringLength(150)]
+        public String Multi_Site_Description { get; set; }
+        [StringLength(50)]
+        public String Budget_Basis { get; set; }
+        [StringLength(50)]
+        public String Authorized_Organizational_User_Count { get; set; }
+        [StringLength(50)]
+        public String Authorized_Non_Organizational_User_Count { get; set; }
+        [StringLength(50)]
+        public String Customers_Count { get; set; }
+        [StringLength(50)]
+        public String IT_ICS_Staff_Count { get; set; }
+        [StringLength(50)]
+        public String Cybersecurity_IT_ICS_Staff_Count { get; set; }
+    }
+    public class jCIS_CSI_USER_COUNTS
+    {
+        [Required]
+        public String User_Count { get; set; }
+        public int Sequence { get; set; }
+    }
+    public class jCOUNTY_ANSWERS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [Required]
+        public String County_FIPS { get; set; }
+
+    }
+    public class jCSAF_FILE
+    {
+        [Required]
+        public String File_Name { get; set; }
+        public byte[] Data { get; set; }
+        public double? File_Size { get; set; }
+        public DateTime? Upload_Date { get; set; }
+    }
+    public class jDEMOGRAPHIC_ANSWERS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [StringLength(100)]
+        public String Employees { get; set; }
+        [StringLength(100)]
+        public String CustomersSupported { get; set; }
+        [StringLength(100)]
+        public String GeographicScope { get; set; }
+        [StringLength(50)]
+        public String CIOExists { get; set; }
+        [StringLength(50)]
+        public String CISOExists { get; set; }
+        [StringLength(10)]
+        public String CyberTrainingProgramExists { get; set; }
+        public int? SectorId { get; set; }
+        public int? SubSectorId { get; set; }
+        [StringLength(10)]
+        public String CyberRiskService { get; set; }
+    }
+    public class jMETRO_ANSWERS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [Required]
+        public String Metro_FIPS { get; set; }
+    }
+    public class jNETWORK_WARNINGS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [Required]
+        public int Id { get; set; }
+
+        public String WarningText { get; set; }
+    }
+    public class jREGION_ANSWERS
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [Required]
+        [StringLength(50)]
+        public String State { get; set; }
+        [Required]
+        [StringLength(50)]
+        public String RegionCode { get; set; }
+    }
+    public class jREPORT_DETAIL_SECTION_SELECTION
+    {
+        [Required]
+        public int Report_Section_Id { get; set; }
+        [StringLength(250)]
+        public String Display_Name { get; set; }
+        public int Display_Order { get; set; }
+        public int Report_Order { get; set; }
+        [StringLength(500)]
+        public String Tool_Tip { get; set; }
+    }
+    public class jREPORT_OPTIONS_SELECTION
+    {
+        [Required]
+        public int Assessment_Id { get; set; }
+        [Required]
+        public int Report_Option_Id { get; set; }
+        public bool Is_Selected { get; set; }
     }
 }
+
 
 

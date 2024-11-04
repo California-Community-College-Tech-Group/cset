@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +28,23 @@ import { PageVisibilityService } from './page-visibility.service';
 import { MatTreeNestedDataSource } from '@angular/material/tree';
 import { NestedTreeControl } from '@angular/cdk/tree';
 import { of as observableOf, BehaviorSubject } from "rxjs";
+import { TranslocoService } from '@ngneat/transloco';
+import { CieService } from '../cie.service';
+import { SsgService } from '../ssg.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NavTreeService {
+  
 
   dataSource: MatTreeNestedDataSource<NavTreeNode> = new MatTreeNestedDataSource<NavTreeNode>();
-  dataChange: BehaviorSubject<NavTreeNode[]> = new BehaviorSubject<NavTreeNode[]>([]);
+  dataChange$ = new BehaviorSubject<NavTreeNode[]>([]);
   tocControl: NestedTreeControl<NavTreeNode>;
 
   workflow: Document
+
+  sideNavScrollLocation = 0;
 
   public currentPage: string;
 
@@ -48,12 +54,15 @@ export class NavTreeService {
 
   constructor(
     private assessSvc: AssessmentService,
-    private pageVisibliltySvc: PageVisibilityService
+    private pageVisibliltySvc: PageVisibilityService,
+    private tSvc: TranslocoService,
+    private ssgSvc: SsgService,
+    private cieSvc: CieService
   ) {
     // set up the mat tree control and its data source
     this.tocControl = new NestedTreeControl<NavTreeNode>(this.getChildren);
     this.dataSource = new MatTreeNestedDataSource<NavTreeNode>();
-    this.dataChange.subscribe(data => {
+    this.dataChange$.subscribe(data => {
       this.dataSource.data = data;
       this.tocControl.dataNodes = data;
       this.tocControl.expandAll();
@@ -68,24 +77,27 @@ export class NavTreeService {
    */
   buildTree(workflow: Document, magic: string) {
     if (this.magic !== magic) {
-      console.log('buildTree - magic compare failed');
-      //return;
+      console.warn('buildTree - magic compare failed');
+      return;
+    }
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.cieSvc.exampleExpanded = this.tocControl.isExpanded(this.findInTree(this.tocControl.dataNodes, 'cie-example'));
+      this.cieSvc.tutorialExpanded = this.tocControl.isExpanded(this.findInTree(this.tocControl.dataNodes, 'tutorial-cie'));
     }
 
     this.workflow = workflow;
 
-    if (localStorage.getItem('tree')) {
-      let tree: any = this.parseTocData(JSON.parse(localStorage.getItem('tree')));
-      this.dataSource.data = <NavTreeNode[]>tree;
-    } else {
-      this.dataSource.data = this.buildTocData();
-    }
+    this.dataSource.data = this.buildTocData();
     this.tocControl.dataNodes = this.dataSource.data;
 
-    localStorage.setItem('tree', JSON.stringify(this.dataSource.data));
     this.setQuestionsTree();
 
     this.tocControl.expandAll();
+
+    // remembers state of ToC dropdown for CIE
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.applyCieToCStates();
+    }
 
     this.isNavLoading = false;
   }
@@ -95,7 +107,7 @@ export class NavTreeService {
    */
   buildTocData(): NavTreeNode[] {
     const toc: NavTreeNode[] = [];
-
+    if (!this.workflow) return toc;
     this.domToNav(this.workflow.documentElement.children, toc);
 
     return toc;
@@ -109,23 +121,35 @@ export class NavTreeService {
   domToNav(domNodes: HTMLCollection, navNodes: NavTreeNode[]) {
     Array.from(domNodes).forEach((workflowNode: HTMLElement) => {
 
-      // nodes without a 'displaytext' attribute are ignored
-      if (!!workflowNode.attributes['displaytext']) {
+      // nodes without a 'displaytext' or 'd' attribute are ignored
+      if (!!workflowNode.attributes['displaytext'] || !!workflowNode.attributes['d']) {
+
+        let displaytext = workflowNode.attributes['displaytext']?.value;
+        
+        // localize the 'd' attribute
+        let d = workflowNode.attributes['d']?.value;
+        if (!!d) {
+          displaytext = this.tSvc.translate(`titles.${d}`);
+        }
+        
+        // plug in the applicable SSG description
+        let ssg = workflowNode.attributes['ssg']?.value ?? false;
+        if (!!ssg) {
+          displaytext = this.tSvc.translate(`titles.${d}.${this.ssgSvc.ssgSimpleSectorLabel()}`);
+        }
 
         const navNode: NavTreeNode = {
-          label: workflowNode.attributes['displaytext'].value,
+          label: displaytext,
           value: workflowNode.id ?? 0,
           children: [],
           expandable: true,
-          visible: true
+          visible: true,
+          enabled: true
         };
-
-
-        // TODO
         navNode.visible = this.pageVisibliltySvc.showPage(workflowNode);
-
-
-
+        if (navNode.visible) {
+          navNode.enabled = this.pageVisibliltySvc.isEnabled(workflowNode);
+        }
         // the node might need tweaking based on certain factors
         this.adjustNavNode(navNode);
 
@@ -147,9 +171,20 @@ export class NavTreeService {
    */
   adjustNavNode(node: NavTreeNode) {
     if (node.value == 'maturity-questions') {
-      const alias = this.assessSvc.assessment?.maturityModel?.questionsAlias;
+      // Models may use a specific term (alias) for "questions" or "practices"
+      const alias = this.assessSvc.assessment?.maturityModel?.questionsAlias?.toLowerCase();
       if (!!alias) {
-        node.label = alias;
+        node.label = this.tSvc.translate(`titles.${alias}`);
+      }
+    }
+
+    if (node.value == 'standard-questions') {
+      const mode = this.assessSvc.applicationMode?.toLowerCase();
+      if (mode == 'q') {
+        node.label = this.tSvc.translate('titles.standard questions');
+      }
+      if (mode == 'r') {
+        node.label = this.tSvc.translate('titles.standard requirements');
       }
     }
   }
@@ -165,7 +200,11 @@ export class NavTreeService {
       this.tocControl.dataNodes = this.dataSource.data;
     }
   }
-
+  clearNoMatterWhat() {
+    this.isNavLoading = true;
+    this.dataSource.data = null;
+    this.tocControl.dataNodes = this.dataSource.data;
+  }
 
 
   /**
@@ -182,7 +221,6 @@ export class NavTreeService {
    */
   setQuestionsTree() {
     const d = this.dataSource.data;
-    this.dataSource.data = null;
     this.dataSource.data = d;
   }
 
@@ -211,25 +249,6 @@ export class NavTreeService {
     return node.children?.length > 0;
   }
 
-  /**
-   *
-   */
-  parseTocData(tree): NavTreeNode[] {
-    let navTree: NavTreeNode[] = [];
-    for (let i = 0; i < tree.length; i++) {
-      let p = tree[i];
-
-      const node: NavTreeNode = {
-        label: p.label,
-        value: p.value,
-        children: p.children,
-        expandable: p.expandable,
-        visible: p.visible
-      };
-      navTree.push(node);
-    }
-    return navTree;
-  }
 
   /**
   * Clear any current page and mark the new one.
@@ -241,10 +260,11 @@ export class NavTreeService {
 
     setTimeout(() => {
       const currentNode = this.findInTree(this.dataSource.data, id);
-
       if (!!currentNode) {
         currentNode.isCurrent = true;
         this.currentPage = currentNode.value;
+
+        this.setSideNavScrollLocation(currentNode.value);
       }
     }, delay);
   }
@@ -254,6 +274,7 @@ export class NavTreeService {
    * Sets all nodes in the tree to NOT be current
    */
   clearCurrentPage(tree: NavTreeNode[]) {
+    this.getSideNavScrollLocation()
     this.currentPage = '';
 
     if (!tree) {
@@ -295,4 +316,99 @@ export class NavTreeService {
 
     return result;
   }
+
+  getSideNavScrollLocation() {
+    const sideNav = document.getElementsByClassName("mat-drawer-inner-container");
+    if (sideNav.length > 0) {
+      this.sideNavScrollLocation = sideNav[0].scrollTop;
+    }
+  }
+
+  /**
+   * 
+   */
+  setSideNavScrollLocation(targetId: string) {
+    const sideNavQ = document.getElementsByClassName("mat-drawer-inner-container");
+    if (sideNavQ.length == 0) {
+      return;
+    }
+    const scrollDiv = sideNavQ[0];
+
+    // Scroll to the last known position
+    scrollDiv.scrollTo(0, this.sideNavScrollLocation);
+
+    // If needed, scroll into view
+    this.scrollElementIntoView(targetId, scrollDiv);
+  }
+
+  /**
+   * Move the scroll position into view.
+   */
+  scrollElementIntoView(targetId: string, scrollDiv: Element) {
+    const element = document.getElementById(targetId);
+    if (!element) {
+      return;
+    }
+
+    const parent = element.closest('mat-sidenav');
+    if (!parent) {
+      return;
+    }
+
+    // Get the bounding rectangles of the parent and child views
+    const parentRect = parent.getBoundingClientRect()
+    const childRect = element.getBoundingClientRect();
+
+    // Calculate the relative top and bottom positions of the sidenav view
+    const distanceToTop = childRect.top - parentRect.top + parent.scrollTop;
+    const distanceToBottom = parentRect.bottom - childRect.bottom - parent.scrollTop;
+
+    // If the target is already in view then do nothing
+    if (distanceToTop >= 0 && distanceToBottom >= 0) {
+      return;
+    }
+
+    // Initialize desired scroll position
+    let desiredScrollTop = 0;
+
+    // If target is above top edge then calculate the desired scroll position
+    if (distanceToTop < 0) {
+      desiredScrollTop = scrollDiv.scrollTop + distanceToTop - 3;
+    }
+
+    // If target is below bottom edge then calculate the desired scroll position
+    if (distanceToBottom < 0) {
+      desiredScrollTop = scrollDiv.scrollTop - distanceToBottom + 6;
+    }
+
+    // Enforce scroll bounds (prevent negative scrolling)
+    const scrollTop = Math.max(desiredScrollTop, 0);
+
+    // Scroll to desired position (smooth animation is optional)
+    scrollDiv.scrollTo({
+      top: scrollTop,
+      behavior: 'smooth' // Add 'smooth' for smooth scrolling animation
+    });
+  }
+
+  /**
+   * retains CIE Tutorial and Example section states between tree builds
+   */
+  applyCieToCStates() {
+    let node = this.findInTree(this.tocControl.dataNodes, 'tutorial-cie');
+
+    if (this.cieSvc.tutorialExpanded == null || !this.cieSvc.tutorialExpanded) {
+      if (node != null) this.tocControl.collapse(node);
+    }
+    else if (node != null) this.tocControl.expand(node);
+
+    node = this.findInTree(this.tocControl.dataNodes, 'cie-example');
+
+    if (this.cieSvc.exampleExpanded == null || !this.cieSvc.exampleExpanded) {
+      if (node != null) this.tocControl.collapse(node);
+    }
+    else if (node != null) this.tocControl.expand(node);
+  }
+
+  
 }

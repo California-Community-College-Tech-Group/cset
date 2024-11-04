@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,11 @@
 //
 ////////////////////////////////
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
 import { CodeEditorComponent, CodeEditorService, CodeModel } from '@ngstack/code-editor';
 import { saveAs } from 'file-saver';
 import { editor } from 'monaco-editor/esm/vs/editor/editor.api';
-import { interval, Subject, Subscription, timer } from 'rxjs';
-import { debounce } from 'rxjs/operators/debounce';
-import { startWith } from 'rxjs/operators/startWith';
-import { debounceTime, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import * as screenfull from "screenfull";
 import { Screenfull } from "screenfull";
 import { FileItem, FileUploader } from 'ng2-file-upload';
@@ -216,7 +213,7 @@ export class ImportComponent implements OnInit, OnDestroy {
         }
       },
       e => {
-        console.log(e)
+        console.error(e)
         for (let key in e.error.errors) {
           this.errors.push(`${e.error.errors[key]}`);
         }
@@ -228,7 +225,7 @@ export class ImportComponent implements OnInit, OnDestroy {
   public clearForm() {
     this.uploader.clearQueue();
     this.moduleCode = '';
-    this.codeModel.value = '';
+    this.codeModel = { ...this.jsonCodeModel };
     this.state = 'Ready';
     this.errors = [];
     this.subscriptions.forEach(s => s.unsubscribe());
@@ -251,7 +248,6 @@ export class ImportComponent implements OnInit, OnDestroy {
   constructor(
     private configSvc: ConfigService,
     private fileClient: FileUploadClientService,
-    private sanitizer: DomSanitizer,
     private editorService: CodeEditorService
   ) {
     // hardcoding the polyfill here, as ugly as that is TODO:  Remove
@@ -305,12 +301,12 @@ export class ImportComponent implements OnInit, OnDestroy {
       return promise;
     };
     this.initializeUploader();
-    this.codeModel = this.jsonCodeModel;
+    this.codeModel = { ...this.jsonCodeModel };
 
   }
 
   ngOnInit() {
-    if(this.uploader===undefined) {
+    if (this.uploader === undefined) {
       this.initializeUploader();
     };
   }
@@ -319,8 +315,8 @@ export class ImportComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach(s => s.unsubscribe());
   }
 
-  private initializeUploader(){
-    this.referenceUrl = this.configSvc.apiUrl + 'ReferenceDocument';
+  private initializeUploader() {
+    this.referenceUrl = this.configSvc.refDocUrl;
 
     this.uploader = new FileUploader({
       url: this.referenceUrl,
@@ -397,7 +393,7 @@ export class ImportComponent implements OnInit, OnDestroy {
     });
   }
 
-  public showError(){
-    return this.state!='Processing'&&editor&&editor.getModelMarkers({}).length|| this.errors.length;
+  public showError() {
+    return this.state != 'Processing' && editor && editor.getModelMarkers({}).length || this.errors.length;
   }
 }

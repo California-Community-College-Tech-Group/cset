@@ -1,6 +1,6 @@
 /*
 
-  Copyright 2023 Battelle Energy Alliance, LLC
+  Copyright 2024 Battelle Energy Alliance, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -96,6 +96,11 @@ body {
 
 
 .MarkedFlag {
+  width: 15px;
+  height: auto;
+}
+
+.Filter {
   width: 15px;
   height: auto;
 }
@@ -419,7 +424,7 @@ table.table-site-info {
 }
 
 table.table-site-info td {
-  padding:.3rem;
+  padding: .3rem;
   vertical-align: top;
 }
 
@@ -472,8 +477,11 @@ table.td-padding-half-rem td {
   padding: .5rem;
 }
 
-.shaded-red {
+.shaded-red td {
   background-color: #ffe7e7;
+  @media print {
+     background-color: #ffe7e7 !important;
+  }
 }
 
 .text-underline {
@@ -508,9 +516,7 @@ table.td-padding-half-rem td {
   vertical-align: top;
   font-weight: bold;
   font-size: 130%;
-  color: #777676;
   padding-right: .5em;
-  font-family: 'Courier New', Courier, monospace;
 }
 
 .concern-list tr>td {
@@ -625,7 +631,7 @@ table.td-padding-half-rem td {
 }
 
 /**
-  *Maturity Model graph Styleing
+  *Maturity Model chart styling
   */
 .step-graph-chart {
   transform: translate(-38px, -216px);
@@ -1732,6 +1738,10 @@ div.function-statement {
   display: flex;
 }
 
+.cmu-header-logo {
+  width: 20%;
+  height: auto;
+}
 
 
 
@@ -1831,16 +1841,33 @@ div.spinner-size-50 {
 
 
 
+
+
+
+///   CIE Styles ////////////////////////////////////////////////
+.cie-questions-header-collapse-button-radius {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.cie-questions-header-expand-button-radius {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+
+
 /// nested formatting ///////////////////////////////////
 .nested-question-title {
   font-weight: bold;
 }
 
-.nested-question-text, .nested-question-text p {
+.nested-question-text,
+.nested-question-text p {
   margin-bottom: 1rem;
 }
 
-.nested-option-block, .nested-option-block p {
+.nested-option-block,
+.nested-option-block p {
   margin-bottom: 1rem !important;
 }
 
@@ -2128,19 +2155,16 @@ div.spinner-size-50 {
 
 /////////// custom checkbox and radio styles
 
-$secondary-color: #777;
+$secondary-color: #094997;
 
 .checkbox-custom,
 .radio-custom {
   opacity: 0;
-  position: absolute;
+  display: none;
 }
 
-.checkbox-custom,
 .checkbox-custom-label,
-.radio-custom,
 .radio-custom-label {
-  display: inline-block;
   display: flex;
   vertical-align: middle;
   margin: 5px;
@@ -2187,5 +2211,46 @@ $secondary-color: #777;
   box-shadow: 0 0 3pt 2pt #8bb4f8;
 }
 
-//////////////////////////////////////////////////////////////////
+.checkbox-custom:disabled+.checkbox-custom-label,
+.radio-custom:disabled+.radio-custom-label {
+  cursor: unset;
+}
 
+.checkbox-custom:disabled+.checkbox-custom-label:before,
+.radio-custom:disabled+.radio-custom-label:before {
+  border-color: lighten($secondary-color, 35%);
+}
+
+.checkbox-custom:disabled:checked+.checkbox-custom-label:before,
+.radio-custom:disabled+.radio-custom-label:before {
+  background-color: lighten($secondary-color, 35%);
+}
+
+//
+
+.btn-secondary {
+  background-color: #d9d9d9;
+  color: #262626;
+  height: fit-content;
+}
+
+.btn-secondary:hover {
+  background-color: $secondary-color;
+  border-color: $secondary-color;
+  color: white;
+  fill: white;
+}
+
+.btn-secondary > Label {
+  font-weight: 500;
+}
+
+.btn-secondary:hover > Label {
+  color: white;
+  fill: white;
+}
+
+.btn-secondary:disabled {
+  fill: white;
+}
+//////////////////////////////////////////////////////////////////

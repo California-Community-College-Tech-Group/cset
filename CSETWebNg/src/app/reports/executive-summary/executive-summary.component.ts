@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,10 @@ import { ReportService } from '../../services/report.service';
 import { Title } from '@angular/platform-browser';
 import { AcetDashboard } from '../../models/acet-dashboard.model';
 import { ACETService } from '../../services/acet.service';
-import  Chart  from 'chart.js/auto';
+import Chart from 'chart.js/auto';
 import { ConfigService } from '../../services/config.service';
+import { AssessmentService } from '../../services/assessment.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 
 @Component({
@@ -43,7 +45,7 @@ export class ExecutiveSummaryComponent implements OnInit {
   chartStandardsSummary: Chart;
   //canvasStandardResultsByCategory: Chart;
   responseResultsByCategory: any;
-
+  translationSub: any; 
 
   // Charts for Components
   componentCount = 0;
@@ -65,11 +67,19 @@ export class ExecutiveSummaryComponent implements OnInit {
     public analysisSvc: ReportAnalysisService,
     private titleService: Title,
     public acetSvc: ACETService,
-    public configSvc: ConfigService
+    private assessmentSvc: AssessmentService,
+    public configSvc: ConfigService,
+    public tSvc: TranslocoService, 
+    private translocoService: TranslocoService
   ) { }
 
   ngOnInit() {
+
     this.titleService.setTitle("Executive Summary - " + this.configSvc.behaviors.defaultTitle);
+
+    this.translationSub = this.translocoService.selectTranslate('')
+        .subscribe(value => 
+        this.titleService.setTitle(this.tSvc.translate('reports.core.executive summary.report title') + ' - ' + this.configSvc.behaviors.defaultTitle));
 
     this.reportSvc.getReport('executive').subscribe(
       (r: any) => {
@@ -80,10 +90,10 @@ export class ExecutiveSummaryComponent implements OnInit {
 
 
     this.tempChart = Chart.getChart('canvasComponentTypes');
-    if(this.tempChart){
+    if (this.tempChart) {
       this.tempChart.destroy();
     }
-    
+
     // Component Types (stacked bar chart)
     this.analysisSvc.getComponentTypes().subscribe(x => {
       this.componentCount = x.labels.length;
@@ -92,21 +102,28 @@ export class ExecutiveSummaryComponent implements OnInit {
       }, 0);
     });
 
-    this.acetSvc.getAcetDashboard().subscribe(
-      (data: AcetDashboard) => {
-        this.acetDashboard = data;
+    if (['ACET', 'ISE'].includes(this.assessmentSvc.assessment?.maturityModel?.modelName)) {
+      this.acetSvc.getAcetDashboard().subscribe(
+        (data: AcetDashboard) => {
+          this.acetDashboard = data;
 
-        for (let i = 0; i < this.acetDashboard.irps.length; i++) {
-          this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
-        }
-      },
-      error => {
-        console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-        console.log('Error getting all documents: ' + (<Error>error).stack);
-      });
+          for (let i = 0; i < this.acetDashboard.irps.length; i++) {
+            this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
+          }
+        },
+        error => {
+          console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+          console.log('Error getting all documents: ' + (<Error>error).stack);
+        });
+    }
   }
 
   usesRAC() {
     return !!this.responseResultsByCategory?.dataSets.find(e => e.label === 'RAC');
   }
+
+  ngOnDestroy() {
+    this.translationSub.unsubscribe()
+}
+
 }

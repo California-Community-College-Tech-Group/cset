@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -17,7 +17,7 @@ namespace CSETWebCore.Model.Diagram
 
         /// <remarks/>
         [System.Xml.Serialization.XmlElementAttribute("mxCell", typeof(mxGraphModelRootMxCell))]
-        [System.Xml.Serialization.XmlElementAttribute("object", typeof(mxGraphModelRootObject))]
+        [System.Xml.Serialization.XmlElementAttribute("UserObject", typeof(mxGraphModelRootObject))]
         public object[] Items
         {
             get

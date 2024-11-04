@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,24 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { AssessmentService } from '../../services/assessment.service';
 import { AuthenticationService } from '../../services/authentication.service';
 import { AggregationService } from '../../services/aggregation.service';
 import { MatDialogRef } from '@angular/material/dialog';
+import { forEach, remove } from 'lodash';
+
 
 interface UserAssessment {
   assessmentId: number;
   assessmentName: string;
   assessmentCreatedDate: string;
   selected: boolean;
+  useMaturity: boolean;
+  selectedMaturityModel: string;
+
+  // used to filter selectable assessments in the list
+  disabled: boolean;
 }
 
 @Component({
@@ -42,6 +49,11 @@ export class SelectAssessmentsComponent implements OnInit {
 
   assessments: UserAssessment[];
   aggregation: any = {};
+
+  selectedMaturityModel?: string = null;
+  standardSelected: boolean = false;
+
+  @ViewChild('refreshComponent') refreshComponent;
 
   /**
    * CTOR
@@ -60,6 +72,9 @@ export class SelectAssessmentsComponent implements OnInit {
     this.getAssessmentsForUser();
   }
 
+  /**
+   * Requests a list of the user's assessments 
+   */
   getAssessmentsForUser() {
     this.assessmentSvc.getAssessments().subscribe((resp: UserAssessment[]) => {
       this.assessments = resp;
@@ -70,6 +85,10 @@ export class SelectAssessmentsComponent implements OnInit {
         resp2.assessments.forEach(selectedAssess => {
           this.assessments.find(x => x.assessmentId === selectedAssess.assessmentId).selected = true;
         });
+
+        this.checkSelectedType();
+        this.filterAssessments();
+        this.refreshComponent.refresh();
       });
     },
       error =>
@@ -82,6 +101,52 @@ export class SelectAssessmentsComponent implements OnInit {
   }
 
   /**
+   * Sets a component-level indicator for a selected maturity model
+   * or any selected standard-based assessment, whichever is found first.
+   */
+  checkSelectedType() {
+    this.selectedMaturityModel = null;
+    this.standardSelected = false;
+
+    for (let element of this.assessments) {
+      if (element.selected) {
+        if (element.useMaturity) {
+          this.selectedMaturityModel = element.selectedMaturityModel;
+          return;
+        }
+
+        this.standardSelected = true;
+        return;
+      }
+    }
+  }
+
+  /**
+   * Sets a 'disabled' flag for assessments that are not compatible
+   * with whatever has been selected, e.g., any standard or a specific
+   * maturity model.
+   */
+  filterAssessments() {
+    for (let element of this.assessments) {
+      element.disabled = false;
+
+      if (!!this.selectedMaturityModel) {
+        if (!element.useMaturity) {
+          element.disabled = true;
+        } else if (element.selectedMaturityModel != this.selectedMaturityModel) {
+          element.disabled = true;
+        }
+      }
+      
+      if (!!this.standardSelected) {
+        if (element.useMaturity) {
+          element.disabled = true;
+        }
+      }
+    }
+  }
+
+  /**
    * Call the API to manage connections between aggregation and assessment.
    * @param event
    * @param assessment
@@ -89,6 +154,9 @@ export class SelectAssessmentsComponent implements OnInit {
   toggleSelection(event, assessment) {
     this.aggregationSvc.saveAssessmentSelection(event.target.checked, assessment).subscribe((resp: any) => {
       this.aggregation = resp;
+
+      // refresh the assessment list
+      this.getAssessmentsForUser();
     });
   }
 

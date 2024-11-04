@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -136,7 +136,7 @@ export class AggregationService {
     const agg = this.currentAggregation;
     const aggForSubmit = {
       aggregationId: agg.aggregationId,
-      aggregationName: agg.aggregationName.substring(0,99),
+      aggregationName: agg.aggregationName.substring(0, 99),
       aggregationDate: agg.aggregationDate
     };
     return this.http.post(this.apiUrl + 'update', aggForSubmit);
@@ -161,11 +161,15 @@ export class AggregationService {
 
   saveAssessmentAlias(assessment: any, aliasData: any[]) {
     return this.http.post(this.apiUrl + 'saveassessmentalias',
-      { aliasAssessment: assessment, assessmentList: aliasData });
+      { aliasAssessment: assessment, assessmentList: aliasData }, { responseType: 'text' });
   }
 
   getAnswerTotals(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/getanswertotals?aggregationID='+ aggId, '');
+    return this.http.post(this.apiUrl + 'analysis/getanswertotals?aggregationID=' + aggId, '');
+  }
+
+  getMaturityAnswerTotals(aggId) {
+    return this.http.post(this.apiUrl + 'analysis/getmaturityanswertotals?aggregationID=' + aggId, '');
   }
 
 
@@ -173,19 +177,19 @@ export class AggregationService {
   ////////////////////////////////  Trend  //////////////////////////////////
 
   getOverallComplianceScores(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/overallcompliancescore', {aggregationID:aggId});
+    return this.http.post(this.apiUrl + 'analysis/overallcompliancescore', { aggregationID: aggId });
   }
 
   getTrendTop5(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/top5', {aggregationID:aggId});
+    return this.http.post(this.apiUrl + 'analysis/top5', { aggregationID: aggId });
   }
 
   getTrendBottom5(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/bottom5', {aggregationID:aggId});
+    return this.http.post(this.apiUrl + 'analysis/bottom5', { aggregationID: aggId });
   }
 
   getCategoryPercentageComparisons(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/categorypercentcompare?aggregationID='+aggId, {});
+    return this.http.post(this.apiUrl + 'analysis/categorypercentcompare?aggregationID=' + aggId, {});
   }
 
 
@@ -209,7 +213,7 @@ export class AggregationService {
   }
 
   getCategoryAverages(aggId) {
-    return this.http.post(this.apiUrl + 'analysis/categoryaverages?aggregationID='+ aggId, {});
+    return this.http.post(this.apiUrl + 'analysis/categoryaverages?aggregationID=' + aggId, {});
   }
 
   getAggregationMaturity(aggId) {
@@ -229,7 +233,13 @@ export class AggregationService {
     return this.http.post(this.apiUrl + 'analysis/getbesttoworst', '');
   }
 
+  getMaturityMissedQuestions() {
+    return this.http.post(this.apiUrl + 'getmaturitymissedquestions', {});
+  }
 
+  getMaturityBestToWorst() {
+    return this.http.post(this.apiUrl + 'analysis/getmaturitybesttoworst', '');
+  }
 
 
   //////////////////////////////// Merge //////////////////////////////////////

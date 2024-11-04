@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -42,14 +42,17 @@ export class LayoutService {
     '/home/login-access',
     '/home/reset-pass',
     '/home/login/eject',
-    '/home/privacy-warning'
+    '/home/privacy-warning',
+    '/home/privacy-warning-reject'
   ];
 
   routesWithHiddenFooter = [
     '/home/login',
     '/home/login-access',
     '/home/reset-pass',
-    '/home/login/eject'
+    '/home/login/eject',
+    '/home/privacy-warning',
+    '/home/privacy-warning-reject'
   ];
 
   /**
@@ -69,7 +72,7 @@ export class LayoutService {
    */
   isNavHeaderShown(url: string) {
     if (!this.authSvc.userToken() || this.authSvc.userToken() == 'null') {
-        return false;
+      return false;
     }
 
     return this.routesWithHiddenHeader.indexOf(url) < 0;

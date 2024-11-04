@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,10 @@ import { Title } from '@angular/platform-browser';
 import { AssessmentService } from '../../../services/assessment.service';
 import { ConfigService } from '../../../services/config.service';
 import { CpgService } from '../../../services/cpg.service';
+import { SsgService } from '../../../services/ssg.service';
 import { MaturityService } from '../../../services/maturity.service';
 import { QuestionsService } from '../../../services/questions.service';
-import { RraDataService } from '../../../services/rra-data.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'app-cpg-deficiency',
@@ -37,13 +38,15 @@ import { RraDataService } from '../../../services/rra-data.service';
 })
 export class CpgDeficiencyComponent implements OnInit {
 
+  cpgModelId = 11;
+
   loading = false;
 
   /**
    * Sorry for hardcoding the cpgPracticeTag,
    * but the purpose is to get the hardcoded HTML out of the question text,
    * so look at this if wonky stuff is happening with question text stuff
-  */  
+  */
   cpgPracticeTag: string = '<p class="cpg-practice">';
 
   assessmentName: string;
@@ -52,45 +55,48 @@ export class CpgDeficiencyComponent implements OnInit {
   facilityName: string;
 
   info: any;
+
+  // deficient answers in the principal model
   def: any;
 
   /**
    * 
    */
   constructor(
-    public rraDataSvc: RraDataService,
+    public assessSvc: AssessmentService,
     public titleSvc: Title,
     public maturitySvc: MaturityService,
-    private assessSvc: AssessmentService,
     public questionsSvc: QuestionsService,
     public cpgSvc: CpgService,
-    public configSvc: ConfigService
+    public ssgSvc: SsgService,
+    public configSvc: ConfigService,
+    public tSvc: TranslocoService
   ) { }
 
   /**
    * 
    */
   ngOnInit(): void {
-    this.titleSvc.setTitle("CPG Deficiencies - " + this.configSvc.behaviors.defaultTitle);
+    this.loading = true;
 
-    this.maturitySvc.getMaturityDeficiency('CPG').subscribe((resp: any) => {
+    this.titleSvc.setTitle(this.tSvc.translate('reports.core.cpg.deficiency.cpg deficiency') + " - " + this.configSvc.behaviors.defaultTitle);
+
+    // make sure that the assessSvc has the assessment loaded so that we can determine any SSG model applicable
+    this.assessSvc.getAssessmentDetail().subscribe((assessmentDetail: any) => {
+      this.assessSvc.assessment = assessmentDetail;
+    });
+
+    // get the deficient answers for the CPG model
+    this.maturitySvc.getMaturityDeficiency(this.cpgModelId).subscribe((resp: any) => {
       this.info = resp.information;
-      this.def = resp.deficienciesList;
-
       this.assessmentName = this.info.assessment_Name;
       this.assessmentDate = this.info.assessment_Date;
       this.assessorName = this.info.assessor_Name;
       this.facilityName = this.info.facility_Name;
+      
+      this.def = resp.deficienciesList;
 
-      this.loading = true;
-    })
+      this.loading = false;
+    });
   }
-
-  parseQuestionText(textWithHtml: string) {
-    let startOfRealText = textWithHtml.indexOf(this.cpgPracticeTag)+this.cpgPracticeTag.length;
-    let endOfRealText = textWithHtml.indexOf('<', startOfRealText);
-
-    return textWithHtml.substring(startOfRealText, endOfRealText);
-  }
-
 }

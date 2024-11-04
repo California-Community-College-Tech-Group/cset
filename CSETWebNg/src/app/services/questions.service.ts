@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,12 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 // eslint-disable-next-line max-len
-import { Answer, DefaultParameter, ParameterForAnswer, Domain, Category, SubCategoryAnswers, QuestionResponse, SubCategory, Question } from '../models/questions.model';
+import { Answer, DefaultParameter, ParameterForAnswer, Category, SubCategoryAnswers, QuestionResponse, SubCategory, Question } from '../models/questions.model';
 import { ConfigService } from './config.service';
 import { AssessmentService } from './assessment.service';
 import { QuestionFilterService } from './filtering/question-filter.service';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
+import { TranslocoService } from '@ngneat/transloco';
 
 const headers = {
   headers: new HttpHeaders()
@@ -68,11 +69,10 @@ export class QuestionsService {
   constructor(
     private http: HttpClient,
     private configSvc: ConfigService,
+    private tSvc: TranslocoService,
     private assessmentSvc: AssessmentService,
     private questionFilterSvc: QuestionFilterService
-  ) {
-    this.initializeAnswerButtonDefs();
-  }
+  ) { }
 
   /**
    * The page can store its model here for accessibility by question-extras
@@ -103,7 +103,7 @@ export class QuestionsService {
    *
    */
   getComponentQuestionsList() {
-    return this.http.get(this.configSvc.apiUrl + 'componentquestionlist', headers);
+    return this.http.get(this.configSvc.apiUrl + 'componentquestionlist?skin=' + this.configSvc.installationMode, headers);
   }
 
   /**
@@ -126,29 +126,46 @@ export class QuestionsService {
    * Grab all the child question's answers for a specific parent question.
    * Currently set up for use in an ISE assessment.
   */
-  getActionItems(parentId: number, finding_id: number) {
+  getActionItems(parentId: number, observation_id: number) {
     headers.params = headers.params.set('parentId', parentId);
-    return this.http.get(this.configSvc.apiUrl + 'GetActionItems?finding_id=' + finding_id, headers);
+    return this.http.get(this.configSvc.apiUrl + 'GetActionItems?finding_id=' + observation_id, headers);
   }
 
   /**
    * Analyzes the current 'auto load supplemental' preference and the maturity model
    */
-  autoLoadSupplemental(modelId?: number) {
+  autoLoadSupplemental(model?: any) {
     // first see if it should be forced on by configuration
     if (this.configSvc.config.supplementalAutoloadInitialValue) {
       return true;
     }
 
     // standards (modelid is null) - check the checkbox state
-    if (!modelId) {
+    if (!model) {
       return this.autoLoadSuppCheckboxState;
     }
 
-    // CPG - auto load supplemental
-    if (modelId == 11) {
+    // check the model's configuration
+    const modelConfiguration = this.configSvc.config.moduleBehaviors.find(x => x.modelId == model.modelId);
+    if (modelConfiguration == null) {
+      let modelConfigurationByName = this.configSvc.config.moduleBehaviors.find(x => x.modelName == model.modelName);
+      if (modelConfigurationByName != null ? (modelConfigurationByName.autoLoadSupplemental ?? false) : false) {
+        return true;
+      }
+    }
+
+    else if (modelConfiguration.autoLoadSupplemental ?? false) {
       return true;
     }
+
+    else {
+      let modelConfigurationByModelName = this.configSvc.config.moduleBehaviors.find(x => x.moduleName == model.moduleName);
+      if (modelConfigurationByModelName != null && (modelConfiguration.autoLoadSupplemental ?? false)) {
+        return true;
+      }
+    }
+
+    
 
     return false;
   }
@@ -159,6 +176,9 @@ export class QuestionsService {
    */
   storeAnswer(answer: Answer) {
     answer.questionType = localStorage.getItem('questionSet');
+    if (this.configSvc.installationMode == 'CF') {
+      this.processNavigationDisable(answer);
+    }
     return this.http.post(this.configSvc.apiUrl + 'answerquestion', answer, headers);
   }
 
@@ -249,7 +269,6 @@ export class QuestionsService {
    *
    */
   getSubGroupingQuestionCount(subGroups: string[], modelId: number) {
-    console.log(subGroups)
     return this.http.get(this.configSvc.apiUrl + 'SubGroupingQuestionCount?subGroups=' +
       subGroups + '&modelId=' + modelId, headers);
   }
@@ -259,7 +278,7 @@ export class QuestionsService {
    */
   getAllSubGroupingQuestionCount(modelId: number, groupLevel: number) {
     return this.http.get(this.configSvc.apiUrl + 'AllSubGroupingQuestionCount?modelId=' + modelId +
-    '&groupLevel=' + groupLevel, headers);
+      '&groupLevel=' + groupLevel, headers);
   }
 
   /**
@@ -342,115 +361,95 @@ export class QuestionsService {
     return '';
   }
 
-
-  private answerButtonDefs: any[] = [];
-
-  /**
-   * Incorporates settings from config.json into the
-   * service so that answer button properties can be searched.
-   */
-  initializeAnswerButtonDefs() {
-    // load default answer set
-    this.answerButtonDefs.push({
-      modelId: 0,
-      answers: this.configSvc.config.answersDefault
-    });
-
-    this.answerButtonDefs.push({
-      modelId: 9,
-      answers: this.configSvc.config.answersMVRA
-    });
-
-    this.answerButtonDefs.push({
-      modelId: 10,
-      answers: this.configSvc.config.answersISE
-    });
-
-    this.answerButtonDefs.push({
-      modelId: 11,
-      answers: this.configSvc.config.answersCPG
-    });
-
-    this.answerButtonDefs.push({
-      modelId: 12,
-      answers: this.configSvc.config.answersC2M2
-    });
-
-    // ACET labels are only used in the ACET skin
-    this.answerButtonDefs.push({
-      skin: 'ACET',
-      modelId: 1,
-      answers: this.configSvc.config.answersACET
-    });
-  }
-
   /**
    * Finds the button definition and return its CSS
    */
-  answerOptionCss(modelId: Number, answerCode: string) {
-    return this.findAnsDefinition(modelId, answerCode).buttonCss;
+  answerOptionCss(modelName: string, answerCode: string) {
+    return this.findAnsDefinition(modelName, answerCode).buttonCss;
   }
 
   /**
    * Finds the button definition and returns its label
    */
-  answerButtonLabel(modelId: Number, answerCode: string): string {
-    return this.findAnsDefinition(modelId, answerCode).buttonLabel;
+  answerButtonLabel(modelName: string, answerCode: string): string {
+    const def = this.findAnsDefinition(modelName, answerCode);
+    return this.tSvc.translate('answer-options.button-labels.' + def.buttonLabelKey.toLowerCase());
   }
 
   /**
    * Finds the button definition and returns its tooltip, if defined.
    * If a tooltip is not defined, the button label is returned.
    */
-  answerButtonTooltip(modelId: Number, answerCode: string): string {
-    var t = this.findAnsDefinition(modelId, answerCode);
-      if (!!t.buttonTooltip) {
-        return t.buttonTooltip;
-      }
-      return t.buttonLabel;
+  answerButtonTooltip(modelName: string, answerCode: string): string {
+    var def = this.findAnsDefinition(modelName, answerCode);
+    return this.tSvc.translate('answer-options.button-tooltips.' + def.buttonLabelKey.toLowerCase());
   }
 
   /**
-   * Finds the button definition and returns its full label (tooltip)
+   * Finds the button definition and returns its full label
    */
-  answerDisplayLabel(modelId: Number, answerCode: string) {
-    const def = this.findAnsDefinition(modelId, answerCode);
-    if (!def) {
-      console.log('cannot find definition for model: ' + modelId + ', answerCode: ' + answerCode);
-      return "?";
-    }
-    return def.answerLabel;
+  answerDisplayLabel(modelName: string, answerCode: string) {
+    const def = this.findAnsDefinition(modelName, answerCode);
+    return this.tSvc.translate('answer-options.labels.' + def.buttonLabelKey.toLowerCase());
   }
 
   /**
    * Finds the answer in the default object or the model-specific object.
    * Standards questions screen pass '0' for the modelId.
    */
-  findAnsDefinition(modelId: Number, answerCode: string) {
+  findAnsDefinition(model: string, answerCode: string) {
+    let ansDef = null;
+
     // assume unanswered if null or undefined
     if (!answerCode) {
       answerCode = 'U';
     }
 
-    // first look for a skin-specific label set
-    let ans = this.answerButtonDefs.find(x => x.skin == this.configSvc.installationMode
-      && x.modelId == modelId)?.answers.find(y => y.code == answerCode);
-    if (ans) {
-      return ans;
+    // look for model-specific answer options
+    if (!!model && String(model).trim().length > 0) {
+      
+      // first try to find the model configuration using its model name
+      let modelConfiguration = this.configSvc.config.moduleBehaviors.find(x => x.moduleName == model);
+      
+      // if that didn't work, use model ID instead
+      if (!modelConfiguration) {
+        modelConfiguration = this.configSvc.config.moduleBehaviors.find(x => x.modelId == model);
+      }
+
+      if (!!modelConfiguration) {
+        // first look for a skin-specific answer option
+        ansDef = modelConfiguration.answerOptions?.find(o => o.code == answerCode && o.skin == this.configSvc.installationMode);
+        if (ansDef) {
+          return ansDef;
+        }
+
+        // or the general version of the answer option for the model
+        ansDef = modelConfiguration.answerOptions?.find(o => o.code == answerCode && !o.skin);
+        if (ansDef) {
+          return ansDef;
+        }
+      }
     }
 
-    // next, look for a model-specific label set with no skin defined
-    ans = this.answerButtonDefs.find(x => !x.skin && x.modelId == modelId)?.answers.find(y => y.code == answerCode);
-    if (ans) {
-      return ans;
+    // fallback to default options for standard-based or model-based
+    ansDef = this.configSvc.config.answerOptionsDefault.find(x => x.code == answerCode);
+    if (ansDef) {
+      return ansDef;
     }
 
-    // fallback to default definition set
-    ans = this.answerButtonDefs[0].answers.find(x => x.code == answerCode);
-    if (ans) {
-      return ans;
-    }
+    // return a dummy definition to help us spot holes in the lookup
+    return {
+      buttonLabelKey: "X",
+      buttonCss: "btn-yes"
+    };
+  }
 
-    return answerCode;
+  /**
+   * 
+   */
+  processNavigationDisable(answer: Answer) {
+    //have a list of all the 20 necessary id's
+    //then when the list is complete enable the navigation
+    this.assessmentSvc.updateAnswer(answer);
   }
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,12 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
-import { AssessmentDetail } from '../../../models/assessment-info.model';
+import { Component } from '@angular/core';
 import { AssessmentService } from '../../../services/assessment.service';
 import { ConfigService } from '../../../services/config.service';
 import { NavigationService } from '../../../services/navigation/navigation.service';
 import { NCUAService } from '../../../services/ncua.service';
-import { MatDialogRef , MatDialogModule} from '@angular/material/dialog';
+import { ACETService } from '../../../services/acet.service';
 
 @Component({
   selector: 'app-assessment-info',
@@ -36,18 +34,13 @@ import { MatDialogRef , MatDialogModule} from '@angular/material/dialog';
   // eslint-disable-next-line
   host: { class: 'd-flex flex-column flex-11a' }
 })
-export class AssessmentInfoComponent implements OnInit {
+export class AssessmentInfoComponent {
 
   constructor(
     public assessSvc: AssessmentService,
     public configSvc: ConfigService,
     public navSvc: NavigationService,
-    public ncuaSvc: NCUAService
-    ) { }
-
-
-  ngOnInit() {
-    this.navSvc.setWorkflow('omni');
-    this.navSvc.setCurrentPage('info1');
-  }
+    public ncuaSvc: NCUAService,
+    public acetSvc: ACETService
+  ) { }
 }

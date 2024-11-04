@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,12 @@ import {
 import { User } from '../models/user.model';
 import { ConfigService } from './config.service';
 import { Router } from '@angular/router';
+import { DemographicExtendedService } from './demographic-extended.service';
+import { CyberFloridaService } from './cyberflorida.service';
+import { Answer } from '../models/questions.model';
+import { BehaviorSubject } from 'rxjs';
+import { TranslocoService } from '@ngneat/transloco';
+import { ConversionService } from './conversion.service';
 
 
 export interface Role {
@@ -52,7 +58,7 @@ export class AssessmentService {
   private apiUrl: string;
   private initialized = false;
   public applicationMode: string;
-
+  public assessmentStateChanged$ = new BehaviorSubject(123);
   /**
    * This is private because we need a setter so that we can do things
    * when the assessment is loaded.
@@ -80,7 +86,11 @@ export class AssessmentService {
   constructor(
     private http: HttpClient,
     private configSvc: ConfigService,
-    private router: Router
+    private router: Router,
+    private extDemoSvc: DemographicExtendedService,
+    private floridaSvc: CyberFloridaService,
+    private tSvc: TranslocoService,
+    private convSvc: ConversionService
   ) {
     if (!this.initialized) {
       this.apiUrl = this.configSvc.apiUrl;
@@ -115,15 +125,20 @@ export class AssessmentService {
     return this.http.get(this.apiUrl + 'contacts/allroles');
   }
 
-  createAssessment(workflow: string) {
-    return this.http.get(this.apiUrl + 'createassessment?workflow=' + workflow);
+  clearFirstTime() {
+    this.http.get(this.apiUrl + 'clearFirstTime').subscribe(
+      () => {
+        console.log("cleared first Time");
+      }
+    );
+    this.floridaSvc.clearState();
   }
 
   /**
    * If a custom set name is found on the gallery item, include it in the query string.
    * Custom set gallery items are built on the fly and don't have a gallery ID.
    */
-  createNewAssessmentGallery(workflow: string, galleryItem: any) {
+  createNewAssessmentFromGallery(workflow: string, galleryItem: any) {
     let queryString: string = 'workflow=' + workflow + '&galleryGuid=' + galleryItem.gallery_Item_Guid;
     if (!!galleryItem.custom_Set_Name) {
       queryString += '&csn=' + galleryItem.custom_Set_Name
@@ -176,9 +191,12 @@ export class AssessmentService {
    * @returns
    */
   getLastModified() {
-    return this.http.get(this.apiUrl + 'lastmodified', { responseType: 'text' });
+    return this.http.get(this.apiUrl + 'lastmodified', { responseType: 'json' });
   }
 
+  moveActionItemsFrom_IseActions_To_HydroData() {
+    return this.http.get(this.apiUrl + 'moveHydroActionsOutOfIseActions');
+  }
 
   /**
    *
@@ -187,7 +205,7 @@ export class AssessmentService {
     this.assessment = assessment;
 
     // clean out properties that may contain HTML before posting.
-    // The API WAF may reject to prevent XSS.  
+    // The API WAF may reject to prevent XSS.
     // These properties are not user updatable.
     const payload = JSON.parse(JSON.stringify(assessment));
     payload.maturityModel = null;
@@ -199,7 +217,11 @@ export class AssessmentService {
         JSON.stringify(payload),
         headers
       )
-      .subscribe();
+      .subscribe(() => {
+        if (this.configSvc.cisaAssessorWorkflow) {
+          this.updateAssessmentName();
+        }
+      });
   }
 
   /**
@@ -216,10 +238,45 @@ export class AssessmentService {
   }
 
   /**
+   * 
+   */
+  getAssessmentContactsById(ids: number[]) {
+    var id1 = (ids[0] != undefined ? ids[0] : 0);
+    var id2 = (ids[1] != undefined ? ids[1] : 0);
+    var id3 = (ids[2] != undefined ? ids[2] : 0);
+    var id4 = (ids[3] != undefined ? ids[3] : 0);
+    var id5 = (ids[4] != undefined ? ids[4] : 0);
+    var id6 = (ids[5] != undefined ? ids[5] : 0);
+    var id7 = (ids[6] != undefined ? ids[6] : 0);
+    var id8 = (ids[7] != undefined ? ids[7] : 0);
+    var id9 = (ids[8] != undefined ? ids[8] : 0);
+    var id10 = (ids[9] != undefined ? ids[9] : 0);
+
+    headers.params = headers.params.set('id1', id1).set('id2', id2).set('id3', id3).set('id4', id4)
+    .set('id5', id5).set('id6', id6).set('id7', id7).set('id8', id8).set('id9', id9).set('id10', id10);
+
+    return this.http.get(this.apiUrl + 'contactsById', headers);
+  }
+
+  /**
    *
    */
   getOrganizationTypes() {
     return this.http.get(this.apiUrl + 'getOrganizationTypes');
+  }
+
+  /**
+   *
+   */
+  getOtherRemarks() {
+    return this.http.get(this.apiUrl + 'remarks', { responseType: 'text' });
+  }
+
+  /**
+   *
+   */
+  saveOtherRemarks(remarks: string) {
+    return this.http.post(this.apiUrl + 'remarks', JSON.stringify(remarks), headers);
   }
 
   /**
@@ -238,9 +295,30 @@ export class AssessmentService {
    */
   createContact(contact: User) {
     const body = this.configSvc.config.defaultInviteTemplate;
-    return this.http.post(
-      this.apiUrl + 'contacts/addnew',
-      {
+    return this.http.post(this.apiUrl + 'contacts/addnew', {
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        primaryEmail: contact.primaryEmail,
+        title: contact.title,
+        phone: contact.phone,
+        cellPhone: contact.cellPhone,
+        reportsTo: contact.reportsTo,
+        organizationName: contact.organizationName,
+        siteName: contact.siteName,
+        emergencyCommunicationsProtocol: contact.emergencyCommunicationsProtocol,
+        isSiteParticipant: contact.isSiteParticipant,
+        isPrimaryPoc: contact.isPrimaryPoc,
+        assessmentRoleId: contact.assessmentRoleId,
+        subject: this.configSvc.config.defaultInviteSubject,
+        body: body
+      },
+      headers
+    );
+  }
+
+  createMergeContact(contact: User) {
+    const body = this.configSvc.config.defaultInviteTemplate;
+    return this.http.post(this.apiUrl + 'contacts/addnewmergecontact', {
         firstName: contact.firstName,
         lastName: contact.lastName,
         primaryEmail: contact.primaryEmail,
@@ -336,37 +414,8 @@ export class AssessmentService {
       .subscribe((mode: string) => (this.applicationMode = mode));
   }
 
-  /**
-   * Create a new assessment.
-   */
-  newAssessment() {
-    let workflow: string;
-    switch (this.configSvc.installationMode || '') {
-      case 'ACET':
-        workflow = 'ACET';
-        break;
-      case 'TSA':
-        workflow = 'TSA';
-        break;
-      default:
-        workflow = 'BASE';
-    }
-    this.createAssessment(workflow)
-      .toPromise()
-      .then(
-        (response: any) => {
-          // set the brand new flag
-          this.isBrandNew = true;
-          this.loadAssessment(response.id);
-        },
-        error =>
-          console.log(
-            'Unable to create new assessment: ' + (<Error>error).message
-          )
-      );
-  }
 
-  newAssessmentGallery(galleryItem: any) {
+  newAssessmentGallery(galleryItem: any): Promise<any> {
     let workflow = 'BASE';
     switch (this.configSvc.installationMode || '') {
       case 'ACET':
@@ -379,52 +428,81 @@ export class AssessmentService {
         workflow = 'BASE';
     }
 
-    this.createNewAssessmentGallery(workflow, galleryItem)
-      .toPromise()
-      .then(
-        (response: any) => {
-          // set the brand new flag
-          this.isBrandNew = true;
-          this.loadAssessment(response.id);
-        },
-        error =>
-          console.log(
-            'Unable to create new assessment: ' + (<Error>error).message
-          )
-      );
+    return new Promise((resolve, reject) => {
+      this.createNewAssessmentFromGallery(workflow, galleryItem)
+        .toPromise()
+        .then(
+          (response: any) => {
+            // set the brand new flag
+            this.isBrandNew = true;
+            this.loadAssessment(response.id).then(() => {
+              resolve('assessment loaded');
+            });
+          },
+          error =>
+            console.log(
+              'Unable to create new assessment: ' + (<Error>error).message
+            )
+        );
+    });
   }
 
 
+  //Call this when the assessment name
+  //was calculated in the backend and needs
+  //to be updated here
+  updateAssessmentName() {
+    this.getAssessmentDetail().subscribe((data: AssessmentDetail) => {
+      this.assessment.assessmentName = data.assessmentName;
+    });
+  }
+
+  refreshAssessment(){
+    this.getAssessmentDetail().subscribe((detail: AssessmentDetail) => {
+      this.assessment = detail
+    })
+  }
+
   /**
-   *
+   * Requests the assessment detail from the API
+   * and resolves the promise so that navigation
+   * can take place in the function that called
+   * this one.
    */
-  loadAssessment(id: number) {
-    this.getAssessmentToken(id).then(() => {
+  loadAssessment(id: number): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.getAssessmentToken(id).then(() => {
+        this.getAssessmentDetail().subscribe(data => {
+          this.assessment = data;
 
-      this.getAssessmentDetail().subscribe(data => {
-        this.assessment = data;
-        if (this.assessment.baselineAssessmentId) {
-          localStorage.setItem("baseline", this.assessment.baselineAssessmentId.toString());
-        } else {
-          localStorage.setItem("baseline", "0");
-        }
-        // make sure that the acet only switch is turned off when in standard CSET
-        if (this.configSvc.installationMode !== 'ACET') {
-          this.assessment.isAcetOnly = false;
-        }
+          this.applicationMode = this.assessment.applicationMode;
+          //this.floridaSvc.updateStatus(this.assessment.);
 
-        const rpath = localStorage.getItem('returnPath');
-        if (rpath != null) {
-          localStorage.removeItem('returnPath');
-          const returnPath = '/assessment/' + id + '/' + rpath;
-          this.router.navigate([returnPath], { queryParamsHandling: 'preserve' });
-        } else {
-          if (this.assessment.workflow == 'TSA') {
-            this.router.navigate(['/assessment', id, 'prepare', 'info-tsa']);
+          if (this.assessment.baselineAssessmentId) {
+            localStorage.setItem("baseline", this.assessment.baselineAssessmentId.toString());
           } else {
-            this.router.navigate(['/assessment', id]);
+            localStorage.setItem("baseline", "0");
           }
-        }
+
+          // make sure that the acet only switch is turned off when in standard CSET
+          if (this.configSvc.installationMode !== 'ACET') {
+            this.assessment.isAcetOnly = false;
+          }
+          this.extDemoSvc.preloadDemoAndGeo();
+          const rpath = localStorage.getItem('returnPath');
+
+          // normal assessment load
+          if (!rpath) {
+            resolve('assessment loaded');
+            return;
+          }
+
+          // return path specified
+          localStorage.removeItem('returnPath');
+          const returnPath = `/assessment/${id}/${rpath}`;
+          this.router.navigate([returnPath], { queryParamsHandling: 'preserve' });
+          resolve(returnPath);
+        });
       });
     });
   }
@@ -504,7 +582,7 @@ export class AssessmentService {
   }
 
   /**
-   * Indicates if the assessment uses the specified maturity model.
+   * Indicates if the assessment uses the specified maturity model name.
    */
   usesMaturityModel(modelName: string) {
     if (!this.assessment) {
@@ -526,8 +604,15 @@ export class AssessmentService {
     if (modelName == '*' && !!this.assessment.maturityModel.modelName) {
       return true;
     }
-
+    
     return this.assessment.maturityModel.modelName.toLowerCase() === modelName.toLowerCase();
+  }
+
+  /**
+   * Indicates if the assessment uses the maturity model for the specified ID
+   */
+  usesMaturityModelId(modelId: number) {
+    return this.assessment?.useMaturity && modelId == this.assessment?.maturityModel?.modelId;
   }
 
   /**
@@ -576,8 +661,19 @@ export class AssessmentService {
   }
 
   /**
+   * Indicates if the assessment is PCII.  This is set in the
+   * CISA Assessor Workflow's Assessment Configuration page.
+   */
+  isPcii() {
+    if (!!this.assessment) {
+      return this.assessment.is_PCII ?? false;
+    }
+    return false;
+  }
+
+  /**
   * Saves the user's "Prevent Encrypt" toggle option to the database.
-  * @param status 
+  * @param status
   */
   persistEncryptPreference(preventEncrypt: boolean) {
     let status = preventEncrypt;
@@ -586,9 +682,37 @@ export class AssessmentService {
   }
 
   /**
-  * Gets the user's "Prevent Encrypt" toggle option from the database. 
+  * Gets the user's "Prevent Encrypt" toggle option from the database.
   */
   getEncryptPreference() {
     return this.http.get(this.apiUrl + 'getPreventEncrypt');
   }
+
+  isCyberFloridaComplete(): boolean {
+    if (this.configSvc.installationMode == "CF") {
+      return this.floridaSvc.isAssessmentComplete();
+    }
+    else
+      return true;
+  }
+
+  initCyberFlorida(assessmentId: number) {
+    this.floridaSvc.getInitialState().then(() => {
+      this.assessmentStateChanged$.next(125);
+    }
+    );
+  }
+
+  updateAnswer(answer: Answer) {
+    this.floridaSvc.updateCompleteStatus(answer);
+    if (this.isCyberFloridaComplete()) {
+      this.convSvc.isEntryCfAssessment().subscribe((data) => {
+        if (data)
+          this.assessmentStateChanged$.next(124);
+      });
+    }
+  }
+
+
+ 
 }

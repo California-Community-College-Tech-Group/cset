@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Nelibur.ObjectMapper;
 
 using Microsoft.AspNetCore.Authorization;
+using CSETWebCore.Business.Demographic;
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -26,40 +27,35 @@ namespace CSETWebCore.Api.Controllers
     {
         private readonly ITokenManager _token;
         private readonly IAssessmentBusiness _assessment;
+        private readonly IAssessmentUtil _assessmentUtil;
         private readonly IDemographicBusiness _demographic;
         private CSETContext _context;
 
-        public DemographicsExtendedController(ITokenManager token, IAssessmentBusiness assessment,
+        public DemographicsExtendedController(ITokenManager token, IAssessmentBusiness assessment, IAssessmentUtil assessmentUtil,
             IDemographicBusiness demographic, CSETContext context)
         {
             _token = token;
             _assessment = assessment;
+            _assessmentUtil = assessmentUtil;
             _demographic = demographic;
             _context = context;
         }
 
 
         /// <summary>
-        /// Gets the extended demographics for the assessment.
+        /// Gets the extended demographic answers for the assessment.
         /// </summary>
         /// <returns></returns>
         [HttpGet]
         [Route("api/demographics/ext")]
-        public IActionResult GetDemographics()
+        public IActionResult GetExtendedDemographics()
         {
             int assessmentId = _token.AssessmentForUser();
 
-            var demo = _context.DEMOGRAPHIC_ANSWERS.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
+            var demoBiz = new DemographicBusiness(_context, _assessmentUtil);
+            var resp = demoBiz.GetExtendedDemographics(assessmentId);
 
-            if (demo == null)
-            {
-                demo = new DEMOGRAPHIC_ANSWERS()
-                {
-                    Assessment_Id = assessmentId
-                };
-            }
-
-            return Ok(demo);
+            return Ok(resp);
         }
 
 
@@ -357,11 +353,11 @@ namespace CSETWebCore.Api.Controllers
                 demo = new DEMOGRAPHIC_ANSWERS();
             }
 
-            if (demo.SectorId == null 
+            if (demo.SectorId == null
                 || demo.SubSectorId == null
                 || demo.Employees == null
                 || demo.CustomersSupported == null
-                || demo.CIOExists == null 
+                || demo.CIOExists == null
                 || demo.CISOExists == null
                 || demo.CyberTrainingProgramExists == null
                 || demo.GeographicScope == null)

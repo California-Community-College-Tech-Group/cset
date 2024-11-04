@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -47,7 +47,6 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentid = _token.AssessmentForUser();
 
-            //TODO: make this async
             TinyMapper.Bind<GENERAL_SAL_DESCRIPTIONS, GeneralSalDescriptionsWeights>();
             TinyMapper.Bind<GEN_SAL_WEIGHTS, GenSalWeights>();
 

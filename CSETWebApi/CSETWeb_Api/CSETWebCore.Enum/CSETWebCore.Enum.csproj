@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npoi.Mapper" Version="6.2.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSETWebCore.Constants\CSETWebCore.Constants.csproj" />

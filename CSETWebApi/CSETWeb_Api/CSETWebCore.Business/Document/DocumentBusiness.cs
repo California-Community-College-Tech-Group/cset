@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -12,6 +12,10 @@ using CSETWebCore.Interfaces.Document;
 using CSETWebCore.Interfaces.Helpers;
 using Microsoft.EntityFrameworkCore;
 using System;
+using LogicExtensions;
+using CSETWebCore.Model.Question;
+using CSETWebCore.Business.Reports;
+using CSETWebCore.Model.Maturity;
 
 namespace CSETWebCore.Business.Document
 {
@@ -285,5 +289,65 @@ namespace CSETWebCore.Business.Document
 
             return list;
         }
+
+
+        /// <summary>
+        /// Merging assessments' documents into a single new assessment
+        /// </summary>
+        /// <param name=documents></param>
+        public void CopyFilesForMerge(List<DocumentWithAnswerId> documents)
+        {
+            List<DOCUMENT_FILE> docsToAdd = new List<DOCUMENT_FILE>();
+            List<DOCUMENT_ANSWERS> docAnsToAdd = new List<DOCUMENT_ANSWERS>();
+            int assessId = _context.ANSWER.Where(a => a.Answer_Id == documents[0].Answer_Id).Select(x => x.Assessment_Id).FirstOrDefault();
+
+            foreach (var file in documents)
+            {
+                // get the file to copy
+                DOCUMENT_FILE docToCopy = _context.DOCUMENT_FILE.Where(f => f.Document_Id == file.Document_Id).FirstOrDefault();
+
+
+                DOCUMENT_FILE newDoc = new DOCUMENT_FILE()
+                {
+                    Assessment_Id = assessId,
+                    Title = string.IsNullOrWhiteSpace(docToCopy.Title) ? "click to edit title" : docToCopy.Title,
+                    Path = docToCopy.Path,  // this may end up being some other reference
+                    Name = docToCopy.Name,
+                    FileMd5 = docToCopy.FileMd5,
+                    ContentType = docToCopy.ContentType,
+                    CreatedTimestamp = DateTime.Now,
+                    UpdatedTimestamp = DateTime.Now,
+                    Data = docToCopy.Data
+                };
+
+                if (newDoc != null && assessId != 0)
+                {
+                   docsToAdd.Add(newDoc);
+                }
+
+            }
+
+            _context.DOCUMENT_FILE.AddRange(docsToAdd);
+            _context.SaveChanges();
+            _assessmentUtil.TouchAssessment(assessId);
+
+            var counter = 0;
+
+            foreach (var file in docsToAdd)
+            {
+                DOCUMENT_ANSWERS temp = new DOCUMENT_ANSWERS()
+                {
+                    Answer_Id = documents[counter].Answer_Id,
+                    Document_Id = file.Document_Id
+                };
+
+                docAnsToAdd.Add(temp);
+            }
+
+            _context.DOCUMENT_ANSWERS.AddRange(docAnsToAdd);
+            _context.SaveChanges();
+
+        }
+
     }
 }

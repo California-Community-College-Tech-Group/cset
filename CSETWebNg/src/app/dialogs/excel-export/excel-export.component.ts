@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ConfigService } from '../../services/config.service';
+import { AssessmentService } from '../../services/assessment.service';
 
 @Component({
   selector: 'excel-export',
@@ -34,16 +35,18 @@ import { ConfigService } from '../../services/config.service';
 export class ExcelExportComponent {
 
   doNotShow: boolean = false;
-  
+
   /**
    * Constructor.
    */
-  constructor(private dialog: MatDialogRef<ExcelExportComponent>,
+  constructor(
+    private dialog: MatDialogRef<ExcelExportComponent>,
     public configSvc: ConfigService,
+    public assessSvc: AssessmentService,
     @Inject(MAT_DIALOG_DATA) public data: any) {
-        dialog.beforeClosed().subscribe(() => dialog.close());
-        var doNotShowLocal = localStorage.getItem('doNotShowExcelExport');
-        this.doNotShow = doNotShowLocal && doNotShowLocal == 'true' ? true : false;
+    dialog.beforeClosed().subscribe(() => dialog.close());
+    var doNotShowLocal = localStorage.getItem('doNotShowExcelExport');
+    this.doNotShow = doNotShowLocal && doNotShowLocal == 'true' ? true : false;
   }
 
   close() {
@@ -51,12 +54,17 @@ export class ExcelExportComponent {
   }
 
   exportToExcel() {
-    window.location.href = this.configSvc.apiUrl + 'ExcelExport?token=' + localStorage.getItem('userToken');
-    this.close();
+    if (this.assessSvc.isISE()) {
+      window.location.href = this.configSvc.apiUrl + 'ExcelExportISE?token=' + localStorage.getItem('userToken');
+    } else {
+      window.location.href = this.configSvc.apiUrl + 'ExcelExport?token=' + localStorage.getItem('userToken');
+    }
+
+    this.dialog.close();
   }
 
-  setDoNotShow(){
-      localStorage.setItem('doNotShowExcelExport', this.doNotShow.toString());
+  setDoNotShow() {
+    localStorage.setItem('doNotShowExcelExport', this.doNotShow.toString());
   }
 
 }

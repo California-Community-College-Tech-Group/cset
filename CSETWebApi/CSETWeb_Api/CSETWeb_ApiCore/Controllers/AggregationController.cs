@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -141,9 +141,9 @@ namespace CSETWebCore.Api.Controllers
             }
 
             var aggreg = new AggregationBusiness(_context);
-            aggreg.SaveAssessmentAlias((int)aggregationID, req.aliasAssessment.AssessmentId, req.aliasAssessment.Alias, req.assessmentList);
+            var newAlias = aggreg.SaveAssessmentAlias((int)aggregationID, req.aliasAssessment.AssessmentId, req.aliasAssessment.Alias, req.assessmentList);
 
-            return Ok();
+            return Ok(newAlias);
         }
 
 
@@ -162,6 +162,19 @@ namespace CSETWebCore.Api.Controllers
         }
 
 
+        [HttpPost]
+        [Route("api/aggregation/getmaturitymissedquestions")]
+        public IActionResult GetCommonlyMissedMaturityQuestions()
+        {
+            var aggregationID = _token.PayloadInt("aggreg");
+            if (aggregationID == null)
+            {
+                return Ok(new List<MissedQuestion>());
+            }
+
+            var manager = new AggregationBusiness(_context);
+            return Ok(manager.GetCommonlyMissedMaturityQuestions((int)aggregationID));
+        }
 
         //////////////////////////////////////////
         /// Merge

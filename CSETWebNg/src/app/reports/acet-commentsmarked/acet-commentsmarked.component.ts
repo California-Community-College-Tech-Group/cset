@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,14 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ReportAnalysisService } from '../../services/report-analysis.service';
 import { ReportService } from '../../services/report.service';
 import { QuestionsService } from './../../services/questions.service';
 import { ConfigService } from '../../services/config.service';
 import { Title } from '@angular/platform-browser';
 import { MaturityService } from '../../services/maturity.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'app-acet-commentsmarked',
@@ -45,16 +46,17 @@ export class AcetCommentsmarkedComponent implements OnInit {
     public configSvc: ConfigService,
     private titleService: Title,
     public maturitySvc: MaturityService,
-    public questionsSvc: QuestionsService
+    public questionsSvc: QuestionsService,
+    private tSvc: TranslocoService
   ) { }
 
   ngOnInit(): void {
     this.loading = true;
-    this.titleService.setTitle("Comments Report - ACET");
 
     this.maturitySvc.getCommentsMarked().subscribe(
       (r: any) => {
         this.response = r;
+        this.titleService.setTitle(this.tSvc.translate('reports.acet.comments and mfr.tab title'));
         this.loading = false;
       },
       error => console.log('Comments Marked Report Error: ' + (<Error>error).message)

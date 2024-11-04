@@ -1,14 +1,17 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
+
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Helpers;
 using System.Linq;
 using CSETWebCore.Model.Assessment;
 using System.Collections.Generic;
+using CSETWebCore.Business.Assessment;
+
 
 namespace CSETWebCore.Business.Demographic
 {
@@ -80,7 +83,7 @@ namespace CSETWebCore.Business.Demographic
         /// <summary>
         /// Persists data to the CIS_CSI_SERVICE_DEMOGRAPHICS table.
         /// </summary
-        public int SaveServiceDemographics(CisServiceDemographics serviceDemographics)
+        public int SaveServiceDemographics(CisServiceDemographics serviceDemographics, int userid)
         {
             var dbServiceDemographics = _context.CIS_CSI_SERVICE_DEMOGRAPHICS.Where(x => x.Assessment_Id == serviceDemographics.AssessmentId).FirstOrDefault();
 
@@ -95,7 +98,6 @@ namespace CSETWebCore.Business.Demographic
                 _context.SaveChanges();
             }
 
-            dbServiceDemographics.Critical_Service_Name = serviceDemographics.CriticalServiceName;
             dbServiceDemographics.Critical_Service_Description = serviceDemographics.CriticalServiceDescription;
             dbServiceDemographics.IT_ICS_Name = serviceDemographics.ItIcsName;
             dbServiceDemographics.Multi_Site = serviceDemographics.MultiSite;
@@ -110,7 +112,7 @@ namespace CSETWebCore.Business.Demographic
             _context.CIS_CSI_SERVICE_DEMOGRAPHICS.Update(dbServiceDemographics);
             _context.SaveChanges();
             serviceDemographics.AssessmentId = dbServiceDemographics.Assessment_Id;
-
+            AssessmentNaming.ProcessName(_context, userid, serviceDemographics.AssessmentId);
             _assessmentUtil.TouchAssessment(dbServiceDemographics.Assessment_Id);
 
             return serviceDemographics.AssessmentId;
@@ -147,7 +149,7 @@ namespace CSETWebCore.Business.Demographic
             // Removing un selected secondary defining systems 
             foreach (var item in currentSecondaryDefiningSystems)
             {
-                if (!serviceComposition.SecondaryDefiningSystems.Contains(item.Defining_System_Id)) 
+                if (!serviceComposition.SecondaryDefiningSystems.Contains(item.Defining_System_Id))
                 {
                     _context.CIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS.Remove(currentSecondaryDefiningSystems.Find(x => x.Defining_System_Id == item.Defining_System_Id));
                 }
@@ -156,7 +158,7 @@ namespace CSETWebCore.Business.Demographic
             // Adding newly selected secondary defining systems
             foreach (var systemId in serviceComposition.SecondaryDefiningSystems)
             {
-                if (!currentSecondaryDefiningSystems.Exists(x => x.Defining_System_Id == systemId)) 
+                if (!currentSecondaryDefiningSystems.Exists(x => x.Defining_System_Id == systemId))
                 {
                     _context.CIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS.Add(
                         new CIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS
@@ -166,7 +168,7 @@ namespace CSETWebCore.Business.Demographic
                         });
                 }
             }
-            
+
             _context.CIS_CSI_SERVICE_COMPOSITION.Update(dbServiceComposition);
             _context.SaveChanges();
             serviceComposition.AssessmentId = dbServiceComposition.Assessment_Id;
@@ -227,7 +229,6 @@ namespace CSETWebCore.Business.Demographic
 
             if (dbServiceDemographics != null)
             {
-                serviceDemographics.CriticalServiceName = dbServiceDemographics.Critical_Service_Name;
                 serviceDemographics.CriticalServiceDescription = dbServiceDemographics.Critical_Service_Description;
                 serviceDemographics.ItIcsName = dbServiceDemographics.IT_ICS_Name;
                 serviceDemographics.MultiSite = dbServiceDemographics.Multi_Site;
@@ -253,7 +254,7 @@ namespace CSETWebCore.Business.Demographic
             var dbServiceComposition = _context.CIS_CSI_SERVICE_COMPOSITION.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
             var dbSecondaryDefiningSystems = _context.CIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS.Where(x => x.Assessment_Id == assessmentId).ToList();
 
-            if (dbServiceComposition != null) 
+            if (dbServiceComposition != null)
             {
                 serviceComposition.NetworksDescription = dbServiceComposition.Networks_Description;
                 serviceComposition.ServicesDescription = dbServiceComposition.Services_Description;

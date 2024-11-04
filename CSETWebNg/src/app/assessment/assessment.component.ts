@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,16 +26,16 @@ import {
   Component,
   EventEmitter,
   OnInit,
-  Output,
-  ViewChild,
-  HostListener
+  Output, HostListener,
+  ApplicationRef
 } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AssessmentService } from '../services/assessment.service';
 import { LayoutService } from '../services/layout.service';
 import { NavTreeService } from '../services/navigation/nav-tree.service';
 import { NavigationService } from '../services/navigation/navigation.service';
+import { TranslocoService } from '@ngneat/transloco';
+import { ConfigService } from '../services/config.service';
 
 @Component({
   selector: 'app-assessment',
@@ -63,11 +63,11 @@ export class AssessmentComponent implements OnInit {
   widthBreakpoint = 960;
   scrollTop = 0;
 
+  assessmentAlias = this.tSvc.translate('titles.assessment');
+
 
   @Output() navSelected = new EventEmitter<string>();
-
-  @ViewChild('sNav')
-  sideNav: MatSidenav;
+  isSet: boolean;
 
   @HostListener('window:resize', ['$event'])
   onResize(event) {
@@ -80,21 +80,36 @@ export class AssessmentComponent implements OnInit {
     public assessSvc: AssessmentService,
     public navSvc: NavigationService,
     public navTreeSvc: NavTreeService,
-    public layoutSvc: LayoutService
+    public layoutSvc: LayoutService,
+    public tSvc: TranslocoService,
+    private configSvc: ConfigService,
+    private appRef: ApplicationRef
   ) {
     this.assessSvc.getAssessmentToken(+this.route.snapshot.params['id']);
     this.assessSvc.getMode();
     this.setTab('prepare');
-    this.navSvc.activeResultsView = null;
-    if (localStorage.getItem('tree')) {
-      this.navSvc.buildTree();
-    }
+    this.navSvc.activeResultsView = null;    
+    this.isSet=false;
   }
 
   ngOnInit(): void {
+    //This is a hack to force the app to update the view after the assessment is loaded
+    //but not the first time.
+    if(this.isSet){
+      this.isSet = true;
+      this.appRef.tick();
+    }
     this.evaluateWindowSize();
-  }
 
+    if (this.configSvc.behaviors.replaceAssessmentWithAnalysis) {
+      this.assessmentAlias = this.tSvc.translate('titles.analysis');
+    }
+
+    this.tSvc.langChanges$.subscribe((event) => {
+      this.navSvc.buildTree();
+    });
+  }
+ 
   setTab(tab) {
     this.assessSvc.currentTab = tab;
   }
@@ -144,21 +159,13 @@ export class AssessmentComponent implements OnInit {
     }
 
     this.navSvc.navDirect(target);
+    setTimeout(() => {
+      this.navTreeSvc.setSideNavScrollLocation(target)
+    }, 300);
   }
 
   toggleNav() {
     this.expandNav = !this.expandNav;
-  }
-
-  handleScroll(component: string) {
-    const element = document.getElementById(component);
-    if (
-      element.scrollTop < this.scrollTop &&
-      document.scrollingElement.scrollTop > 0
-    ) {
-      document.scrollingElement.scrollTo({ behavior: 'smooth', top: 0 });
-    }
-    this.scrollTop = element.scrollTop;
   }
 
   /**
@@ -176,9 +183,11 @@ export class AssessmentComponent implements OnInit {
     this.expandNav = e;
   }
 
-  isTocLoading(s) {
-    return s === "Please wait" || s === "Loading questions";
-  }
+  // isTocLoading(node) { 
+  //   console.log(node);
+  //   var s = node?.label;
+  //   return  (s === "Please wait" || s === "Loading questions") ;
+  // }
 
   goHome() {
     this.assessSvc.dropAssessment();

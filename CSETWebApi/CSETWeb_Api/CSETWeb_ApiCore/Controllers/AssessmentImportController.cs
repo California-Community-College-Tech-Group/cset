@@ -1,6 +1,6 @@
-﻿//////////////////////////////// 
+//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -11,14 +11,10 @@ using CSETWebCore.Interfaces.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Net.Http.Headers;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Ionic.Zip;
-using System.Collections.Generic;
-using System.Net.Http;
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -26,7 +22,7 @@ namespace CSETWebCore.Api.Controllers
     {
         private ITokenManager _tokenManager;
         private CSETContext _context;
-        private IAssessmentUtil _assessmentUtil;
+        private IImportManager _importManager;
 
         /// <summary>
         /// Constructor.
@@ -34,54 +30,19 @@ namespace CSETWebCore.Api.Controllers
         /// <param name="token"></param>
         /// <param name="context"></param>
         /// <param name="assessmentUtil"></param>
-        public AssessmentImportController(ITokenManager token, CSETContext context, IAssessmentUtil assessmentUtil)
+        public AssessmentImportController(ITokenManager token, CSETContext context, IImportManager importManager)
         {
             _tokenManager = token;
             _context = context;
-            _assessmentUtil = assessmentUtil;
+            _importManager = importManager;
         }
-
-
-        /// <summary>
-        /// Gets the path to the Legacy CSET Import process. Checks for both dev and production versions.
-        /// </summary>
-        /// <returns></returns>
-        private string GetLegacyImportProcessPath()
-        {
-            var dir = new FileInfo(AppDomain.CurrentDomain.BaseDirectory).Directory;
-
-            // TODO: Problem: These paths create a dependency and should be some sort of variable for installation as well as debugging. 
-            // Also, can the user change the installation directory? If so, this gets messed up...
-            var importFile = dir.Parent.Parent.Parent.Parent.FullName + "\\CSETStandAlone\\LegacyCSETImport\\Bin\\Debug\\LegacyCSETImport.exe";
-            var importProductionFile = Path.Combine(dir.Parent.FullName, "LegacyCSETImport.exe");
-
-            var path = string.Empty;
-            if (System.IO.File.Exists(importFile))
-            {
-                path = importFile;
-            }
-            else if (System.IO.File.Exists(importProductionFile))
-            {
-                path = importProductionFile;
-            }
-            return path;
-        }
-
-
-        private bool LegacyImportProcessExists()
-        {
-            var processPath = GetLegacyImportProcessPath();
-            var processExists = !string.IsNullOrEmpty(processPath);
-            return processExists;
-        }
-
 
         [HttpGet]
         //  [CSETAuthorize]
         [Route("api/assessment/legacy/import/installed")]
         public IActionResult LegacyImportIsInstalled()
         {
-            return Ok(LegacyImportProcessExists());
+            return Ok(false);
         }
 
 
@@ -103,8 +64,7 @@ namespace CSETWebCore.Api.Controllers
 
             try
             {
-                var manager = new ImportManager(_tokenManager, _assessmentUtil, _context);
-                await manager.ProcessCSETAssessmentImport(target.ToArray(), _tokenManager.GetUserId(), _tokenManager.GetAccessKey(), _context);
+                await _importManager.ProcessCSETAssessmentImport(target.ToArray(), _tokenManager.GetUserId(), _tokenManager.GetAccessKey(), _context);
             }
             catch (Exception)
             {
@@ -125,6 +85,7 @@ namespace CSETWebCore.Api.Controllers
                 // unsupported media type
                 return StatusCode(415);
             }
+            var assessmentFile = Request.Form.Files[0];
 
             var currentUserId = _tokenManager.GetCurrentUserId();
             var accessKey = _tokenManager.GetAccessKey();
@@ -160,9 +121,7 @@ namespace CSETWebCore.Api.Controllers
                         }
                     }
 
-
-                    var manager = new ImportManager(_tokenManager, _assessmentUtil, _context);
-                    await manager.ProcessCSETAssessmentImport(bytes, currentUserId, accessKey, _context, pwd);
+                    await _importManager.ProcessCSETAssessmentImport(bytes, currentUserId, accessKey, _context, pwd);
                 }
             }
             catch (Exception e)
@@ -171,7 +130,7 @@ namespace CSETWebCore.Api.Controllers
 
                 if (e.Message == "Exception of type 'Ionic.Zip.BadPasswordException' was thrown.")
                 {
-                    returnMessage = (hint == null) ? "Bad Password Exception" : "Bad Password Exception - " + hint.FileName;                    
+                    returnMessage = (hint == null) ? "Bad Password Exception" : "Bad Password Exception - " + hint.FileName;
                     return StatusCode(423, returnMessage);
                 }
                 else if (e.Message == "The password did not match.")
@@ -179,13 +138,19 @@ namespace CSETWebCore.Api.Controllers
                     returnMessage = (hint == null) ? "Invalid Password" : "Invalid Password - " + hint.FileName;
                     return StatusCode(406, returnMessage);
                 }
+                else if (e.Message == "Custom module not found")
+                {
+                    returnMessage = "Custom module not found";
+                    return StatusCode(404, returnMessage);
+                }
                 else
                 {
                     return BadRequest(e);
                 }
             }
 
-            var response = new {
+            var response = new
+            {
                 Message = "Assessment was successfully imported"
             };
 
@@ -217,7 +182,7 @@ namespace CSETWebCore.Api.Controllers
                     if (!file.FileName.EndsWith(".xlsx")
                             && file.FileName.EndsWith(".xls"))
                     {
-                        return Ok(new 
+                        return Ok(new
                         {
                             Message = "Only Microsoft Excel spreadsheets can be uploaded."
                         });

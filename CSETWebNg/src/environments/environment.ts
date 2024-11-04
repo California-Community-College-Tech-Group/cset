@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,5 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 export const environment = {
-  production: false,
-  appUrl: 'http://localhost:4200/',
-  apiUrl: 'https://localhost:5001/api/',
-  docUrl: 'https://localhost:5001/Documents/',
-  appCode: 'CSET',
-  visibleVersion: "12.0.2.4",
-  version: '12.0.2.4',
-  helpContactEmail: 'cset@cisa.dhs.gov',
-  helpContactPhone: ''
+  production: false
 };

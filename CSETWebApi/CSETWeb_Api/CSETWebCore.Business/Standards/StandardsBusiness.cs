@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -59,9 +59,9 @@ namespace CSETWebCore.Business.Standards
 
             var query = from sc in _context.SETS_CATEGORY
                         from s in _context.SETS.Where(set => set.Set_Category_Id == sc.Set_Category_Id
-                            && (set.Is_Displayed ?? false)
+                            && (set.Is_Displayed)
                             && (!set.IsEncryptedModule
-                            || (set.IsEncryptedModule && (set.IsEncryptedModuleOpen ?? false)))
+                            || (set.IsEncryptedModule && (set.IsEncryptedModuleOpen)))
                             )
                         select new { s, sc.Set_Category_Name };
 
@@ -248,11 +248,11 @@ namespace CSETWebCore.Business.Standards
         /// <returns></returns>
         public List<string> GetDefaultStandardsList()
         {
-            var appCode = _tokenManager.Payload("scope");
+            var scope = _tokenManager.Payload("scope");
 
             List<string> basicStandards = new List<string>();
 
-            switch (appCode.ToLower())
+            switch (scope.ToLower())
             {
                 case "cset":
                     basicStandards.Add("Key");

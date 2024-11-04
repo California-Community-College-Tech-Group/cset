@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, ComponentFactoryResolver, ElementRef, Injector, Input, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { Question, QuestionGrouping, Answer } from '../../../models/questions.model';
 import { AssessmentService } from '../../../services/assessment.service';
 import { ConfigService } from '../../../services/config.service';
@@ -31,6 +31,8 @@ import { AcetFilteringService } from '../../../services/filtering/maturity-filte
 import { NCUAService } from '../../../services/ncua.service';
 import { LayoutService } from '../../../services/layout.service';
 import { CompletionService } from '../../../services/completion.service';
+import { ACETService } from '../../../services/acet.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 
 /**
@@ -55,12 +57,12 @@ export class QuestionBlockMaturityComponent implements OnInit {
   percentAnswered = 0;
   answerOptions = [];
 
-  altTextPlaceholder = "Description, explanation and/or justification for alternate answer";
-  altTextPlaceholder_ACET = "Description, explanation and/or justification for compensating control";
-
+  // tokenized placeholder for transloco, made this variable a switch between the different placeholders
+  altTextPlaceholder = "alt cset";
   showQuestionIds = false;
 
   maturityModelId: number;
+  maturityModelName: string;
 
 
   /**
@@ -74,7 +76,9 @@ export class QuestionBlockMaturityComponent implements OnInit {
     public assessSvc: AssessmentService,
     public acetFilteringSvc: AcetFilteringService,
     public layoutSvc: LayoutService,
-    public ncuaSvc: NCUAService
+    public ncuaSvc: NCUAService,
+    public acetSvc: ACETService,
+    public tSvc: TranslocoService
   ) {
 
   }
@@ -86,6 +90,7 @@ export class QuestionBlockMaturityComponent implements OnInit {
     if (this.assessSvc.assessment.maturityModel.modelName != null) {
       this.answerOptions = this.assessSvc.assessment.maturityModel.answerOptions;
       this.maturityModelId = this.assessSvc.assessment.maturityModel.modelId;
+      this.maturityModelName = this.assessSvc.assessment.maturityModel.modelName;
     }
 
     this.refreshReviewIndicator();
@@ -93,7 +98,7 @@ export class QuestionBlockMaturityComponent implements OnInit {
 
 
     if (this.configSvc.installationMode === "ACET") {
-      this.altTextPlaceholder = this.altTextPlaceholder_ACET;
+      this.altTextPlaceholder = "alt acet";
     }
 
     this.acetFilteringSvc.filterAcet.subscribe((filter) => {
@@ -131,13 +136,12 @@ export class QuestionBlockMaturityComponent implements OnInit {
 
   /**
    * Determines if the level indicator should show or be
-   * hidden.  Someday this behavior might be stored
-   * in the database as some model-specific behavior.
+   * hidden.  Use config moduleBehavior to define this.
    */
   showLevelIndicator(q): boolean {
-    // CPG (11) does not have levels - don't show the indicator
-    if ([11].indexOf(q.maturityModelId) >= 0) {
-      return false;
+    const behavior = this.configSvc.config.moduleBehaviors.find(m => m.moduleName == this.assessSvc.assessment.maturityModel.modelName)
+    if (!!behavior) {
+      return behavior.showMaturityLevelBadge ?? true;
     }
 
     return true;
@@ -289,4 +293,23 @@ export class QuestionBlockMaturityComponent implements OnInit {
         .subscribe();
     }, 500);
   }
+
+  checkAnswerKeyPress(event: any, q: Question, newAnswerValue: string) {
+    if (event) {
+      if (event.key === "Enter") {
+        this.storeAnswer(q, newAnswerValue);
+      }
+    }
+
+  }
+
+  checkReviewKeyPress(event: any, q: Question) {
+    if (event) {
+      if (event.key === "Enter") {
+        this.saveMFR(q);
+      }
+    }
+  }
+
+
 }

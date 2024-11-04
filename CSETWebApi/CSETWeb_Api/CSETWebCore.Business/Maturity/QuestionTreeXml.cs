@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -173,7 +173,7 @@ namespace CSETWebCore.Business.Maturity
                 xQuestions.Add(xQ);
 
                 xQ.SetAttributeValue("id", myQ.Mat_Question_Id);
-                xQ.SetAttributeValue("text", myQ.Question_Text.Replace("\r\n", "<br/>").Replace("\n", "<br/>").Replace("\r", "<br/> "));
+                xQ.SetAttributeValue("text", myQ.Question_Text);
                 xQ.SetAttributeValue("answer-text", answer?.Answer_Text);
 
                 GetOptions(xQ);

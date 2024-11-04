@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../../../services/assessment.service';
 import { AssessmentDetail } from '../../../../models/assessment-info.model';
@@ -35,6 +34,7 @@ import { map, startWith } from 'rxjs/operators';
 import { CreditUnionDetails } from '../../../../models/credit-union-details.model';
 import { ACETService } from '../../../../services/acet.service';
 import { AcetDashboard } from '../../../../models/acet-dashboard.model';
+import { DateTime } from 'luxon';
 
 
 @Component({
@@ -54,18 +54,18 @@ import { AcetDashboard } from '../../../../models/acet-dashboard.model';
 export class AssessmentDetailNcuaComponent implements OnInit {
 
   assessment: AssessmentDetail = {};
-  
+
   // Adding a date property here to avoid breaking any other assessments. Will probably update later.
   assessmentEffectiveDate: Date = new Date();
 
   contactInitials: string = "";
-  lastModifiedTimestamp: string = "";
+  lastModifiedTimestamp: string = Date.now().toString();
 
   assessmentControl = new UntypedFormControl('');
   assessmentCharterControl = new UntypedFormControl('');
   creditUnionOptions: CreditUnionDetails[] = [];
   filteredOptions: Observable<CreditUnionDetails[]>;
-  
+
   acetDashboard: AcetDashboard;
   examOverride: string = "";
 
@@ -98,7 +98,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
       });
 
     this.navSvc.setCurrentPage('info1');
-    
+
     if (this.assessSvc.id()) {
       this.getAssessmentDetail();
     }
@@ -119,10 +119,10 @@ export class AssessmentDetailNcuaComponent implements OnInit {
       this.filteredOptions = this.assessmentControl.valueChanges.pipe(
         startWith(''), map(value => {
           let tval = "";
-          if(typeof value === 'string'){
+          if (typeof value === 'string') {
             tval = value;
-          } 
-          else{
+          }
+          else {
             //tval= value.name;
           }
           const name = tval;
@@ -131,11 +131,16 @@ export class AssessmentDetailNcuaComponent implements OnInit {
       );
     }
 
-    this.assessSvc.getLastModified().subscribe((data: string) => {
-      let myArray = data.split(" ");
-      this.lastModifiedTimestamp = myArray[1];
+    this.assessSvc.getLastModified().subscribe((data: any) => {
+      this.lastModifiedTimestamp = DateTime.fromISO(data.lastModifiedDate).toLocaleString(DateTime.TIME_24_WITH_SECONDS)
+      // NCUA specifically asked for the ISE assessment name to update to the 'ISE format' as soon as the page loads.
+      // The time stamp (above) is the final piece of that format that is necessary, so we update the assess name here.
+      this.createAssessmentName();
     });
 
+    this.ncuaSvc.getSubmissionStatus().subscribe((result: any) => {
+      this.ncuaSvc.iseHasBeenSubmitted = result;
+    });
   }
 
   /**
@@ -143,13 +148,14 @@ export class AssessmentDetailNcuaComponent implements OnInit {
    */
   getAssessmentDetail() {
     this.assessment = this.assessSvc.assessment;
-    
+
     // a few things for a brand new assessment
     if (this.assessSvc.isBrandNew) {
       //this.assessSvc.setNcuaDefaults(); <-- legacy from check boxes. Breaks gallery cards.
 
       this.assessSvc.getAssessmentContacts().then((response: any) => {
         this.contactInitials = "_" + response.contactList[0].firstName;
+        this.createAssessmentName();
       });
 
       this.assessSvc.updateAssessmentDetails(this.assessment);
@@ -164,7 +170,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
         }
       }
     }
-    
+
     this.assessSvc.isBrandNew = false;
 
     this.setCharterPad();
@@ -181,23 +187,20 @@ export class AssessmentDetailNcuaComponent implements OnInit {
       this.assessment.assessmentDate = null;
       this.assessmentEffectiveDate = null;
     }
-    
-    if (this.assessment.assessmentName === "New Assessment")
-      this.createAssessmentName();
 
   }
 
   /**
    * 
    */
-  displayOptions (creditUnion: CreditUnionDetails): string {
+  displayOptions(creditUnion: CreditUnionDetails): string {
     return creditUnion.name && creditUnion.name ? creditUnion.name : '';
   }
 
   /**
    * 
    */
-  filter (name: string): CreditUnionDetails[] {
+  filter(name: string): CreditUnionDetails[] {
     const filterValue = name.toLowerCase();
     return this.creditUnionOptions.filter(option => option.name.toLowerCase().includes(filterValue));
   }
@@ -216,13 +219,11 @@ export class AssessmentDetailNcuaComponent implements OnInit {
     let i = 0;
     while (i < this.creditUnionOptions.length) {
       if (e.target.value == this.creditUnionOptions[i].name) {
-        console.log("Credit Union Name match found at: " + i);
         this.populateAssessmentFields(i);
         break;
       }
 
       if ((e.target.value.padStart(5, '0')) === (this.creditUnionOptions[i].charter.toString())) {
-        console.log("Charter Number match found at: " + i);
         this.populateAssessmentFields(i);
         break;
       }
@@ -233,10 +234,17 @@ export class AssessmentDetailNcuaComponent implements OnInit {
     if (e.target.value.padStart(5, '0') === '00000') {
       this.clearAssessmentFields();
     }
-    
+
     this.createAssessmentName();
     this.setCharterPad();
 
+    // Set the name & charter in NCUA service to enable the MERIT submit button on the reports page
+    this.ncuaSvc.creditUnionName = this.assessment.creditUnion;
+    this.ncuaSvc.creditUnionCharterNumber = this.assessment.charter;
+
+    if (+this.assessment.charter < 60000) {
+      this.ncuaSvc.ISE_StateLed = false;
+    }
     this.assessSvc.updateAssessmentDetails(this.assessment);
   }
 
@@ -251,7 +259,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
     this.assessment.charterType = this.creditUnionOptions[i].charterType;
     this.assessment.regionCode = this.creditUnionOptions[i].regionCode;
 
-    if (this.creditUnionOptions[i].charterType != 1) {
+    if (this.creditUnionOptions[i].charterType == 1 || +this.assessment.charter >= 60000) {
       this.assessment.isE_StateLed = false;
     }
 
@@ -270,6 +278,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
     this.assessment.charterType = 0;
     this.assessment.regionCode = 0;
     this.assessment.assets = '0';
+    this.assessment.isE_StateLed = false;
     this.updateAssets();
 
   }
@@ -278,7 +287,10 @@ export class AssessmentDetailNcuaComponent implements OnInit {
   * 
   */
   updateAssets() {
-   // this.assessment.assets = e.target.value;
+    if (this.assessment.assets == null) {
+      this.assessment.assets = "0";
+    }
+      
     this.ncuaSvc.updateAssetSize(this.assessment.assets);
     this.acetDashboard.assets = this.assessment.assets;
 
@@ -345,7 +357,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
       if (this.assessment.assessmentName.includes("merged") || this.assessment.assessmentName.includes("Merged")) {
         return;
       }
-      
+
       this.assessment.assessmentName = "ISE";
     } else {
       this.assessment.assessmentName = "ACET";
@@ -355,19 +367,19 @@ export class AssessmentDetailNcuaComponent implements OnInit {
     if (this.assessment.charter) {
       this.assessment.assessmentName = this.assessment.assessmentName + " " + this.assessment.charter;
     }
-    
+
     if (this.assessment.creditUnion) {
       this.assessment.assessmentName = this.assessment.assessmentName + " " + this.assessment.creditUnion;
     }
-    
+
     if (this.assessment.assessmentDate) {
       let date = new Date(Date.parse(this.assessment.assessmentDate));
       this.assessment.assessmentName = this.assessment.assessmentName + " " + this.datePipe.transform(date, 'MMddyy');
     }
-
-    this.assessment.assessmentName = this.assessment.assessmentName + ", " + this.lastModifiedTimestamp;
-
+    
+    // Specific ISE assessment names that we don't want bleeding over to ACET.
     if (this.isAnExamination()) {
+      this.assessment.assessmentName = this.assessment.assessmentName + ", " + this.lastModifiedTimestamp;
       this.assessment.assessmentName = this.assessment.assessmentName + this.contactInitials;
     }
   }
@@ -387,7 +399,7 @@ export class AssessmentDetailNcuaComponent implements OnInit {
   * 
   */
   regionTranslator(regionCode: number) {
-    switch(regionCode) {
+    switch (regionCode) {
       case 1:
         return 'Eastern';
       case 2:

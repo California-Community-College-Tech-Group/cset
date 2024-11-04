@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
 ////////////////////////////////
 import { Component, OnInit, ViewChild, AfterViewInit, ViewEncapsulation } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { Hotkey, HotkeysService } from 'angular2-hotkeys';
 import { AboutComponent } from './dialogs/about/about.component';
 import { AdvisoryComponent } from './dialogs/advisory/advisory.component';
@@ -43,12 +43,14 @@ import { NgbAccordion } from '@ng-bootstrap/ng-bootstrap';
 import { ExcelExportComponent } from './dialogs/excel-export/excel-export.component';
 import { AggregationService } from './services/aggregation.service';
 import { LocalStoreManager } from './services/storage.service';
+import { NavigationService } from './services/navigation/navigation.service';
+import { FooterService } from './services/footer.service';
+import { translate } from '@ngneat/transloco';
 
 
 declare var $: any;
 
 @Component({
-  moduleId: module.id,
   selector: 'app-root',
   templateUrl: './app.component.html',
   encapsulation: ViewEncapsulation.None,
@@ -65,11 +67,13 @@ export class AppComponent implements OnInit, AfterViewInit {
   constructor(
     public auth: AuthenticationService,
     public assessSvc: AssessmentService,
+    private navSvc: NavigationService,
     public configSvc: ConfigService,
     public aggregationSvc: AggregationService,
     public dialog: MatDialog,
     public router: Router,
     private _hotkeysService: HotkeysService,
+    private footerSvc: FooterService,
     storageManager: LocalStoreManager
   ) {
     storageManager.initialiseStorageSyncListener();
@@ -99,7 +103,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       localStorage.removeItem("returnPath");
       const qParams = this.processParams(rpath);
       rpath = rpath.split('?')[0];
-      this.router.navigate([rpath], {queryParams: qParams, queryParamsHandling: 'merge' });
+      this.router.navigate([rpath], { queryParams: qParams, queryParamsHandling: 'merge' });
     }
   }
 
@@ -262,7 +266,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     }));
     // Accessibility Features
     this._hotkeysService.add(new Hotkey('alt+c', (event: KeyboardEvent): boolean => {
-      switch(this.configSvc.installationMode || '') {
+      switch (this.configSvc.installationMode || '') {
         case "ACET":
           window.open(this.docUrl + "AccessibilityFeatures/index_acet.htm", "_blank");
           break;
@@ -273,7 +277,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     }));
     // User Guide
     this._hotkeysService.add(new Hotkey('alt+g', (event: KeyboardEvent): boolean => {
-      switch(this.configSvc.installationMode || '') {
+      switch (this.configSvc.installationMode || '') {
         case "ACET":
           window.open(this.docUrl + "htmlhelp_acet/index.htm", "_blank");
           break;
@@ -294,11 +298,18 @@ export class AppComponent implements OnInit, AfterViewInit {
     // New Assessment
     this._hotkeysService.add(new Hotkey('alt+n', (event: KeyboardEvent): boolean => {
       const dialogRef = this.dialog.open(ConfirmComponent);
-      dialogRef.componentInstance.confirmMessage =
-        "Are you sure you want to create a new assessment? ";
+      dialogRef.componentInstance.confirmMessage = translate('dialogs.confirm create new assessment');
+
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.assessSvc.newAssessment();
+          //this.assessSvc.newAssessment();
+          //this.navSvc.beginNewAssessment();
+          this.router.navigate(['/landing-page-tabs'], {
+            queryParams: {
+              'tab': 'newAssessment'
+            },
+            queryParamsHandling: 'merge',
+          });
         }
       });
       return false; // Prevent bubbling
@@ -308,11 +319,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       window.open(this.docUrl + "cdDocs/UserGuide.pdf", "_blank");
       return false; // Prevent bubbling
     }));
-
-    // Questionnaires
-    // this._hotkeysService.add(new Hotkey('alt+q', (event: KeyboardEvent): boolean => {
-    //   return false; // Prevent bubbling
-    // }));
 
     // Protected Features
     this._hotkeysService.add(new Hotkey('alt+r', (event: KeyboardEvent): boolean => {
@@ -345,9 +351,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   isFooterOpen() {
-    if (!!this.accordion) {
-      return this.accordion.isExpanded('footerPanel');
-    }
-    return false;
+    this.footerSvc.isFooterOpen(this.accordion);
   }
 }

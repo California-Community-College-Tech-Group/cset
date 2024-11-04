@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -15,7 +15,7 @@ namespace CSETWebCore.Interfaces.ResourceLibrary
     public interface IResourceLibraryRepository
     {
         CatalogRecommendationsTopicNode GetCatalogRecommendationsNode(int id);
-        ProcurementLanguageTopicNode GetProcurmentLanguageNode(int id);
+        ProcurementLanguageTopicNode GetProcurementLanguageNode(int id);
         Dictionary<int, ResourceNode> ResourceModelDictionary { get; }
         ObservableCollection<ResourceNode> TopNodes { get; }
         List<SimpleNode> GetTreeNodes();

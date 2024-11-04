@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -8,11 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CSETWebCore.DataLayer.Model;
-using CSETWebCore.Helpers;
+using Nelibur.ObjectMapper;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Question;
 using CSETWebCore.Model.Question;
-using Microsoft.AspNetCore.Http;
 using Snickler.EFCore;
 
 namespace CSETWebCore.Business.Question
@@ -84,10 +83,10 @@ namespace CSETWebCore.Business.Question
             // Get any subcategory answers for the assessment
             SubCatAnswers = (from sca in _context.SUB_CATEGORY_ANSWERS
                              join usch in _context.UNIVERSAL_SUB_CATEGORY_HEADINGS on sca.Heading_Pair_Id equals usch.Heading_Pair_Id
-                             where sca.Assessement_Id == AssessmentId
+                             where sca.Assessment_Id == AssessmentId
                              select new SubCategoryAnswersPlus()
                              {
-                                 AssessmentId = sca.Assessement_Id,
+                                 AssessmentId = sca.Assessment_Id,
                                  HeadingId = sca.Heading_Pair_Id,
                                  AnswerText = sca.Answer_Text,
                                  GroupHeadingId = usch.Question_Group_Heading_Id,
@@ -161,7 +160,25 @@ namespace CSETWebCore.Business.Question
             var standardSelection = _context.STANDARD_SELECTION.Where(x => x.Assessment_Id == AssessmentId).FirstOrDefault();
             if (standardSelection != null)
             {
-                var targetString = (mode == "Q") ? "Questions Based" : "Requirements Based";
+                string targetString = "Requirements Based";
+                //var targetString = (mode == "Q") ? "Questions Based" : ((mode == "R") ? "Requirements Based" : 
+                //    ((mode == "P") ? "Principle Scope" : ((mode == "Principle-Phase Scope"));
+                switch (mode) 
+                {
+                    case "Q":
+                        targetString = "Questions Based";
+                        break;
+                    case "P":
+                        targetString = "Principle Scope";
+                        break;
+                    case "F":
+                        targetString = "Principle-Phase Scope";
+                        break;
+                    default:
+                        targetString = "Requirements Based";
+                        break;
+                }
+
                 if (standardSelection.Application_Mode != targetString)
                 {
                     standardSelection.Application_Mode = targetString;
@@ -248,14 +265,23 @@ namespace CSETWebCore.Business.Question
         /// <param name="answer"></param>
         public int StoreAnswer(Answer answer)
         {
-            // Find the Question or Requirement
-            var question = _context.NEW_QUESTION.Where(q => q.Question_Id == answer.QuestionId).FirstOrDefault();
-            var requirement = _context.NEW_REQUIREMENT.Where(r => r.Requirement_Id == answer.QuestionId).FirstOrDefault();
-
-            if (question == null && requirement == null)
+            // Verify the Question exists
+            if (
+                (answer.QuestionType == "Question" && !_context.NEW_QUESTION.Any(q => q.Question_Id == answer.QuestionId))
+                || (answer.QuestionType == "Requirement" && !_context.NEW_REQUIREMENT.Any(r => r.Requirement_Id == answer.QuestionId))
+                || (answer.QuestionType == "Component" && !_context.COMPONENT_QUESTIONS.Any(c => c.Question_Id == answer.QuestionId))
+                || (answer.QuestionType == "Maturity" && !_context.MATURITY_QUESTIONS.Any(m => m.Mat_Question_Id == answer.QuestionId))
+                )
             {
                 throw new Exception("Unknown question or requirement ID: " + answer.QuestionId);
             }
+
+            var types = new List<string> { "Question", "Requirement", "Component", "Maturity" };
+            if (!types.Contains(answer.QuestionType))
+            {
+                throw new Exception("Unknown question type:" + answer.QuestionType);
+            }
+
 
 
             // in case a null is passed, store 'unanswered'
@@ -263,7 +289,7 @@ namespace CSETWebCore.Business.Question
             {
                 answer.AnswerText = "U";
             }
-            string questionType = "Question";
+
 
             ANSWER dbAnswer = null;
             if (answer != null && answer.ComponentGuid != Guid.Empty)
@@ -286,7 +312,7 @@ namespace CSETWebCore.Business.Question
 
             dbAnswer.Assessment_Id = AssessmentId;
             dbAnswer.Question_Or_Requirement_Id = answer.QuestionId;
-            dbAnswer.Question_Type = answer.QuestionType ?? questionType;
+            dbAnswer.Question_Type = answer.QuestionType;
 
             dbAnswer.Question_Number = answer.QuestionNumber != null ? int.Parse(answer.QuestionNumber) : (int?)null;
             dbAnswer.Answer_Text = answer.AnswerText;
@@ -315,7 +341,8 @@ namespace CSETWebCore.Business.Question
         /// <param name="resp"></param>        
         public void BuildComponentsResponse(QuestionResponse resp)
         {
-            var list = _context.usp_Answer_Components_Default(this.AssessmentId).Cast<Answer_Components_Base>().ToList();
+            var answerComponents = _context.usp_Answer_Components_Default(this.AssessmentId);
+            var list = answerComponents.Select(component => TinyMapper.Map<Answer_Components_Base>(component)).ToList();
             //.Where(x => x.Assessment_Id == this.assessmentID).Cast<Answer_Components_Base>()
             //.OrderBy(x => x.Question_Group_Heading).ThenBy(x => x.Universal_Sub_Category).ToList();
 
@@ -403,7 +430,7 @@ namespace CSETWebCore.Business.Question
                 {
                     DisplayNumber = (++displayNumber).ToString(),
                     QuestionId = dbQ.Question_Id,
-                    QuestionText = FormatLineBreaks(dbQ.Simple_Question),
+                    QuestionText = dbQ.Simple_Question,
                     Answer = dbQ.Answer_Text,
                     Answer_Id = dbQ.Answer_Id,
                     AltAnswerText = dbQ.Alternate_Justification,
@@ -481,7 +508,7 @@ namespace CSETWebCore.Business.Question
                 {
                     DisplayNumber = (++displayNumber).ToString(),
                     QuestionId = dbQ.Question_Id,
-                    QuestionText = FormatLineBreaks(dbQ.Simple_Question),
+                    QuestionText = dbQ.Simple_Question,
                     Answer = dbQ.Answer_Text,
                     Answer_Id = dbQ.Answer_Id,
                     AltAnswerText = dbQ.Alternate_Justification,
@@ -535,21 +562,8 @@ namespace CSETWebCore.Business.Question
 
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
-        public string FormatLineBreaks(string s)
-        {
-            return s.Replace("\r\n", "<br/>").Replace("\r", "<br/>").Replace("\n", "<br/>");
-        }
-
-        /// <summary>
         /// Returns the number of questions that are relevant for the selected standards 
-        /// when in REQUIREMENTS mode.
-        /// 
-        /// TODO:  This query is a copy of the one above.  Find a way to have a single copy of the query
-        /// that can be used for full queries or counts or whatever.
+        /// when in REQUIREMENTS mode.        
         /// </summary>
         /// <returns></returns>
         public int NumberOfRequirements()
@@ -573,8 +587,6 @@ namespace CSETWebCore.Business.Question
         /// 
         /// The query differs whether a single or multiple standards are selected.
         /// 
-        /// TODO:  These queries are copies of the ones above.  Find a way to have a single instance of each query
-        /// that can be used for both full data queries and counts in an efficient way.
         /// </summary>
         /// <returns></returns>
         public int NumberOfQuestions()

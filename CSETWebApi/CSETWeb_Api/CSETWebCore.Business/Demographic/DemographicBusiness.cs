@@ -1,14 +1,18 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
+
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using CSETWebCore.Business.Aggregation;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Demographic;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Model.Assessment;
+using CSETWebCore.Model.Demographic;
 
 namespace CSETWebCore.Business.Demographic
 {
@@ -62,8 +66,14 @@ namespace CSETWebCore.Business.Demographic
                 demographics.IsScoped = hit.ddd?.IsScoped != false;
                 demographics.OrganizationName = hit.ddd?.OrganizationName;
                 demographics.OrganizationType = hit.ddd?.OrganizationType;
-
             }
+
+
+            // get any additional values we need from DETAILS_DEMOGRAPHICS
+            var extBiz = new DemographicExtBusiness(_context);
+            demographics.CisaRegion = (int?)extBiz.GetX(assessmentId, "CISA-REGION");
+            demographics.OrgPointOfContact = (int?)extBiz.GetX(assessmentId, "ORG-POC");
+
 
             return demographics;
         }
@@ -112,6 +122,7 @@ namespace CSETWebCore.Business.Demographic
             return demographics;
         }
 
+
         /// <summary>
         /// Persists data to the DEMOGRAPHICS table.
         /// </summary>
@@ -123,7 +134,10 @@ namespace CSETWebCore.Business.Demographic
             string assetValue = _context.DEMOGRAPHICS_ASSET_VALUES.Where(dav => dav.DemographicsAssetId == demographics.AssetValue).FirstOrDefault()?.AssetValue;
             string assetSize = _context.DEMOGRAPHICS_SIZE.Where(dav => dav.DemographicId == demographics.Size).FirstOrDefault()?.Size;
 
+            this.ClearValues(demographics);
+
             // If the user selected nothing for sector or industry, store a null - 0 violates foreign key
+
             if (demographics.SectorId == 0)
             {
                 demographics.SectorId = null;
@@ -135,6 +149,7 @@ namespace CSETWebCore.Business.Demographic
             }
 
             var dbDemographics = _context.DEMOGRAPHICS.Where(x => x.Assessment_Id == demographics.AssessmentId).FirstOrDefault();
+
             if (dbDemographics == null)
             {
                 dbDemographics = new DEMOGRAPHICS()
@@ -154,6 +169,7 @@ namespace CSETWebCore.Business.Demographic
             dbDemographics.PointOfContact = demographics.PointOfContact == 0 ? null : demographics.PointOfContact;
             dbDemographics.IsScoped = demographics.IsScoped;
             dbDemographics.Agency = demographics.Agency;
+
             dbDemographics.OrganizationType = demographics.OrganizationType == 0 ? null : demographics.OrganizationType;
             dbDemographics.OrganizationName = demographics.OrganizationName;
 
@@ -161,14 +177,100 @@ namespace CSETWebCore.Business.Demographic
             _context.SaveChanges();
             demographics.AssessmentId = dbDemographics.Assessment_Id;
 
+
+
+            // Not all fields are stored in DEMOGRAPHICS table ... store some in DETAILS-DEMOGRAPHICS
+            var extBiz = new DemographicExtBusiness(_context);
+            extBiz.SaveX(demographics.AssessmentId, "CISA-REGION", demographics.CisaRegion);
+            extBiz.SaveX(demographics.AssessmentId, "ORG-POC", demographics.OrgPointOfContact);
+
+
+
             _assessmentUtil.TouchAssessment(dbDemographics.Assessment_Id);
 
             return demographics.AssessmentId;
         }
 
+        //Clear out corresponding DETAILS_DEMOGRAPHICS values if new values set by non-assessor
+
+        public void ClearValues(Demographics demographics)
+        {
+            if (demographics.SectorId != null)
+            {
+                var rec = _context.DETAILS_DEMOGRAPHICS.Where(x => x.Assessment_Id == demographics.AssessmentId && x.DataItemName == "SECTOR").FirstOrDefault();
+                if (rec != null)
+                {
+                    _context.DETAILS_DEMOGRAPHICS.Remove(rec);
+                }
+                rec = _context.DETAILS_DEMOGRAPHICS.Where(x => x.Assessment_Id == demographics.AssessmentId && x.DataItemName == "SUBSECTOR").FirstOrDefault();
+                if (rec != null)
+                {
+                    _context.DETAILS_DEMOGRAPHICS.Remove(rec);
+                }
+            }
+            if (demographics.OrganizationType != null)
+            {
+                var rec = _context.DETAILS_DEMOGRAPHICS.Where(x => x.Assessment_Id == demographics.AssessmentId && x.DataItemName == "ORG-TYPE").FirstOrDefault();
+                if (rec != null)
+                {
+                    _context.DETAILS_DEMOGRAPHICS.Remove(rec);
+                }
+            }
+            if (demographics.Agency != null)
+            {
+                var rec = _context.DETAILS_DEMOGRAPHICS.Where(x => x.Assessment_Id == demographics.AssessmentId && x.DataItemName == "BUSINESS-UNIT").FirstOrDefault();
+                if (rec != null)
+                {
+                    _context.DETAILS_DEMOGRAPHICS.Remove(rec);
+                }
+            }
+            _context.SaveChanges();
+        }
+
+        /// <summary>
+        /// Extended Demographics can be stored both in the DEMOGRAPHIC_ANSWERS and
+        /// the DETAILS_DEMOGRAPHICS table.  
+        /// </summary>
+        /// <param name="assessmentId"></param>
+        /// <returns></returns>
+        public ExtendedDemographic GetExtendedDemographics(int assessmentId)
+        {
+            var demo = new ExtendedDemographic();
+            demo.AssessmentId = assessmentId;
+
+            // get values from DEMOGRAPHIC_ANSWERS (one row per assessment)
+            var da = _context.DEMOGRAPHIC_ANSWERS.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
+
+            if (da == null)
+            {
+                da = new DEMOGRAPHIC_ANSWERS();
+            }
+
+            demo.CustomersSupported = da.CustomersSupported;
+            demo.CyberRiskService = da.CyberRiskService;
+            demo.CioExists = da.CIOExists;
+            demo.CisoExists = da.CISOExists;
+            demo.Employees = da.Employees;
+            demo.CyberTrainingProgramExists = da.CyberTrainingProgramExists;
+            demo.GeographicScope = da.GeographicScope;
+            demo.SectorId = da.SectorId;
+            demo.SubSectorId = da.SubSectorId;
+
+
+            // get values from DETAILS_DEMOGRAPHICS (multiple name/value rows per assessment)
+            var demogBiz = new DemographicBusiness(_context, _assessmentUtil);
+            demo.Hb7055 = demogBiz.GetDD(assessmentId, "HB-7055");
+            demo.Hb7055Party = demogBiz.GetDD(assessmentId, "HB-7055-PARTY");
+            demo.Hb7055Grant = demogBiz.GetDD(assessmentId, "HB-7055-GRANT");
+            demo.InfrastructureItOt = demogBiz.GetDD(assessmentId, "INFRA-IT-OT");
+
+            return demo;
+        }
+
 
         /// <summary>
         /// Persists data to the ExtendedDemographicAnswer database table.
+        /// Also saves data to DETAILS_DEMOGRAPHICS.
         /// </summary>
         /// <param name="demographics"></param>
         /// <returns></returns>
@@ -179,7 +281,7 @@ namespace CSETWebCore.Business.Demographic
             {
                 dbDemog = new DEMOGRAPHIC_ANSWERS()
                 {
-                    Assessment_Id = demographics.AssessmentId                               
+                    Assessment_Id = demographics.AssessmentId
                 };
                 _context.DEMOGRAPHIC_ANSWERS.Add(dbDemog);
                 _context.SaveChanges();
@@ -193,15 +295,65 @@ namespace CSETWebCore.Business.Demographic
             dbDemog.CIOExists = demographics.CioExists;
             dbDemog.CISOExists = demographics.CisoExists;
             dbDemog.CyberTrainingProgramExists = demographics.CyberTrainingProgramExists;
-            dbDemog.cyberRiskService = demographics.cyberRiskService;
+            dbDemog.CyberRiskService = demographics.CyberRiskService;
 
             _context.DEMOGRAPHIC_ANSWERS.Update(dbDemog);
             _context.SaveChanges();
 
 
+            // save demographic answers that live in DETAILS_DEMOGRAPHICS
+            SaveDD(demographics.AssessmentId, "HB-7055", demographics.Hb7055, null);
+            SaveDD(demographics.AssessmentId, "HB-7055-PARTY", demographics.Hb7055Party, null);
+            SaveDD(demographics.AssessmentId, "INFRA-IT-OT", demographics.InfrastructureItOt, null);
+            SaveDD(demographics.AssessmentId, "HB-7055-GRANT", demographics.Hb7055Grant, null);
+
+
             _assessmentUtil.TouchAssessment(dbDemog.Assessment_Id);
 
             return dbDemog.Assessment_Id;
+        }
+
+
+        /// <summary>
+        /// Retrieves a DETAILS_DEMOGRAPHICS record for the assessment.
+        /// </summary>
+        /// <returns></returns>
+        public string GetDD(int assessmentId, string key)
+        {
+            var dd = _context.DETAILS_DEMOGRAPHICS
+               .Where(x => x.Assessment_Id == assessmentId && x.DataItemName == key).FirstOrDefault();
+
+            if (dd != null)
+            {
+                return dd.StringValue;
+            }
+
+            return null;
+        }
+
+
+        /// <summary>
+        /// Persists a DETAILS_DEMOGRAPHICS record for the assessment.
+        /// Replaces an existing record; does not create another one with the same name.
+        /// TODO:  implement a datatype option.
+        /// </summary>
+        public void SaveDD(int assessmentId, string key, string value, string dataType)
+        {
+            var dd = _context.DETAILS_DEMOGRAPHICS
+               .Where(x => x.Assessment_Id == assessmentId && x.DataItemName == key).FirstOrDefault();
+
+            if (dd == null)
+            {
+                dd = new DETAILS_DEMOGRAPHICS
+                {
+                    Assessment_Id = assessmentId,
+                    DataItemName = key
+                };
+                _context.DETAILS_DEMOGRAPHICS.Add(dd);
+            }
+
+            dd.StringValue = value;
+            _context.SaveChanges();
         }
     }
 }

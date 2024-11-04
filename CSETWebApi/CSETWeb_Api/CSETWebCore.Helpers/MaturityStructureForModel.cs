@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -14,9 +14,8 @@ using CSETWebCore.Model.Question;
 namespace CSETWebCore.Helpers
 {
     /// <summary>
-    /// The idea is a lightweight XDocument based 
-    /// representation of any maturity model's questions
-    /// in their grouping structure.
+    /// Represents a maturity model's questions
+    /// in their grouping structure.  
     /// 
     /// </summary>
     public class MaturityStructureForModel
@@ -63,7 +62,7 @@ namespace CSETWebCore.Helpers
 
         /// <summary>
         /// Gathers questions and answers and builds them into a basic
-        /// hierarchy in an XDocument.
+        /// hierarchy.
         /// </summary>
         private void LoadStructure()
         {
@@ -151,7 +150,7 @@ namespace CSETWebCore.Helpers
 
 
                 // are there any questions that belong to this grouping?
-                var myQuestions = allQuestions.Where(x => x.Grouping_Id == sg.Grouping_Id 
+                var myQuestions = allQuestions.Where(x => x.Grouping_Id == sg.Grouping_Id
                     && x.Parent_Question_Id == null && x.Parent_Option_Id == null).ToList();
 
                 foreach (var myQ in myQuestions.OrderBy(s => s.Sequence))
@@ -176,10 +175,18 @@ namespace CSETWebCore.Helpers
                     if (_includeText)
                     {
                         question.QuestionText = myQ.Question_Text.Replace("\r\n", "<br/>").Replace("\n", "<br/>").Replace("\r", "<br/> ");
+
+                        // CPG elements
+                        question.SecurityPractice = myQ.Security_Practice;
+                        question.Outcome = myQ.Outcome;
+                        question.Scope = myQ.Scope;
+                        question.RecommendedAction = myQ.Recommend_Action;
+                        question.ImplementationGuides = myQ.Implementation_Guides;
+
                         question.SupplementalInfo = myQ.Supplemental_Info;
                         question.ReferenceText = myQ.MATURITY_REFERENCE_TEXT.FirstOrDefault()?.Reference_Text;
 
-                        GetReferences(myQ.Mat_Question_Id, out List<CustomDocument> s, out List<CustomDocument> r);
+                        GetReferences(myQ.Mat_Question_Id, out List<ReferenceDocLink> s, out List<ReferenceDocLink> r);
                         question.SourceDocuments = s;
                         question.AdditionalDocuments = r;
                     }
@@ -234,7 +241,7 @@ namespace CSETWebCore.Helpers
                     question.SupplementalInfo = myQ.Supplemental_Info;
                     question.ReferenceText = myQ.MATURITY_REFERENCE_TEXT.FirstOrDefault()?.Reference_Text;
 
-                    GetReferences(myQ.Mat_Question_Id, out List<CustomDocument> s, out List<CustomDocument> r);
+                    GetReferences(myQ.Mat_Question_Id, out List<ReferenceDocLink> s, out List<ReferenceDocLink> r);
                     question.SourceDocuments = s;
                     question.AdditionalDocuments = r;
                 }
@@ -295,7 +302,7 @@ namespace CSETWebCore.Helpers
                         question.SupplementalInfo = myQ.Supplemental_Info;
                         question.ReferenceText = myQ.MATURITY_REFERENCE_TEXT.FirstOrDefault()?.Reference_Text;
 
-                        GetReferences(myQ.Mat_Question_Id, out List<CustomDocument> s, out List<CustomDocument> r);
+                        GetReferences(myQ.Mat_Question_Id, out List<ReferenceDocLink> s, out List<ReferenceDocLink> r);
                         question.SourceDocuments = s;
                         question.AdditionalDocuments = r;
                     }
@@ -309,13 +316,13 @@ namespace CSETWebCore.Helpers
             return list;
         }
 
-            
-        private void GetReferences(int questionId, out List<CustomDocument> sourceDocs,
-                out List<CustomDocument> additionalDocs)
+
+        private void GetReferences(int questionId, out List<ReferenceDocLink> sourceDocs,
+                out List<ReferenceDocLink> additionalDocs)
         {
             var refBuilder = new Helpers.ReferencesBuilder(_context);
-            refBuilder.BuildDocumentsForMaturityQuestion(questionId, out List<CustomDocument> s,
-                out List<CustomDocument> r);
+            refBuilder.BuildRefDocumentsForMaturityQuestion(questionId, out List<ReferenceDocLink> s,
+                out List<ReferenceDocLink> r);
 
             sourceDocs = s;
             additionalDocs = r;

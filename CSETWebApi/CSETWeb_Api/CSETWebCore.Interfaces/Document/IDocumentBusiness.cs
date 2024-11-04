@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -18,5 +18,6 @@ namespace CSETWebCore.Interfaces.Document
         List<int> GetQuestionsForDocument(int id);
         void AddDocument(string title, int answerId, FileUploadStreamResult result);
         List<Model.Document.Document> GetDocumentsForAssessment(int assessmentId);
+        void CopyFilesForMerge(List<DocumentWithAnswerId> documents);
     }
 }

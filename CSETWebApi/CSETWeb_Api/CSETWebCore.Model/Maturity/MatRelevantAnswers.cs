@@ -1,10 +1,11 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using CSETWebCore.DataLayer.Model;
+using CSETWebCore.Model.Document;
 using System.Collections.Generic;
 
 namespace CSETWebCore.Model.Maturity
@@ -45,6 +46,7 @@ namespace CSETWebCore.Model.Maturity
 
         public string Title { get; set; }
         public bool IsDeficient { get; set; }
+        public bool AreFactorQuestionsDeficient { get; set; }
         public List<MaturityAnsweredQuestionsAssesment> AssessmentFactors { get; set; }
     }
 
@@ -55,7 +57,10 @@ namespace CSETWebCore.Model.Maturity
         }
         public string Title { get; set; }
         public bool IsDeficient { get; set; }
+        public bool AreQuestionsDeficient { get; set; }
         public List<MaturityAnsweredQuestionsComponent> Components { get; set; }
+        public List<MaturityAnsweredQuestions>? Questions { get; set; }
+
     }
     public class MaturityAnsweredQuestionsComponent
     {
@@ -80,7 +85,9 @@ namespace CSETWebCore.Model.Maturity
         public bool MarkForReview { get; set; }
         public string Comment { get; set; }
         public int MatQuestionId { get; set; }
+        public string FreeResponseText { get; set; }
+        public List<DocumentWithAnswerId> Documents { get; set; }
+        public bool Visible { get; set; }
     }
 
-  
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit, AfterViewChecked, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { ReportAnalysisService } from '../../services/report-analysis.service';
 import { ReportService } from '../../services/report.service';
 import { ConfigService } from '../../services/config.service';
@@ -32,6 +32,8 @@ import { ACETService } from '../../services/acet.service';
 import { MaturityService } from '../../services/maturity.service';
 import { QuestionsService } from '../../services/questions.service';
 import Chart from 'chart.js/auto';
+import { AssessmentService } from '../../services/assessment.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'site-summary',
@@ -41,6 +43,7 @@ import Chart from 'chart.js/auto';
 export class SiteSummaryComponent implements OnInit, AfterViewInit {
   chartStandardsSummary: Chart;
   chartPercentCompliance: Chart;
+  translationSub: any;
   response: any;
   responseResultsByCategory: any;
 
@@ -79,10 +82,15 @@ export class SiteSummaryComponent implements OnInit, AfterViewInit {
     public acetSvc: ACETService,
     private sanitizer: DomSanitizer,
     private maturitySvc: MaturityService,
+    private assessmentSvc: AssessmentService,
+    public tSvc: TranslocoService
   ) { }
 
   ngOnInit() {
-    this.titleService.setTitle("Site Summary Report - " + this.configSvc.behaviors.defaultTitle);
+    this.translationSub = this.tSvc.selectTranslate('reports.core.site summary.report title')
+      .subscribe(value =>
+        this.titleService.setTitle(this.tSvc.translate('reports.core.site summary.report title') + ' - ' + this.configSvc.behaviors.defaultTitle));
+
     this.isCmmc = this.maturitySvc.maturityModelIsCMMC();
     this.reportSvc.getReport('sitesummary').subscribe(
       (r: any) => {
@@ -120,44 +128,52 @@ export class SiteSummaryComponent implements OnInit, AfterViewInit {
       this.networkDiagramImage = this.sanitizer.bypassSecurityTrustHtml(x.diagram);
     });
 
-    this.acetSvc.getMatDetailList().subscribe(
-      (data) => {
-        this.matDetails = data;
-      },
-      error => {
-        console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-        console.log('Error getting all documents: ' + (<Error>error).stack);
-      });
+    this.assessmentSvc.getAssessmentDetail().subscribe(x => {
+      if (x['useMaturity'] === true){
+          this.acetSvc.getMatDetailList().subscribe(
+        (data) => {
+          this.matDetails = data;
+        },
+        error => {
+          console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+          console.log('Error getting all documents: ' + (<Error>error).stack);
+        });
+      }
+    })
 
-    this.acetSvc.getAcetDashboard().subscribe(
-      (data: AcetDashboard) => {
-        this.acetDashboard = data;
+    
 
-        for (let i = 0; i < this.acetDashboard.irps.length; i++) {
-          this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
-        }
-      },
-      error => {
-        console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-        console.log('Error getting all documents: ' + (<Error>error).stack);
-      });
+    if (['ACET', 'ISE'].includes(this.assessmentSvc.assessment?.maturityModel?.modelName)) {
+      this.acetSvc.getAcetDashboard().subscribe(
+        (data: AcetDashboard) => {
+          this.acetDashboard = data;
 
-    this.acetSvc.getAdminData().subscribe(
-      (data: AdminPageData) => {
-        this.adminPageData = data;
-        this.processAcetAdminData();
-      },
-      error => {
-        console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-        console.log('Error getting all documents: ' + (<Error>error).stack);
-      });
+          for (let i = 0; i < this.acetDashboard.irps.length; i++) {
+            this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
+          }
+        },
+        error => {
+          console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+          console.log('Error getting all documents: ' + (<Error>error).stack);
+        });
+
+      this.acetSvc.getAdminData().subscribe(
+        (data: AdminPageData) => {
+          this.adminPageData = data;
+          this.processAcetAdminData();
+        },
+        error => {
+          console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+          console.log('Error getting all documents: ' + (<Error>error).stack);
+        });
+    }
   }
 
   /**
    * 
    */
   ngAfterViewInit() {
-    
+
   }
 
   processAcetAdminData() {
@@ -229,5 +245,9 @@ export class SiteSummaryComponent implements OnInit, AfterViewInit {
 
   usesRAC() {
     return !!this.responseResultsByCategory?.dataSets.find(e => e.label === 'RAC');
+  }
+
+  ngOnDestroy() {
+    this.translationSub.unsubscribe()
   }
 }

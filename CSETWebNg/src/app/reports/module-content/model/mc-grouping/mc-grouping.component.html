@@ -1,6 +1,6 @@
 <!---------------------- 
 
-   Copyright 2023 Battelle Energy Alliance, LLC  
+   Copyright 2024 Battelle Energy Alliance, LLC  
 
   Permission is hereby granted, free of charge, to any person obtaining a copy 
   of this software and associated documentation files (the "Software"), to deal 
@@ -23,8 +23,7 @@
 <div class="mb-4">
     <h5 class="font-weight-bold">{{g.title}}</h5>
 
-    <div *ngIf="g.description?.length > 0" class="alert alert-dark">
-        {{g.description}}
+    <div *ngIf="g.description?.length > 0" class="alert alert-dark" [innerHTML]="g.description">
     </div>
 
     <div class="ml-3">

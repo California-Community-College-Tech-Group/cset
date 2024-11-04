@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -29,6 +29,7 @@ namespace CSETWebCore.Business.Reports
         public List<MatRelevantAnswers> QuestionsList { get; set; }
         public List<MatAnsweredQuestionDomain> MatAnsweredQuestions { get; set; }
         public string AssessmentGuid { get; set; }
+        public string CsetVersion { get; set; }
 
         /// <summary>
         /// Gets the parent questions missing from the given list. Requires the QuestionsList

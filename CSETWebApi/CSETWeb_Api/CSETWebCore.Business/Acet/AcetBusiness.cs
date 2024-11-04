@@ -1,19 +1,20 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using CSETWebCore.Model.Acet;
 using CSETWebCore.Business.Maturity;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.AdminTab;
+using System.IO;
+using NPOI.SS.UserModel;
+using Npoi.Mapper;
 
 
 namespace CSETWebCore.Business.Acet
@@ -23,6 +24,7 @@ namespace CSETWebCore.Business.Acet
         private CSETContext _context;
         private readonly IAssessmentUtil _assessmentUtil;
         private readonly IAdminTabBusiness _adminTabBusiness;
+
 
         public AcetBusiness(CSETContext context, IAssessmentUtil assessmentUtil, IAdminTabBusiness adminTabBusiness)
         {
@@ -37,15 +39,14 @@ namespace CSETWebCore.Business.Acet
         /// </summary>
         /// <param name="assessmentId"></param>
         /// <returns></returns>
-        public Model.Acet.ACETDashboard LoadDashboard(int assessmentId)
+        public Model.Acet.ACETDashboard LoadDashboard(int assessmentId, string lang = "en")
         {
-
             Model.Acet.ACETDashboard result = GetIrpCalculation(assessmentId);
 
             result.Domains = new List<DashboardDomain>();
-            MaturityBusiness matManager = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
+            ACETMaturityBusiness matManager = new ACETMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
 
-            var domains = matManager.GetMaturityAnswers(assessmentId);
+            var domains = matManager.GetMaturityAnswers(assessmentId, lang);
             foreach (var d in domains)
             {
                 result.Domains.Add(new DashboardDomain
@@ -97,7 +98,7 @@ namespace CSETWebCore.Business.Acet
         public Model.Acet.ACETDashboard GetIrpCalculation(int assessmentId)
         {
             Model.Acet.ACETDashboard result = new Model.Acet.ACETDashboard();
-            
+
             // now just properties on an Assessment
             ASSESSMENTS assessment = _context.ASSESSMENTS.FirstOrDefault(a => a.Assessment_Id == assessmentId);
             if (assessment == null) { return null; }
@@ -169,9 +170,9 @@ namespace CSETWebCore.Business.Acet
                 }
             }
 
-
             return result;
         }
+
 
         public void UpdateACETDashboardSummary(int assessmentId, Model.Acet.ACETDashboard summary)
         {
@@ -204,7 +205,6 @@ namespace CSETWebCore.Business.Acet
             }
 
             _context.SaveChanges();
-
         }
     }
 }

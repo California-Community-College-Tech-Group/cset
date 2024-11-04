@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -35,7 +35,7 @@ namespace CSETWebCore.Helpers
         private CSETContext _context;
 
         public UserAuthentication(IPasswordHash password, IUserBusiness userBusiness,
-            ILocalInstallationHelper localInstallationHelper, ITokenManager transactionSecurity, 
+            ILocalInstallationHelper localInstallationHelper, ITokenManager transactionSecurity,
             INotificationBusiness notificationBusiness, IConfiguration configuration,
             CSETContext context)
         {
@@ -66,7 +66,7 @@ namespace CSETWebCore.Helpers
                 return null;
             }
 
-            if (!loginUser.IsActive.GetValueOrDefault(true))
+            if (!loginUser.IsActive)
             {
                 return null;
             }
@@ -77,12 +77,15 @@ namespace CSETWebCore.Helpers
             bool passwordIsValid = _password.ValidatePassword(login.Password, loginUser.Password, loginUser.Salt);
 
             string tempPasswordUsed = null;
-            // Validate against the user's temp passwords as well in case they forgot password and need to reset it
+
+            // Validate against the user's temp passwords as well in case they forgot password and need to reset it.
             if (!passwordIsValid)
             {
                 foreach (PASSWORD_HISTORY tempPassword in tempPasswords)
                 {
-                    if (_password.ValidatePassword(login.Password, tempPassword.Password, tempPassword.Salt))
+                    // Include a trimmed alternative in case they accidentally copied a trailing space/linefeed from the temp password email.
+                    if (_password.ValidatePassword(login.Password, tempPassword.Password, tempPassword.Salt) ||
+                        _password.ValidatePassword(login.Password.TrimEnd((Environment.NewLine + " ").ToCharArray()), tempPassword.Password, tempPassword.Salt))
                     {
                         passwordIsValid = true;
                         tempPasswordUsed = tempPassword.Password;
@@ -96,12 +99,12 @@ namespace CSETWebCore.Helpers
                     return null;
                 }
             }
-            else 
+            else
             {
                 // We never require a password reset if the user is able to login with their official password that is stored in the USERS table
                 loginUser.PasswordResetRequired = false;
 
-                if (tempPasswords.Count > 0) 
+                if (tempPasswords.Count > 0)
                 {
                     UserAccountSecurityManager accountSecurityManager = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
 
@@ -116,13 +119,15 @@ namespace CSETWebCore.Helpers
             {
                 UserId = loginUser.UserId,
                 Email = login.Email,
+                Lang = loginUser.Lang,
                 UserFirstName = loginUser.FirstName,
                 UserLastName = loginUser.LastName,
                 IsSuperUser = loginUser.IsSuperUser,
-                ResetRequired = loginUser.PasswordResetRequired ?? true,
+                ResetRequired = loginUser.PasswordResetRequired,
                 ExportExtension = IOHelper.GetExportFileExtension(login.Scope),
                 ImportExtensions = IOHelper.GetImportFileExtensions(login.Scope),
-                LinkerTime = new BuildNumberHelper().GetLinkerTime()
+                LinkerTime = new BuildNumberHelper().GetLinkerTime(),
+                IsFirstLogin = loginUser.IsFirstLogin
             };
 
 
@@ -163,6 +168,32 @@ namespace CSETWebCore.Helpers
             // Read the file system for the LOCAL-INSTALLATION file put there at install time
             if (!_localInstallationHelper.IsLocalInstallation())
             {
+                // this is not a local install.  Return what we know about this user (if anything).
+                if (tokenManager.Payload("userid") != null)
+                {
+                    var loginUser = _context.USERS.Where(x => x.UserId == int.Parse(tokenManager.Payload("userid"))).FirstOrDefault();
+
+                    if (loginUser != null)
+                    {
+                        var respUser = new LoginResponse
+                        {
+                            UserId = loginUser.UserId,
+                            Email = login.Email,
+                            Lang = loginUser.Lang,
+                            UserFirstName = loginUser.FirstName,
+                            UserLastName = loginUser.LastName,
+                            IsSuperUser = loginUser.IsSuperUser,
+                            ResetRequired = loginUser.PasswordResetRequired,
+                            ExportExtension = IOHelper.GetExportFileExtension(login.Scope),
+                            ImportExtensions = IOHelper.GetImportFileExtensions(login.Scope),
+                            LinkerTime = new BuildNumberHelper().GetLinkerTime(),
+                            IsFirstLogin = loginUser.IsFirstLogin
+                        };
+
+                        return respUser;
+                    }
+                }
+
                 return null;
             }
 
@@ -232,10 +263,11 @@ namespace CSETWebCore.Helpers
             string token = _transactionSecurity.GenerateToken(userIdSO, null, login.TzOffset, -1, assessmentId, null, login.Scope);
 
             // Build response object
-            LoginResponse resp = new LoginResponse
+            var resp = new LoginResponse
             {
                 Token = token,
                 Email = primaryEmailSO,
+                Lang = user == null ? "en" : user.Lang ?? "en",
                 UserFirstName = name,
                 UserLastName = "",
                 IsSuperUser = false,
@@ -243,7 +275,8 @@ namespace CSETWebCore.Helpers
                 UserId = userIdSO,
                 ExportExtension = IOHelper.GetExportFileExtension(login.Scope),
                 ImportExtensions = IOHelper.GetImportFileExtensions(login.Scope),
-                LinkerTime = new BuildNumberHelper().GetLinkerTime()
+                LinkerTime = new BuildNumberHelper().GetLinkerTime(),
+                IsFirstLogin = user?.IsFirstLogin ?? false
             };
 
 

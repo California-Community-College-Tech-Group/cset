@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -11,7 +11,7 @@ namespace CSETWebCore.Business.Demographic
     public interface ICisDemographicBusiness
     {
         int SaveOrgDemographics(CisOrganizationDemographics orgDemographics);
-        int SaveServiceDemographics(CisServiceDemographics serviceDemographics);
+        int SaveServiceDemographics(CisServiceDemographics serviceDemographics, int userid);
         int SaveServiceComposition(CisServiceComposition serviceComposition);
         CisOrganizationDemographics GetOrgDemographics(int assessmentId);
         CisServiceDemographics GetServiceDemographics(int assessmentId);

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,14 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit, AfterViewChecked, AfterViewInit } from '@angular/core';
-import { Title, DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Component, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { ReportService } from '../../services/report.service';
 import { ACETService } from '../../services/acet.service';
 import { ConfigService } from '../../services/config.service';
 import { QuestionsService } from '../../services/questions.service';
+import { TranslocoService } from '@ngneat/transloco';
+import { MaturityService } from '../../services/maturity.service';
 
 
 @Component({
@@ -36,25 +38,39 @@ import { QuestionsService } from '../../services/questions.service';
 })
 export class AcetAnsweredQuestionsComponent implements OnInit {
   response: any = {};
+  targetLevel: any;
 
   constructor(
     public reportSvc: ReportService,
     private titleService: Title,
     public acetSvc: ACETService,
     public configSvc: ConfigService,
-    public questionsSvc: QuestionsService
+    public questionsSvc: QuestionsService,
+    private tSvc: TranslocoService, 
+    public matSvc: MaturityService
   ) { }
 
   ngOnInit(): void {
-    this.titleService.setTitle("Answered Statements Report - ACET");
 
     this.acetSvc.getAnsweredQuestions().subscribe(
       (r: any) => {
         this.response = r;
+        this.titleService.setTitle(this.tSvc.translate('reports.acet.answered statements.tab title'));
       },
       error => console.log('Assessment Information Error: ' + (<Error>error).message)
     );
+
+    // Get current maturity levels
+    this.acetSvc.getMatRange().subscribe(
+      (r: any) => {
+        let list = JSON.stringify(r)
+        let cleanedString: string = list.replace(/[\[\]"]+/g, '');
+        let final: string = cleanedString.replace(/,/g, '/');
+        this.targetLevel = final;
+      });
+      
+    
   }
 
-  
+
 }

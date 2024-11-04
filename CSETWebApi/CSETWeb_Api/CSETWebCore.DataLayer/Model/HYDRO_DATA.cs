@@ -6,25 +6,39 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace CSETWebCore.DataLayer.Model
-{
-    public partial class HYDRO_DATA
-    {
-        [Key]
-        public int Mat_Option_Id { get; set; }
-        public int Mat_Question_Id { get; set; }
-        [StringLength(50)]
-        public string Feasibility { get; set; }
-        public int? Feasibility_Limit { get; set; }
-        [StringLength(50)]
-        public string Impact { get; set; }
-        public int? Impact_Limit { get; set; }
+namespace CSETWebCore.DataLayer.Model;
 
-        [ForeignKey("Mat_Option_Id")]
-        [InverseProperty("HYDRO_DATA")]
-        public virtual MATURITY_ANSWER_OPTIONS Mat_Option { get; set; }
-        [ForeignKey("Mat_Question_Id")]
-        [InverseProperty("HYDRO_DATA")]
-        public virtual MATURITY_QUESTIONS Mat_Question { get; set; }
-    }
+public partial class HYDRO_DATA
+{
+    [Key]
+    public int Mat_Option_Id { get; set; }
+
+    public int Mat_Question_Id { get; set; }
+
+    [StringLength(50)]
+    public string Feasibility { get; set; }
+
+    public int? Feasibility_Limit { get; set; }
+
+    [StringLength(50)]
+    public string Impact { get; set; }
+
+    public int? Impact_Limit { get; set; }
+
+    public string Action_Item_Description { get; set; }
+
+    [StringLength(1000)]
+    public string Action_Items { get; set; }
+
+    public int? Severity { get; set; }
+
+    public int? Sequence { get; set; }
+
+    [ForeignKey("Mat_Option_Id")]
+    [InverseProperty("HYDRO_DATA")]
+    public virtual MATURITY_ANSWER_OPTIONS Mat_Option { get; set; }
+
+    [ForeignKey("Mat_Question_Id")]
+    [InverseProperty("HYDRO_DATA")]
+    public virtual MATURITY_QUESTIONS Mat_Question { get; set; }
 }

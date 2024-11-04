@@ -99,6 +99,7 @@ function updateGraph(editor, data, finalize) {
 }
 
 function makeRequest(e) {
+
     const jwt = localStorage.getItem('jwt');
     return new Promise(function (resolve, reject) {
         const xhr = new XMLHttpRequest();
@@ -183,7 +184,6 @@ CsetUtils.LoadFileFromCSET = async function (app) {
         app.createFile(app.defaultFilename, null, null, App.MODE_CSET, null, null, null, null);
     }
     file = app.getCurrentFile();
-
     const resp = await makeRequest({
         method: 'GET',
         url: localStorage.getItem('cset.host') + 'diagram/get',
@@ -219,7 +219,7 @@ CsetUtils.LoadFileFromCSET = async function (app) {
     // set analysis toggle state
     if (data.analyzeDiagram || false) {
         for (var element of app.toolbar.container.childNodes) {
-            if (element.title == 'Analyze Network Diagram') {
+            if (element.title == 'Analyze') {
                 element.click();
                 break;
             }
@@ -261,13 +261,15 @@ CsetUtils.PersistGraphToCSET = async function (editor) {
     if (model) {
         const enc = new mxCodec();
         const node = enc.encode(model);
-        const sXML =  xmlserializer.serializeToString(node);
+        const sXML = xmlserializer.serializeToString(node);
+
         if (sXML !== EditorUi.prototype.emptyDiagramXml) {
             analysisReq.DiagramXml = testForBase64(sXML);
         }
     }
 
     CsetUtils.clearWarningsFromDiagram(editor.graph);
+    // below is commented because the analyzer was running twice and crashing in the backend
     await CsetUtils.analyzeDiagram(analysisReq, editor);
     await CsetUtils.PersistDataToCSET(editor, analysisReq.DiagramXml);
 }
@@ -282,6 +284,7 @@ CsetUtils.PersistDataToCSET = async function (editor, xml, revision) {
         revision: revision
     };
 
+
     const bg = '#ffffff';
     const xmlserializer = new XMLSerializer();
     let svgRoot = editor.graph.getSvg(bg, 1, 0, true, null, true, true, null, null, false);
@@ -290,14 +293,14 @@ CsetUtils.PersistDataToCSET = async function (editor, xml, revision) {
 
     //may need to add this in to the save
     //editor.menubarContainer;
-
     await CsetUtils.saveDiagram(req);
 }
 
-function testForBase64(strValue){
+function testForBase64(strValue) {
     var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
     if (!base64regex.test(strValue)) {
-        return btoa(strValue);
+        //return btoa(strValue);
+        return Base64.encode(strValue);
     }
     return strValue;
 }
@@ -307,6 +310,7 @@ function testForBase64(strValue){
  */
 CsetUtils.analyzeDiagram = async function (req, editor) {
     try {
+        req.AnalyzeDiagram = true;
         const response = await makeRequest({
             method: 'POST',
             overrideMimeType: 'application/json',
@@ -463,7 +467,6 @@ CsetUtils.handleZoneChanges = function (edit) {
     changes.forEach(change => {
         if (change instanceof mxValueChange && change.cell.isZone()) {
             const c = change.cell;
-
             // if they just changed the label, update the internal label
             if (change.value.attributes.label.value !== change.previous.attributes.label.value) {
                 c.setAttribute('internalLabel', change.value.attributes.label.value);

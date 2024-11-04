@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -103,7 +103,7 @@ namespace CSETWebCore.Business.ModuleIO
             {
                 set.Standard_ToolTip = $"{category.Set_Category_Name} - {set.Standard_ToolTip}";
             }
-            else 
+            else
             {
                 set.Standard_ToolTip = $"{category.Set_Category_Name}";
             }
@@ -169,7 +169,7 @@ namespace CSETWebCore.Business.ModuleIO
                             DataLayer.Model.NEW_QUESTION existingQuestion;
                             if (questionDictionary.TryGetValue(question.Simple_Question, out existingQuestion))
                             {
-                                requirementResult.REQUIREMENT_QUESTIONS.Remove(new REQUIREMENT_QUESTIONS() { Question_Id = question.Question_Id, Requirement_Id = requirementResult.Requirement_Id });
+                                requirementResult.REQUIREMENT_QUESTIONS_SETS.Remove(new REQUIREMENT_QUESTIONS_SETS() { Question_Id = question.Question_Id, Requirement_Id = requirementResult.Requirement_Id });
                             }
                             else
                             {
@@ -329,6 +329,7 @@ namespace CSETWebCore.Business.ModuleIO
                         reqReference.Page_Number = reference.pageNumber;
                         reqReference.Section_Ref = String.IsNullOrEmpty(reference.sectionReference) ? "" : reference.sectionReference;
                         reqReference.Gen_File_Id = importer.LookupGenFileId(reference.fileName);
+                        reqReference.Source = false;
                     }
                     catch
                     {
@@ -345,7 +346,7 @@ namespace CSETWebCore.Business.ModuleIO
                 }
             }
 
-            var reqSource = new REQUIREMENT_SOURCE_FILES();
+            var reqSource = new REQUIREMENT_REFERENCES();
 
             try
             {
@@ -355,13 +356,14 @@ namespace CSETWebCore.Business.ModuleIO
                     reqSource.Page_Number = externalRequirement.source.pageNumber;
                     reqSource.Destination_String = externalRequirement.source.destination;
                     reqSource.Section_Ref = String.IsNullOrEmpty(externalRequirement.source.sectionReference) ? "" : externalRequirement.source.sectionReference;
+                    reqSource.Source = true;
                     if (reqSource.Gen_File_Id == 0)
                     {
                         result.LogError(String.Format("Source {0} has not been loaded into CSET.  Please add the file and try again.", externalRequirement.source?.fileName, externalRequirement.identifier, externalRequirement.text));
                     }
                     else
                     {
-                        newRequirement.REQUIREMENT_SOURCE_FILES.Add(reqSource);
+                        newRequirement.REQUIREMENT_REFERENCES.Add(reqSource);
                     }
                 }
             }
@@ -499,19 +501,6 @@ namespace CSETWebCore.Business.ModuleIO
                         && x.Set_Name == rqs.Set_Name) == 0)
                     {
                         _context.REQUIREMENT_QUESTIONS_SETS.Add(rqs);
-                    }
-
-
-                    var rq = new REQUIREMENT_QUESTIONS()
-                    {
-                        Question_Id = newQuestion.Question_Id,
-                        Requirement_Id = newRequirement.Requirement_Id
-                    };
-
-                    if (_context.REQUIREMENT_QUESTIONS_SETS.Count(x => x.Question_Id == rq.Question_Id
-                        && x.Requirement_Id == rq.Requirement_Id) == 0)
-                    {
-                        _context.REQUIREMENT_QUESTIONS.Add(rq);
                     }
 
                     _context.SaveChanges();

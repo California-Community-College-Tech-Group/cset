@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -16,8 +16,10 @@ namespace CSETWebCore.Model.Authentication
         public bool ResetRequired { get; set; }
         public bool IsPasswordExpired { get; set; }
         public bool IsSuperUser { get; set; }
+        public string Lang { get; set; }
         public string ExportExtension { get; set; }
         public string ImportExtensions { get; set; }
         public string LinkerTime { get; set; }
+        public bool IsFirstLogin { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -11,13 +11,13 @@ namespace CSETWebCore.Interfaces.Notification
 {
     public interface INotificationBusiness
     {
-        void SetAppCode();
-        void SetAppCode(string appCode);
+        void SetScope();
+        void SetScope(string scope);
         void Initialize();
         void InviteToAssessment(ContactCreateParameters contact);
-        void SendPasswordEmail(string email, string firstName, string lastName, string password, string appCode);
-        void SendInviteePassword(string email, string firstName, string lastName, string password, string appCode);
-        void SendPasswordResetEmail(string email, string firstName, string lastName, string password, string subject, string appCode);
+        void SendPasswordEmail(string email, string firstName, string lastName, string password, string appName);
+        void SendInviteePassword(string email, string firstName, string lastName, string password, string appName);
+        void SendPasswordResetEmail(string email, string firstName, string lastName, string password, string subject, string appName);
         void SendMail(MailMessage mail);
         void SendTestEmail(string recip);
     }

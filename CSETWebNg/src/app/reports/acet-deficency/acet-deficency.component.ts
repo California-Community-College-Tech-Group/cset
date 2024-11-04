@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import { QuestionsService } from '../../services/questions.service';
 import { ConfigService } from '../../services/config.service';
 import { Title } from '@angular/platform-browser';
 import { ACETService } from '../../services/acet.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 
 @Component({
@@ -46,16 +47,16 @@ export class AcetDeficencyComponent implements OnInit {
     public questionsSvc: QuestionsService,
     public configSvc: ConfigService,
     private titleService: Title,
-    public acetSvc: ACETService
+    public acetSvc: ACETService,
+    private tSvc: TranslocoService
   ) { }
 
   ngOnInit() {
     this.loading = true;
-    this.titleService.setTitle("Gap Report - ACET");
-
     this.acetSvc.getAnsweredQuestions().subscribe(
       (r: any) => {
         this.response = r;
+        this.titleService.setTitle(this.tSvc.translate('reports.acet.gap report.tab title'));
         this.loading = false;
       },
       error => console.log('Gap Report Error: ' + (<Error>error).message)

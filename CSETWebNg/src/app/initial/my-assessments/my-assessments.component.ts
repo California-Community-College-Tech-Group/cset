@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Sort } from "@angular/material/sort";
 import { Router } from "@angular/router";
-
 import { AssessmentService } from "../../services/assessment.service";
 import { AuthenticationService } from "../../services/authentication.service";
 import { ConfigService } from "../../services/config.service";
@@ -38,19 +37,24 @@ import { Title } from "@angular/platform-browser";
 import { NavigationService } from "../../services/navigation/navigation.service";
 import { QuestionFilterService } from '../../services/filtering/question-filter.service';
 import { ReportService } from '../../services/report.service';
-import { concatMap, delay, map } from "rxjs/operators";
-import { TsaAnalyticsService } from "../../services/tsa-analytics.service";
+import { concatMap, map } from "rxjs/operators";
 import { NCUAService } from "../../services/ncua.service";
 import { NavTreeService } from "../../services/navigation/nav-tree.service";
 import { LayoutService } from "../../services/layout.service";
 import { Comparer } from "../../helpers/comparer";
 import { ExportPasswordComponent } from '../../dialogs/assessment-encryption/export-password/export-password.component';
-import { ImportPasswordComponent } from '../../dialogs/assessment-encryption/import-password/import-password.component';
-import * as moment from "moment";
-import { forEach } from "lodash";
+import { DateTime } from "luxon";
+import { NcuaExcelExportComponent } from "../../dialogs/excel-export/ncua-export/ncua-excel-export.component";
+import { TranslocoService } from "@ngneat/transloco";
+import { DateAdapter } from '@angular/material/core';
+import { HydroService } from "../../services/hydro.service";
+import { CieService } from "../../services/cie.service";
+import { ConversionService } from "../../services/conversion.service";
 
 
 interface UserAssessment {
+  isEntry: boolean;
+  isEntryString: string;
   assessmentId: number;
   assessmentName: string;
   useDiagram: boolean;
@@ -59,13 +63,16 @@ interface UserAssessment {
   type: string;
   assessmentCreatedDate: string;
   creatorName: string;
-  lastModifiedDate: string;
+  lastModifiedDate: DateTime;
   markedForReview: boolean;
   altTextMissing: boolean;
   selectedMaturityModel?: string;
   selectedStandards?: string;
   completedQuestionsCount: number;
   totalAvailableQuestionsCount: number;
+  questionAlias: string;
+  iseSubmission: boolean;
+  submittedDate?: Date;
 }
 
 @Component({
@@ -76,16 +83,17 @@ interface UserAssessment {
 })
 export class MyAssessmentsComponent implements OnInit {
   comparer: Comparer = new Comparer();
-  sortedAssessments: UserAssessment[] = null;
+  sortedAssessments: UserAssessment[] = [];
   unsupportedImportFile: boolean = false;
 
   browserIsIE: boolean = false;
 
   // contains CSET or ACET; used for tooltips, etc
-  appCode: string;
+  appName: string;
   appTitle: string;
-  isTSA:boolean =false;
-  isCSET:boolean =false;
+  isTSA: boolean = false;
+  isCSET: boolean = false;
+  isCF: boolean = false;
   exportExtension: string;
   importExtensions: string;
 
@@ -99,6 +107,7 @@ export class MyAssessmentsComponent implements OnInit {
   disabledEncrypt: boolean = false;
 
   timer = ms => new Promise(res => setTimeout(res, ms));
+  
 
   constructor(
     public configSvc: ConfigService,
@@ -112,10 +121,14 @@ export class MyAssessmentsComponent implements OnInit {
     public navSvc: NavigationService,
     public navTreeSvc: NavTreeService,
     private filterSvc: QuestionFilterService,
-    private reportSvc: ReportService,
-    private tsaanalyticSvc :TsaAnalyticsService,
+    public tSvc: TranslocoService,
     private ncuaSvc: NCUAService,
-    public layoutSvc: LayoutService
+    public layoutSvc: LayoutService,
+    public dateAdapter: DateAdapter<any>,
+    public reportSvc: ReportService,
+    private hydroSvc: HydroService,
+    public cieSvc: CieService,
+    public conversionSvc: ConversionService
   ) { }
 
   ngOnInit() {
@@ -126,28 +139,41 @@ export class MyAssessmentsComponent implements OnInit {
     this.importExtensions = localStorage.getItem('importExtensions');
     this.titleSvc.setTitle(this.configSvc.config.behaviors.defaultTitle);
     this.appTitle = this.configSvc.config.behaviors.defaultTitle;
-    this.appCode = this.configSvc.config.appCode;
+    this.appName = 'CSET';
     switch (this.configSvc.installationMode || '') {
       case 'ACET':
+        this.preventEncrypt = true;
+        this.updateEncryptPreference();
         this.ncuaSvc.reset();
         break;
       case 'TSA':
-        this.isTSA=true;
+        // ACET files shouldn't be imported into the TSA version
+        this.importExtensions = this.importExtensions.replace(', .acet', '');
+        this.isTSA = true;
+        break;
+      case 'CF':
+        this.isCF = true;
+        this.navTreeSvc.clearNoMatterWhat();
         break;
       default:
-        this.isCSET=true;
+        this.isCSET = true;
     }
 
-    if (localStorage.getItem("returnPath")) {
-    }
+    if (localStorage.getItem("returnPath")) { }
     else {
-      localStorage.removeItem('tree');
-      this.navTreeSvc.clearTree(this.navSvc.getMagic());
+      this.navTreeSvc.clearTree(this.navSvc.getMagic());      
     }
+    // if(this.isCF){
+    //   this.navTreeSvc.clearNoMatterWhat();
+    // }
 
     this.ncuaSvc.assessmentsToMerge = [];
+    this.cieSvc.assessmentsToMerge = [];
+
     this.assessSvc.getEncryptPreference().subscribe((result: boolean) => this.preventEncrypt = result);
-  }  
+
+    this.configSvc.getCisaAssessorWorkflow().subscribe((resp: boolean) => this.configSvc.cisaAssessorWorkflow = resp);
+  }
 
   /**
    * Determines if a particular column should be included in the display.
@@ -158,20 +184,45 @@ export class MyAssessmentsComponent implements OnInit {
       if (this.configSvc.config.isRunningAnonymous) {
         return false;
       }
-      // NCUA didn't want the primary assessor column
+
       if (this.ncuaSvc.switchStatus) {
         return false;
       }
+    }
+
+    if (column == 'analytics') {
+      if (this.ncuaSvc.switchStatus) {
+        return false;
+      }
+
+      return false;
+    }
+
+    if (column == 'ise-submitted') {
+      if (this.ncuaSvc.switchStatus) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    if (column == 'export') {
       return true;
     }
+
+    if (column == 'export json') {
+      return this.configSvc.cisaAssessorWorkflow;
+    }
+
+    return true;
   }
 
-  showCsetOrigin() : boolean {
-    return this.configSvc.installationMode ==='CSET';
+  showCsetOrigin(): boolean {
+    return this.configSvc.installationMode === 'CSET';
   }
 
-  showAcetOrigin() : boolean {
-    return this.configSvc.installationMode ==='ACET';
+  showAcetOrigin(): boolean {
+    return this.configSvc.installationMode === 'ACET';
   }
 
   getAssessments() {
@@ -182,39 +233,69 @@ export class MyAssessmentsComponent implements OnInit {
     const rid = localStorage.getItem("redirectid");
     if (rid != null) {
       localStorage.removeItem("redirectid");
-      this.assessSvc.loadAssessment(+rid);
+      this.navSvc.beginAssessment(+rid);
     }
+
+    let assessmentiDs = [];
 
     this.assessSvc.getAssessmentsCompletion().pipe(
       concatMap((assessmentsCompletionData: any[]) =>
         this.assessSvc.getAssessments().pipe(
           map((assessments: UserAssessment[]) => {
             assessments.forEach((item, index, arr) => {
+              if(this.isCF){
+                assessmentiDs.push(item.assessmentId);
+                item.isEntry = false;                
+              }
               let type = '';
-              if(item.useDiagram) type += ', Diagram';
-              if(item.useMaturity) type += ', ' + item.selectedMaturityModel;
-              if(item.useStandard && item.selectedStandards) type += ', ' + item.selectedStandards;
-              if(type.length > 0) type = type.substring(2);
+              if (item.useDiagram) type += ', Diagram';
+              item.questionAlias = 'questions';
+              if (item.useMaturity) {
+                type += ', ' + item.selectedMaturityModel;
+                if (item.selectedMaturityModel === 'ISE') {
+                  item.questionAlias = 'statements';
+                }
+              }
+              if (item.useStandard && item.selectedStandards) type += ', ' + item.selectedStandards;
+              if (type.length > 0) type = type.substring(2);
               item.type = type;
               let currentAssessmentStats = assessmentsCompletionData.find(x => x.assessmentId === item.assessmentId);
               item.completedQuestionsCount = currentAssessmentStats?.completedCount;
               item.totalAvailableQuestionsCount =
                 (currentAssessmentStats?.totalMaturityQuestionsCount ?? 0) +
                 (currentAssessmentStats?.totalDiagramQuestionsCount ?? 0) +
-                (currentAssessmentStats?.totalStandardQuestionsCount ?? 0);
+                (currentAssessmentStats?.totalStandardQuestionsCount ?? 0);              
             });
-            this.sortedAssessments = assessments;
+            if(this.isCF){
+              this.conversionSvc.isEntryCfAssessments(assessmentiDs).subscribe(
+                (result: any) => {
+                  result.forEach((element: any) => {
+                    let assessment = assessments.find(x => x.assessmentId === element.assessmentId);
+                    if (assessment) {
+                      assessment.isEntry = element.isEntry;
+                      assessment.isEntryString = element.isEntry ? 'Entry' : 'Full';                        
+                      if(assessment.isEntry)
+                        assessment.totalAvailableQuestionsCount = 20;
+                    }
+                  });
+                  this.sortedAssessments = assessments;
+                }
+              );
+            }
+            else{
+              this.sortedAssessments = assessments;
+            }
           },
-          error => {
-            console.log(
-              "Unable to get Assessments for " +
-              this.authSvc.email() +
-              ": " +
-              (<Error>error).message
-            );
-          }
-        )
-    ))).subscribe();
+            error => {
+              console.log(
+                "Unable to get Assessments for " +
+                this.authSvc.email() +
+                ": " +
+                (<Error>error).message
+              );
+            }
+          )
+        ))).subscribe();
   }
 
   hasPath(rpath: string) {
@@ -242,9 +323,10 @@ export class MyAssessmentsComponent implements OnInit {
         // if it's legal, see if they really want to
         const dialogRef = this.dialog.open(ConfirmComponent);
         dialogRef.componentInstance.confirmMessage =
-          "Are you sure you want to remove '" +
-          assessment.assessmentName +
-          "'?";
+          // "Are you sure you want to remove '" +
+          // assessment.assessmentName +
+          // "'?";
+          this.tSvc.translate('dialogs.remove assessment', { assessmentName: assessment.assessmentName });
         dialogRef.afterClosed().subscribe(result => {
           if (result) {
             this.assessSvc.removeMyContact(assessment.assessmentId).subscribe(
@@ -281,6 +363,8 @@ export class MyAssessmentsComponent implements OnInit {
           return this.comparer.compare(a.type, b.type, isAsc);
         case "status":
           return this.comparer.compareBool(a.markedForReview, b.markedForReview, isAsc);
+        case "ise-submitted":
+          return this.comparer.compareIseSubmission(a.submittedDate, b.submittedDate, isAsc);
         default:
           return 0;
       }
@@ -291,15 +375,19 @@ export class MyAssessmentsComponent implements OnInit {
     this.authSvc.logout();
   }
 
-  clickDownloadLink(ment_id: number) {
+  clickDownloadLink(ment_id: number, jsonOnly: boolean = false) {
     if (!this.preventEncrypt) {
       let dialogRef = this.dialog.open(ExportPasswordComponent);
       dialogRef.afterClosed().subscribe(result => {
-      
+
         // get short-term JWT from API
         this.authSvc.getShortLivedTokenForAssessment(ment_id).subscribe((response: any) => {
           let url = this.fileSvc.exportUrl + "?token=" + response.token;
-          
+
+          if (jsonOnly) {
+            url = this.fileSvc.exportJsonUrl + "?token=" + response.token;
+          }
+
           if (result.password != null && result.password != "") {
             url = url + "&password=" + result.password;
           }
@@ -307,7 +395,7 @@ export class MyAssessmentsComponent implements OnInit {
           if (result.hint != null && result.hint != "") {
             url = url + "&passwordHint=" + result.hint;
           }
-        
+
           //if electron
           window.location.href = url;
 
@@ -317,7 +405,11 @@ export class MyAssessmentsComponent implements OnInit {
       });
     } else {
       this.authSvc.getShortLivedTokenForAssessment(ment_id).subscribe((response: any) => {
-        const url = this.fileSvc.exportUrl + "?token=" + response.token;
+        let url = this.fileSvc.exportUrl + "?token=" + response.token;
+
+        if (jsonOnly) {
+          url = this.fileSvc.exportJsonUrl + "?token=" + response.token;
+        }
 
         //if electron
         window.location.href = url;
@@ -326,7 +418,7 @@ export class MyAssessmentsComponent implements OnInit {
         //window.open(url, "_blank");
       });
     }
-  
+
   }
 
   /**
@@ -366,8 +458,26 @@ export class MyAssessmentsComponent implements OnInit {
     window.location.href = this.configSvc.apiUrl + 'ExcelExportAllNCUA?token=' + localStorage.getItem('userToken');
   }
 
+  openExportDecisionDialog() {
+    let dialogRef = this.dialog.open(NcuaExcelExportComponent, {
+      data: {
+        assessments: this.sortedAssessments
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result != undefined) {
+        window.location.href = this.configSvc.apiUrl + 'ExcelExportAllNCUA?token=' + localStorage.getItem('userToken') + '&type=' + result;
+      }
+    });
+  }
+
   proceedToMerge() {
     this.router.navigate(['/examination-merge']);
+  }
+
+  proceedToCieMerge() {
+    this.router.navigate(['/merge-cie-analysis']);
   }
 
   clickNewAssessmentButton() {
@@ -375,10 +485,17 @@ export class MyAssessmentsComponent implements OnInit {
   }
 
   //translates assessment.lastModifiedDate to the system time, without changing lastModifiedDate
-  systemTimeTranslator(lastModifiedDate: any) {
-    let localTime = moment.utc(lastModifiedDate).local();
+  systemTimeTranslator(dateString: string, format: string) {
+    var dtD = DateTime.fromISO(dateString);
+    let localDate = '';
+    if (format == 'med') {
+      localDate = dtD.setLocale(this.tSvc.getActiveLang()).toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+    }
+    else if (format == 'short') {
+      localDate = dtD.setLocale(this.tSvc.getActiveLang()).toLocaleString(DateTime.DATE_SHORT);
+    }
 
-    return localTime;
+    return localDate;
   }
 
   exportAllAssessments() {
@@ -387,7 +504,7 @@ export class MyAssessmentsComponent implements OnInit {
   }
 
 
-  async exportAllLoop () { // allows for multiple api calls
+  async exportAllLoop() { // allows for multiple api calls
     for (let i = 0; i < this.sortedAssessments.length; i++) {
       let a = document.getElementById('assess-' + i + '-export');
       a.click();
@@ -402,4 +519,9 @@ export class MyAssessmentsComponent implements OnInit {
     this.assessSvc.persistEncryptPreference(this.preventEncrypt);
     this.disabledEncrypt = false;
   }
+
+  temp() {
+    this.assessSvc.moveActionItemsFrom_IseActions_To_HydroData().subscribe();
+  }
+
 }

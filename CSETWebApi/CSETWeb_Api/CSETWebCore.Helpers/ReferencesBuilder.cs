@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -8,11 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CSETWebCore.DataLayer;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Model.Question;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace CSETWebCore.Helpers
 {
@@ -34,34 +33,31 @@ namespace CSETWebCore.Helpers
 
         /// <summary>
         /// Populates sourceDocList and additionalDocList with any connections from 
-        /// REQUIREMENT_SOURCE_FILES and REQUIREMENT_REFERENCES, respectively.
+        /// REQUIREMENT_REFERENCES, respectively.
         /// </summary>
-        /// <param name="requirement_ID"></param>
+        /// <param name="requirementId"></param>
         /// <param name="controlContext"></param>
-        public void BuildReferenceDocuments(int requirement_ID,
-            out List<CustomDocument> sourceDocList,
-            out List<CustomDocument> additionalDocList)
+        public void BuildReferenceDocuments(int requirementId,
+            out List<ReferenceDocLink> sourceDocList,
+            out List<ReferenceDocLink> additionalDocList)
         {
-            // Build a list of available documents
+            // Source Documents  
+            var q1 = _context.REQUIREMENT_REFERENCES
+                .Include(x => x.Gen_File)
+                .Where(s => s.Requirement_Id == requirementId && s.Source)
+                .Select(s => new GenFileView { File_Id = s.Gen_File_Id, Title = s.Gen_File.Title, File_Name = s.Gen_File.File_Name, Section_Ref = s.Section_Ref, Destination_String = s.Destination_String, Is_Uploaded = s.Gen_File.Is_Uploaded, Sequence = s.Sequence });
 
-            List<string> availableRefDocs = GetBuildDocuments();
-
-            var documents = _context.REQUIREMENT_SOURCE_FILES.Where(s => s.Requirement_Id == requirement_ID)
-                .Select(s => new { s.Gen_File.Gen_File_Id, s.Gen_File.Title, s.Gen_File.File_Name, s.Section_Ref, IsSource = true, s.Gen_File.Is_Uploaded })
-                .Concat(
-                    _context.REQUIREMENT_REFERENCES.Where(s => s.Requirement_Id == requirement_ID).Select(s => new { s.Gen_File.Gen_File_Id, s.Gen_File.Title, s.Gen_File.File_Name, s.Section_Ref, IsSource = false, s.Gen_File.Is_Uploaded })
-                ).ToList();
-
-            // Source Documents        
-            var sourceDocuments = documents.Where(t => t.IsSource)
-                .Select(s => new CustomDocument { File_Id = s.Gen_File_Id, Title = s.Title, File_Name = s.File_Name, Section_Ref = s.Section_Ref, Is_Uploaded = s.Is_Uploaded ?? false });
-            sourceDocList = sourceDocuments.Where(d => availableRefDocs.Contains(d.File_Name) || d.Is_Uploaded).ToList();
+            sourceDocList = SortList(q1);
 
 
             // Additional Resource Documents
-            var additionalDocuments = documents.Where(t => !t.IsSource)
-                .Select(s => new CustomDocument { File_Id = s.Gen_File_Id, Title = s.Title, File_Name = s.File_Name, Section_Ref = s.Section_Ref, Is_Uploaded = s.Is_Uploaded ?? false });
-            additionalDocList = additionalDocuments.Where(d => availableRefDocs.Contains(d.File_Name) || d.Is_Uploaded).ToList();
+            var q2 = _context.REQUIREMENT_REFERENCES
+                .Include(x => x.Gen_File)
+                .Where(s => s.Requirement_Id == requirementId && !s.Source)
+                .OrderBy(s => s.Sequence)
+                .Select(s => new GenFileView { File_Id = s.Gen_File_Id, Title = s.Gen_File.Title, File_Name = s.Gen_File.File_Name, Section_Ref = s.Section_Ref, Destination_String = s.Destination_String, Is_Uploaded = s.Gen_File.Is_Uploaded, Sequence = s.Sequence });
+
+            additionalDocList = SortList(q2);
         }
 
 
@@ -70,29 +66,70 @@ namespace CSETWebCore.Helpers
         /// </summary>
         /// <param name="maturityQuestion_ID"></param>
         /// <param name="controlContext"></param>
-        public void BuildDocumentsForMaturityQuestion(int maturityQuestion_ID,
-             out List<CustomDocument> sourceDocList,
-            out List<CustomDocument> additionalDocList)
+        public void BuildRefDocumentsForMaturityQuestion(int maturityQuestion_ID,
+             out List<ReferenceDocLink> sourceDocList,
+            out List<ReferenceDocLink> additionalDocList)
         {
-            List<string> availableRefDocs = GetBuildDocuments();
-
-            var documents = _context.MATURITY_SOURCE_FILES.Where(s => s.Mat_Question_Id == maturityQuestion_ID).Select(s => new { s.Gen_File.Gen_File_Id, s.Gen_File.Title, s.Gen_File.File_Name, s.Section_Ref, IsSource = true, s.Gen_File.Is_Uploaded })
-                .Concat(
-              _context.MATURITY_REFERENCES.Where(s => s.Mat_Question_Id == maturityQuestion_ID).Select(s => new { s.Gen_File.Gen_File_Id, s.Gen_File.Title, s.Gen_File.File_Name, s.Section_Ref, IsSource = false, s.Gen_File.Is_Uploaded })
-              ).ToList();
-
             // Source Documents  
-            var sourceDocuments = documents.Where(t => t.IsSource)
-                .Select(s => new CustomDocument() { File_Id = s.Gen_File_Id, Title = s.Title, File_Name = s.File_Name, Section_Ref = s.Section_Ref, Is_Uploaded = s.Is_Uploaded ?? false })
-                .ToList();
-            sourceDocList = sourceDocuments.Where(d => availableRefDocs.Contains(d.File_Name) || d.Is_Uploaded).ToList();
+            var q1 = _context.MATURITY_REFERENCES
+                .Include(x => x.Gen_File)
+                .Where(s => s.Mat_Question_Id == maturityQuestion_ID && s.Source)
+                .Select(s => new GenFileView { File_Id = s.Gen_File_Id, Title = s.Gen_File.Title, File_Name = s.Gen_File.File_Name, File_Type_Id = s.Gen_File.File_Type_Id ?? 0, Section_Ref = s.Section_Ref, Destination_String = s.Destination_String, Is_Uploaded = s.Gen_File.Is_Uploaded, Sequence = s.Sequence });
+
+            sourceDocList = SortList(q1);
 
 
             // Additional Resource Documents
-            var additionalDocuments = documents.Where(t => !t.IsSource)
-               .Select(s => new CustomDocument() { File_Id = s.Gen_File_Id, Title = s.Title, File_Name = s.File_Name, Section_Ref = s.Section_Ref, Is_Uploaded = s.Is_Uploaded ?? false })
-               .ToList();
-            additionalDocList = additionalDocuments.Where(d => availableRefDocs.Contains(d.File_Name) || d.Is_Uploaded).ToList();
+            var q2 = _context.MATURITY_REFERENCES
+                .Include(x => x.Gen_File)
+                .Where(s => s.Mat_Question_Id == maturityQuestion_ID && !s.Source)
+                .OrderBy(s => s.Sequence)
+                .Select(s => new GenFileView { File_Id = s.Gen_File_Id, Title = s.Gen_File.Title, File_Name = s.Gen_File.File_Name, File_Type_Id = s.Gen_File.File_Type_Id ?? 0, Section_Ref = s.Section_Ref, Destination_String = s.Destination_String, Is_Uploaded = s.Gen_File.Is_Uploaded, Sequence = s.Sequence });
+
+            additionalDocList = SortList(q2);
+        }
+
+
+        /// <summary>
+        /// Arranges the list with sequenced entries up front (orderd by sequence)
+        /// and any non-sequenced entries after that.
+        /// 
+        /// Documents without a filename are allowed because they will be displayed as plain text but with
+        /// no links rendered.  This will allow us to list references to documents that are not onboard in CSET
+        /// but the user could look up on their own. 
+        /// </summary>
+        private List<ReferenceDocLink> SortList(IQueryable<GenFileView> docList)
+        {
+            var sorted = docList.Where(x => x.Sequence != null).OrderBy(x => x.Sequence).ToList();
+            sorted.AddRange(docList.Where(x => x.Sequence == null));
+
+
+            var outList = new List<ReferenceDocLink>();
+            foreach (var doc in sorted)
+            {
+                var docLink = new ReferenceDocLink()
+                {
+                    FileId = doc.File_Id,
+                    FileName = doc.File_Name,
+                    Url = doc.Url,
+                    Title = doc.Title,
+                    SectionRef = doc.Section_Ref,
+                    DestinationString = doc.Destination_String,
+                };
+
+
+                // special case for URLs - populate URL field with file_name from GEN_FILE
+                if (doc.File_Type_Id == 45)
+                {
+                    docLink.Url = doc.File_Name;
+                    docLink.FileName = null;
+                }
+
+
+                outList.Add(docLink);
+            }
+
+            return outList;
         }
 
 
@@ -159,7 +196,7 @@ namespace CSETWebCore.Helpers
             {
                 NLog.LogManager.GetCurrentClassLogger().Error($"... {exc}");
 
-                return new List<string>();
+                return [];
             }
         }
     }

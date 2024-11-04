@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -13,6 +13,10 @@ using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Maturity;
 using CSETWebCore.Model.Acet;
 using CSETWebCore.Model.Maturity;
+using CSETWebCore.Business.Acet;
+using NPOI.SS.Formula.Functions;
+using CSETWebCore.Helpers;
+using Org.BouncyCastle.Utilities.IO.Pem;
 
 namespace CSETWebCore.Business.ACETDashboard
 {
@@ -21,14 +25,26 @@ namespace CSETWebCore.Business.ACETDashboard
         private CSETContext _context;
         private IAssessmentUtil _assessmentUtil;
         private IMaturityBusiness _maturity;
+        private IACETMaturityBusiness _acetMaturity;
         private IAdminTabBusiness _adminTab;
+        private TranslationOverlay _overlay;
 
-        public ACETDashboardBusiness(CSETContext context, IAssessmentUtil assessmentUtil, IMaturityBusiness maturity, IAdminTabBusiness adminTab)
+
+        public ACETDashboardBusiness(
+            CSETContext context, 
+            IAssessmentUtil assessmentUtil, 
+            IMaturityBusiness maturity, 
+            IACETMaturityBusiness acetMaturity, 
+            IAdminTabBusiness adminTab
+            )
         {
             _context = context;
             _assessmentUtil = assessmentUtil;
             _maturity = maturity;
+            _acetMaturity = acetMaturity;
             _adminTab = adminTab;
+
+            _overlay = new TranslationOverlay();
         }
 
 
@@ -37,21 +53,37 @@ namespace CSETWebCore.Business.ACETDashboard
         /// </summary>
         /// <param name="assessmentId"></param>
         /// <returns></returns>
-        public Model.Acet.ACETDashboard LoadDashboard(int assessmentId)
+        public Model.Acet.ACETDashboard LoadDashboard(int assessmentId, string lang = "en")
         {
             var result = GetIrpCalculation(assessmentId);
 
             result.Domains = new List<DashboardDomain>();
 
-            List<MaturityDomain> domains = _maturity.GetMaturityAnswers(assessmentId);
+            List<MaturityDomain> domains = _acetMaturity.GetMaturityAnswers(assessmentId, lang);
+
             foreach (var d in domains)
             {
-                result.Domains.Add(new DashboardDomain
+                var d1 = new DashboardDomain
                 {
                     Maturity = d.DomainMaturity,
                     Name = d.DomainName
-                });
+                };
 
+                result.Domains.Add(d1);
+            }
+
+
+            // overlay
+            if (lang != "en")
+            {
+                foreach (var irp in result.Irps)
+                {
+                    var o = _overlay.GetValue("IRP_HEADER", irp.HeaderId.ToString(), lang);
+                    if (o != null)
+                    {
+                        irp.HeaderText = o.Value;
+                    }
+                }
             }
 
             return result;
@@ -96,8 +128,8 @@ namespace CSETWebCore.Business.ACETDashboard
         public Model.Acet.ACETDashboard GetIrpCalculation(int assessmentId)
         {
             Model.Acet.ACETDashboard result = new Model.Acet.ACETDashboard();
-            
-           
+
+
             // now just properties on an Assessment
             ASSESSMENTS assessment = _context.ASSESSMENTS.FirstOrDefault(a => a.Assessment_Id == assessmentId);
             if (assessment == null) { return null; }
@@ -113,6 +145,7 @@ namespace CSETWebCore.Business.ACETDashboard
             foreach (IRP_HEADER header in _context.IRP_HEADER)
             {
                 IRPSummary summary = new IRPSummary();
+                summary.HeaderId = header.IRP_Header_Id;
                 summary.HeaderText = header.Header;
 
                 ASSESSMENT_IRP_HEADER headerInfo = _context.ASSESSMENT_IRP_HEADER.FirstOrDefault(h => h.IRP_HEADER.IRP_Header_Id == header.IRP_Header_Id && h.ASSESSMENT.Assessment_Id == assessmentId);
@@ -175,7 +208,7 @@ namespace CSETWebCore.Business.ACETDashboard
             {
                 _maturity.PersistMaturityLevel(assessmentId, result.SumRiskLevel);
             }
-            else 
+            else
             {
                 _maturity.PersistMaturityLevel(assessmentId, result.Override);
             }

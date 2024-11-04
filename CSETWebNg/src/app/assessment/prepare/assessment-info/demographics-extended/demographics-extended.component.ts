@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,15 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { throwIfEmpty } from 'rxjs/operators';
+import { Component, OnInit } from '@angular/core';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SectorHelpComponent } from '../../../../dialogs/sector-help/sector-help.component';
 import { Demographic } from '../../../../models/assessment-info.model';
-import { County, ExtendedDemographics, ListItem, Region, Sector, Subsector, Geographics, GeoRegion } from '../../../../models/demographics-extended.model';
+import { County, ExtendedDemographics, ListItem, Region, Sector, Subsector, Geographics } from '../../../../models/demographics-extended.model';
 import { AssessmentService } from '../../../../services/assessment.service';
 import { ConfigService } from '../../../../services/config.service';
 import { DemographicExtendedService } from '../../../../services/demographic-extended.service';
+import { NavigationService } from '../../../../services/navigation/navigation.service';
 
 
 @Component({
@@ -52,11 +52,13 @@ export class DemographicsExtendedComponent implements OnInit {
   cioList: any[];
   cisoList: any[];
   trainingList: any[];
+  radioNo: any;
 
   /**
    * This is the model that contains the current answers
    */
   demographicData: ExtendedDemographics = {};
+  geoGraphics: any;
 
 
   /**
@@ -66,6 +68,7 @@ export class DemographicsExtendedComponent implements OnInit {
     private demoSvc: DemographicExtendedService,
     public assessSvc: AssessmentService,
     public configSvc: ConfigService,
+    private navSvc: NavigationService,
     private dialog: MatDialog
   ) { }
 
@@ -93,18 +96,18 @@ export class DemographicsExtendedComponent implements OnInit {
         if (a.name < b.name) { return -1; }
         if (a.name > b.name) { return 1; }
         return 0;
-      });      
+      });
     });
 
     this.demoSvc.getMetros('FL').subscribe((data: any) => {
       this.metroList = [];
 
       data.forEach(m => {
-        const m1= {          
-            selected: false,
-            name: m.metropolitanAreaName,
-            fips: m.metro_FIPS,
-            counties: []    
+        const m1 = {
+          selected: false,
+          name: m.metropolitanAreaName,
+          fips: m.metro_FIPS,
+          counties: []
         };
 
         m.countY_METRO_AREA.forEach(e => {
@@ -153,11 +156,10 @@ export class DemographicsExtendedComponent implements OnInit {
   getDemographics() {
     this.demoSvc.getDemographics().subscribe(
       (data: Demographic) => {
-        console.log(data);
         this.demographicData = data;
-
         // populate Subsector (industry) dropdown based on Sector
         this.getSubsectors(this.demographicData.sectorId, false);
+        this.checkComplete();
       },
       error => console.log('Demographic load Error: ' + (<Error>error).message)
     );
@@ -169,6 +171,7 @@ export class DemographicsExtendedComponent implements OnInit {
   getGeographics() {
     this.demoSvc.getGeographics().subscribe(
       (data: any) => {
+        this.geoGraphics = data;
         data.regions.forEach(x => {
           this.regionList.find(y => y.regionCode == x.regionCode).selected = true;
         });
@@ -176,11 +179,12 @@ export class DemographicsExtendedComponent implements OnInit {
         data.countyFips.forEach(x => {
           this.countyList.find(y => y.fips == x).selected = true;
         });
-     
+
         data.metroFips.forEach(x => {
           this.metroList.find(y => y.fips == x).selected = true;
         });
         this.buildMetros();
+        this.checkComplete();
       }
     );
   }
@@ -210,13 +214,24 @@ export class DemographicsExtendedComponent implements OnInit {
   update(event: any) {
     this.updateDemographics();
   }
-
   /**
    * 
    */
   updateDemographics() {
     this.demoSvc.updateExtendedDemographics(this.demographicData);
+    this.checkComplete();
   }
+
+  checkComplete() {
+    if (this.demoSvc.AreDemographicsComplete(this.demographicData, this.geoGraphics)) {
+      this.navSvc.setNextEnabled(true);
+    }
+    else {
+      this.navSvc.setNextEnabled(false);
+    }
+  }
+
+
 
   /**
    * Called when 'select all' or 'select none' is clicked
@@ -324,8 +339,40 @@ export class DemographicsExtendedComponent implements OnInit {
     this.dialog.open(SectorHelpComponent, config);
   }
 
-  setCyberRisk(value:string){    
+  setCyberRisk(value: string) {
     this.demographicData.cyberRiskService = value;
+    this.updateDemographics();
+  }
+
+  setHb7055(value: string) {
+    this.demographicData.hb7055 = value;
+    if (value !== 'Y') {
+      this.radioNo.value = '';
+      this.demographicData.hb7055Party = '';
+    }
+    this.updateDemographics();
+  }
+
+  setHb7055Party(event) {
+    this.demographicData.hb7055Party = event.target.value;
+    this.updateDemographics();
+  }
+  getGrant():boolean{    
+    return (this.demographicData.hb7055Grant == 'Y');
+  }
+  getGrantNo():boolean{
+    return (this.demographicData.hb7055Grant == 'N');
+  }
+  sethb7055Grant(value: string) {
+    this.demographicData.hb7055Grant = value;
+    if (value != 'Y') {
+      this.demographicData.hb7055Grant = '';      
+    }    
+    this.updateDemographics();
+
+  }
+  setInfrastructureItOt(value: string) {
+    this.demographicData.infrastructureItOt = value;
     this.updateDemographics();
   }
 }

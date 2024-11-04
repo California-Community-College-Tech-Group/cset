@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -16,7 +16,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using NSoup;
+using HtmlAgilityPack;
+using System.IO;
 
 
 namespace CSETWebCore.Business.Notification
@@ -45,20 +46,20 @@ namespace CSETWebCore.Business.Notification
             Initialize();
         }
 
-        public void SetAppCode()
+        public void SetScope()
         {
             _scope = _tokenManager.Payload("scope");
+            if (_scope == null)
+            {
+                _scope = "CSET";
+            }
         }
 
-        public void SetAppCode(string appCode)
+        public void SetScope(string scope)
         {
-            _scope = appCode;
+            _scope = scope;
         }
 
-        //public string GetConfiguration()
-        //{
-        //    return _configuration.GetSection("SmtpPort").Value;
-        //}
 
         /// <summary>
         /// Performs initialization common to any instantiation.
@@ -82,9 +83,9 @@ namespace CSETWebCore.Business.Notification
         /// </summary>
         public void InviteToAssessment(ContactCreateParameters contact)
         {
-            SetAppCode();
+            SetScope();
 
-            string bodyHtml = _resourceHelper.GetEmbeddedResource(@"App_Data\assessmentInviteTemplate_{{scope}}.html", this._scope);
+            string bodyHtml = _resourceHelper.GetEmbeddedResource(Path.Combine("App_Data", @"assessmentInviteTemplate_{{scope}}.html"), this._scope);
             var emailConfig = _configuration.GetSection("Email").AsEnumerable();
             // Build the name if supplied.  
             string contactName = String.Empty;
@@ -108,11 +109,11 @@ namespace CSETWebCore.Business.Notification
             if (_localInstallationHelper.IsLocalInstallation())
             {
                 RemoveCsetAppLink(ref bodyHtml);
-            }           
+            }
 
 
             MailMessage message = new MailMessage();
-            message.Subject = contact.Subject;
+            message.Subject = "You've been invited to a CSET assessment";
             message.Body = bodyHtml;
             message.IsBodyHtml = true;
             message.To.Add(new MailAddress(contact.PrimaryEmail));
@@ -131,9 +132,9 @@ namespace CSETWebCore.Business.Notification
         /// <param name="firstName"></param>
         /// <param name="lastName"></param>
         /// <param name="password"></param>
-        public void SendPasswordEmail(string email, string firstName, string lastName, string password, string appCode)
+        public void SendPasswordEmail(string email, string firstName, string lastName, string password, string appName)
         {
-            string bodyHtml = _resourceHelper.GetEmbeddedResource(@"App_Data\passwordCreationTemplate_{{scope}}.html", appCode);
+            string bodyHtml = _resourceHelper.GetEmbeddedResource(Path.Combine("App_Data", @"passwordCreationTemplate_{{scope}}.html"), appName);
             var emailConfig = _configuration.GetSection("Email").AsEnumerable();
             bodyHtml = bodyHtml.Replace("{{name}}", firstName + " " + lastName);
             bodyHtml = bodyHtml.Replace("{{password}}", password);
@@ -147,7 +148,7 @@ namespace CSETWebCore.Business.Notification
 
 
             MailMessage message = new MailMessage();
-            message.Subject = "New " + _appDisplayName[appCode] + " account creation";
+            message.Subject = "New " + _appDisplayName[appName] + " account creation";
             message.Body = bodyHtml;
             message.To.Add(new MailAddress(email));
             message.From = new MailAddress(
@@ -168,10 +169,10 @@ namespace CSETWebCore.Business.Notification
         /// <param name="firstName"></param>
         /// <param name="lastName"></param>
         /// <param name="password"></param>
-        public void SendInviteePassword(string email, string firstName, string lastName, string password, string appCode)
+        public void SendInviteePassword(string email, string firstName, string lastName, string password, string appName)
         {
             var emailConfig = _configuration.GetSection("Email").AsEnumerable();
-            string bodyHtml = _resourceHelper.GetEmbeddedResource(@"App_Data\invitedPasswordCreationTemplate_{{scope}}.html", appCode);
+            string bodyHtml = _resourceHelper.GetEmbeddedResource(Path.Combine("App_Data", @"invitedPasswordCreationTemplate_{{scope}}.html"), appName);
             bodyHtml = bodyHtml.Replace("{{name}}", firstName + " " + lastName);
             bodyHtml = bodyHtml.Replace("{{password}}", password);
             bodyHtml = bodyHtml.Replace("{{rootUrl}}", _utilities.GetClientHost());
@@ -184,7 +185,7 @@ namespace CSETWebCore.Business.Notification
 
 
             MailMessage message = new MailMessage();
-            message.Subject = "You are invited to " + _appDisplayName[appCode];
+            message.Subject = "You are invited to " + _appDisplayName[appName];
             message.Body = bodyHtml;
             message.To.Add(new MailAddress(email));
             message.From = new MailAddress(
@@ -206,10 +207,10 @@ namespace CSETWebCore.Business.Notification
         /// <param name="lastName"></param>
         /// <param name="password"></param>
         /// <param name="subject"></param>
-        public void SendPasswordResetEmail(string email, string firstName, string lastName, string password, string subject, string appCode)
+        public void SendPasswordResetEmail(string email, string firstName, string lastName, string password, string subject, string appName)
         {
-            SetAppCode(appCode);
-            string bodyHtml = _resourceHelper.GetEmbeddedResource(@"App_Data\passwordResetTemplate_{{scope}}.html", appCode);
+            SetScope(appName);
+            string bodyHtml = _resourceHelper.GetEmbeddedResource(Path.Combine("App_Data", @"passwordResetTemplate_{{scope}}.html"), appName);
             string name = (firstName + " " + lastName).Trim();
             var emailConfig = _configuration.GetSection("Email").AsEnumerable();
             if (string.IsNullOrEmpty(name)) name = email;
@@ -255,8 +256,13 @@ namespace CSETWebCore.Business.Notification
 
             string footerACET = _resourceHelper.GetEmbeddedResource(@"App_Data\EmailFooter_ACET.html");
             mail.Body = mail.Body.Replace("{{email-footer-ACET}}", footerACET);
+
+            string footerTSA = _resourceHelper.GetEmbeddedResource(@"App_Data\EmailFooter_TSA.html");
+            mail.Body = mail.Body.Replace("{{email-footer-TSA}}", footerTSA);
+
             string footerCF = _resourceHelper.GetEmbeddedResource(@"App_Data\EmailFooter_CF.html");
             mail.Body = mail.Body.Replace("{{email-footer-CF}}", footerCF);
+
             string footer = _resourceHelper.GetEmbeddedResource(@"App_Data\EmailFooter.html");
             mail.Body = mail.Body.Replace("{{email-footer}}", footer);
 
@@ -297,7 +303,7 @@ namespace CSETWebCore.Business.Notification
         /// </summary>
         public void SendTestEmail(string recip)
         {
-            SetAppCode();
+            SetScope();
 
             // only send the email if configured to do so (unpublished app setting)
             var emailConfig = _configuration.GetSection("Email").AsEnumerable();
@@ -331,13 +337,19 @@ namespace CSETWebCore.Business.Notification
         /// <returns></returns>
         private void RemoveCsetAppLink(ref string html)
         {
-            var doc = NSoup.Parse.Parser.Parse(html, "");
-            var appLinks = doc.Select(".cset-app-link").ToList();
-            appLinks.ForEach(l => {
-                l.Parent.RemoveChild(l);
-            });
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
 
-            html = doc.ToString();
+            var appLinks = doc.DocumentNode.SelectNodes("//*[contains(@class, 'cset-app-link')]");
+            if (appLinks != null)
+            {
+                foreach (var link in appLinks)
+                {
+                    link.ParentNode.RemoveChild(link);
+                }
+            }
+
+            html = doc.DocumentNode.OuterHtml;
         }
     }
 }

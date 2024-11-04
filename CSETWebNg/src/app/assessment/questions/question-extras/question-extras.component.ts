@@ -1,6 +1,7 @@
+import { ResourceLibraryService } from './../../../services/resource-library.service';
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,19 +27,21 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { OkayComponent } from '../../../dialogs/okay/okay.component';
 import { ConfirmComponent } from '../../../dialogs/confirm/confirm.component';
 // eslint-disable-next-line max-len
-import { CustomDocument, QuestionDetailsContentViewModel, QuestionInformationTabData } from '../../../models/question-extras.model';
+import { ReferenceDocLink, QuestionDetailsContentViewModel, QuestionInformationTabData } from '../../../models/question-extras.model';
 import { Answer, Question } from '../../../models/questions.model';
 import { ConfigService } from '../../../services/config.service';
 import { FileUploadClientService } from '../../../services/file-client.service';
-import { FindingsService } from '../../../services/findings.service';
+import { ObservationsService } from '../../../services/observations.service';
 import { QuestionsService } from '../../../services/questions.service';
 import { AuthenticationService } from './../../../services/authentication.service';
-import { FindingsComponent } from './../findings/findings.component';
-import { Finding } from './../findings/findings.model';
+import { ObservationsComponent } from '../observations/observations.component';
+import { Observation } from '../observations/observations.model';
 import { AssessmentService } from '../../../services/assessment.service';
 import { ComponentOverrideComponent } from '../../../dialogs/component-override/component-override.component';
-import { MaturityService } from '../../../services/maturity.service';
 import { LayoutService } from '../../../services/layout.service';
+import { TranslocoService } from '@ngneat/transloco';
+import { CieService } from '../../../services/cie.service';
+
 
 
 @Component({
@@ -58,16 +61,24 @@ export class QuestionExtrasComponent implements OnInit {
 
   @Input() myOptions: any;
 
+  // ISE options
+  @Input() ncuaDisplay: boolean = false;
+  @Input() iconsToDisplay: string[] = [];
+
   extras: QuestionDetailsContentViewModel;
   tab: QuestionInformationTabData;
   expanded = false;
-  mode: string;  // selector for which data is being displayed, 'DETAIL', 'SUPP', 'CMNT', 'DOCS', 'DISC', 'FDBK'.
+  mode: string;  // selector for which data is being displayed, 'DETAIL', 'SUPP', 'CMNT', 'DOCS', 'OBSV', 'FDBK'.
   answer: Answer;
   dialogRef: MatDialogRef<OkayComponent>;
+
+  msgNoSupplemental: string = `(${this.tSvc.translate('extras.no supplemental available')})`;
 
   showMfr = false;
 
   showQuestionIds = false;
+
+  toggleComponent = false;
 
   /**
    * Stores the original document title, in case the user escapes out of an unwanted change
@@ -76,20 +87,27 @@ export class QuestionExtrasComponent implements OnInit {
 
   constructor(
     public questionsSvc: QuestionsService,
-    private findSvc: FindingsService,
+    private observationSvc: ObservationsService,
     public fileSvc: FileUploadClientService,
     public dialog: MatDialog,
     public configSvc: ConfigService,
     public authSvc: AuthenticationService,
     public assessSvc: AssessmentService,
-    private maturitySvc: MaturityService,
-    public layoutSvc: LayoutService
-    ) {
+    public layoutSvc: LayoutService,
+    private tSvc: TranslocoService,
+    private cieSvc: CieService,
+    private resourceLibSvc: ResourceLibraryService
+  ) {
   }
 
 
   ngOnInit() {
     this.showQuestionIds = this.configSvc.showQuestionAndRequirementIDs();
+
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.cieSvc.feedbackMap.set(this.myQuestion.questionId, this.myQuestion.feedback);
+      this.cieSvc.commentMap.set(this.myQuestion.questionId, this.myQuestion.comment);
+    }
 
     if (!!this.myOptions) {
       if (this.myOptions.eagerSupplemental) {
@@ -105,9 +123,6 @@ export class QuestionExtrasComponent implements OnInit {
    */
   showOverrideDialog(componentType: any): void {
     const dialogRef = this.dialog.open(ComponentOverrideComponent, {
-      width: this.layoutSvc.hp ? '90%' : '600px',
-      maxWidth: this.layoutSvc.hp ? '90%' : '600px',
-      height: '800px',
       data: { componentType: componentType, component_Symbol_Id: componentType.component_Symbol_Id, myQuestion: this.myQuestion },
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -155,15 +170,27 @@ export class QuestionExtrasComponent implements OnInit {
       return;
     }
 
+
     // Call the API for content
     this.questionsSvc.getDetails(this.myQuestion.questionId, this.myQuestion.questionType).subscribe(
       (details) => {
         this.extras = details;
+        if (details.is_Component === true) {
+          this.myQuestion.is_Component = true;
+          this.toggleComponent = true;
+        }
+
         this.extras.questionId = this.myQuestion.questionId;
 
         // populate my details with the first "non-null" tab
         this.tab = this.extras.listTabs?.find(t => t.requirementFrameworkTitle != null) ?? this.extras.listTabs[0];
-        //this.scrollToExtras()
+
+
+        // Component detail toggle
+        if (this.toggleComponent == true) {
+          this.toggleExtras('COMPONENT')
+          this.toggleComponent = false;
+        }
 
         // add questionIDs to related questions for debug if configured to do so
         if (this.showQuestionIds) {
@@ -182,12 +209,29 @@ export class QuestionExtrasComponent implements OnInit {
   }
 
   /**
+   * Translates the level to the user's language.
+   * Returns empty string if no level is present.
+   */
+  salLevel(level: string) {
+    if (!level) {
+      return '';
+    }
+    return this.tSvc.translate('titles.sal.level.' + level.toLowerCase());
+  }
+
+  /**
    *
    * @param e
    */
   saveComment(e) {
     this.defaultEmptyAnswer();
-    this.answer.comment = e.target.value;
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.myQuestion.comment = this.cieSvc.applyContactAndEndTag(e.target.value, '\n- - End of Comment - -\n');
+      this.cieSvc.commentMap.set(this.myQuestion.questionId, this.myQuestion.comment);
+    }
+    else {
+      this.answer.comment = e.target.value;
+    }
     this.saveAnswer();
   }
 
@@ -196,7 +240,6 @@ export class QuestionExtrasComponent implements OnInit {
    * @returns
    */
   showDocumentsIcon(): boolean {
-
     return true;
   }
 
@@ -206,7 +249,14 @@ export class QuestionExtrasComponent implements OnInit {
   */
   saveFeedback(e) {
     this.defaultEmptyAnswer();
-    this.answer.feedback = e.target.value;
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.myQuestion.feedback = this.cieSvc.applyContactAndEndTag(e.target.value, '\n- - End of Feedback - -\n');
+      this.cieSvc.feedbackMap.set(this.myQuestion.questionId, this.myQuestion.feedback);
+    }
+    else {
+      this.myQuestion.feedback = e.target.value;
+    }
+
     this.saveAnswer();
   }
 
@@ -233,6 +283,7 @@ export class QuestionExtrasComponent implements OnInit {
         questionNumber: this.myQuestion.displayNumber,
         answerText: this.myQuestion.answer,
         altAnswerText: this.myQuestion.altAnswerText,
+        freeResponseAnswer: this.myQuestion.freeResponseAnswer,
         comment: '',
         feedback: '',
         markForReview: false,
@@ -279,7 +330,7 @@ export class QuestionExtrasComponent implements OnInit {
 
 
   /**
-   * Returns a boolean indicating if there are comments, documents or discoveries present
+   * Returns a boolean indicating if there are comments, documents or observations present
    * on the answer.
    * @param mode
    */
@@ -298,34 +349,33 @@ export class QuestionExtrasComponent implements OnInit {
         }
         return (this.extras && this.extras.documents && this.extras.documents.length > 0) ? 'inline' : 'none';
 
-      case 'DISC':
+      case 'OBSV':
         // if the extras have not been pulled, get the indicator from the question list JSON
-        if (this.extras == null || this.extras.findings == null) {
-          return this.myQuestion.hasDiscovery ? 'inline' : 'none';
+        if (this.extras == null || this.extras.observations == null) {
+          return (this.myQuestion.hasObservation) ? 'inline' : 'none';
         }
-        return (this.extras && this.extras.findings && this.extras.findings.length > 0) ? 'inline' : 'none';
-
-
+        return (this.extras && this.extras.observations && this.extras.observations.length > 0) ? 'inline' : 'none';
     }
+    return false;
   }
 
   /**
    *
-   * @param findid
+   * @param observationId
    */
-  addEditDiscovery(findid) {
-    //this.saveAnswer();
+  addEditObservation(observationId) {
 
     // TODO Always send an empty one for now.
     // At some juncture we need to change this to
-    // either send the finding to be edited or
+    // either send the observation to be edited or
     // send an empty one.
-    const find: Finding = {
+    const obs: Observation = {
       question_Id: this.myQuestion.questionId,
+      questionType: this.myQuestion.questionType,
       answer_Id: this.myQuestion.answer_Id,
-      finding_Id: findid,
+      observation_Id: observationId,
       summary: '',
-      finding_Contacts: null,
+      observation_Contacts: null,
       impact: '',
       importance: null,
       importance_Id: 1,
@@ -344,42 +394,63 @@ export class QuestionExtrasComponent implements OnInit {
       supp_Guidance: null
     };
 
-    this.dialog.open(FindingsComponent, {
-        data: find,
-        disableClose: true,
-        width: this.layoutSvc.hp ? '90%' : '600px',
-        maxWidth: this.layoutSvc.hp ? '90%' : '600px'
-      })
+    this.dialog.open(ObservationsComponent, {
+      data: obs,
+      disableClose: true,
+      width: this.layoutSvc.hp ? '90%' : '750px',
+      maxWidth: this.layoutSvc.hp ? '90%' : '750px',
+    }
+
+    )
       .afterClosed().subscribe(result => {
-        const answerID = find.answer_Id;
-        this.findSvc.getAllDiscoveries(answerID).subscribe(
-          (response: Finding[]) => {
-            this.extras.findings = response;
-            this.myQuestion.hasDiscovery = (this.extras.findings.length > 0);
-            this.myQuestion.answer_Id = find.answer_Id;
+        const answerID = obs.answer_Id;
+        this.observationSvc.getAllObservations(answerID).subscribe(
+          (response: Observation[]) => {
+            this.extras.observations = response;
+            for (let i of response) {
+              if ((!i.summary) && (!i.resolution_Date) && (!i.issue) && (!i.impact) && (!i.recommendations) && (!i.vulnerabilities)) {
+                this.deleteEmptyObservation(i)
+              }
+            }
+            this.myQuestion.hasObservation = (this.extras.observations.length > 0);
+            this.myQuestion.answer_Id = obs.answer_Id;
           },
-          error => console.log('Error updating findings | ' + (<Error>error).message)
+          error => console.log('Error updating observations | ' + (<Error>error).message)
         );
+
       });
+
   }
 
   /**
-   * Deletes a discovery.
-   * @param findingToDelete
+   * Deletes an empty observation.
+   * @param observationToDelete
    */
-  deleteDiscovery(findingToDelete) {
+  deleteEmptyObservation(observationToDelete) {
+    this.observationSvc.deleteObservation(observationToDelete.observation_Id).subscribe();
+    let deleteIndex = null;
 
+    for (let i = 0; i < this.extras.observations.length; i++) {
+      if (this.extras.observations[i].observation_Id === observationToDelete.observation_Id) {
+        deleteIndex = i;
+      }
+    }
+    this.extras.observations.splice(deleteIndex, 1);
+    this.myQuestion.hasObservation = (this.extras.observations.length > 0);
+  };
+
+
+  /**
+   * Deletes an Observation.
+   * @param obsToDelete
+   */
+  deleteObservation(obsToDelete) {
     // Build a message whether the observation has a title or not
-    let msg = "Are you sure you want to delete "
-      + this.observationOrIssue().toLowerCase()
-      + " '"
-      + findingToDelete.summary
-      + "?'";
+    let msg = this.tSvc.translate('observation.delete ' + this.observationOrIssue().toLowerCase() + ' confirm');
+    msg = msg.replace('{title}', obsToDelete.summary);
 
-    if (findingToDelete.summary === null) {
-      msg = "Are you sure you want to delete this "
-      + this.observationOrIssue().toLowerCase()
-      + "?";
+    if (obsToDelete.summary === null) {
+      msg = this.tSvc.translate('observation.delete this ' + this.observationOrIssue().toLowerCase() + ' confirm');
     }
 
 
@@ -388,17 +459,16 @@ export class QuestionExtrasComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.findSvc.deleteFinding(findingToDelete.finding_Id).subscribe();
+        this.observationSvc.deleteObservation(obsToDelete.observation_Id).subscribe();
         let deleteIndex = null;
 
-        for (let i = 0; i < this.extras.findings.length; i++) {
-          if (this.extras.findings[i].finding_Id === findingToDelete.finding_Id) {
+        for (let i = 0; i < this.extras.observations.length; i++) {
+          if (this.extras.observations[i].observation_Id === obsToDelete.observation_Id) {
             deleteIndex = i;
           }
         }
-        this.extras.findings.splice(deleteIndex, 1);
-        this.myQuestion.hasDiscovery = (this.extras.findings.length > 0);
-
+        this.extras.observations.splice(deleteIndex, 1);
+        this.myQuestion.hasObservation = (this.extras.observations.length > 0);
       }
     });
   }
@@ -491,7 +561,7 @@ export class QuestionExtrasComponent implements OnInit {
         this.questionsSvc.deleteDocument(document.document_Id, this.myQuestion.questionId)
           .subscribe();
 
-          this.questionsSvc.broadcastExtras(this.extras);
+        this.questionsSvc.broadcastExtras(this.extras);
       }
     });
   }
@@ -558,7 +628,7 @@ export class QuestionExtrasComponent implements OnInit {
     // get short-term JWT from API
     this.authSvc.getShortLivedToken().subscribe((response: any) => {
       const url = this.fileSvc.downloadUrl + doc.document_Id + "?token=" + response.token;
-      window.open(url, "_blank");
+      window.location.href = url;
     });
   }
 
@@ -569,7 +639,18 @@ export class QuestionExtrasComponent implements OnInit {
   // }
 
   autoLoadSupplemental() {
-    return this.questionsSvc.autoLoadSupplemental(this.assessSvc.assessment.maturityModel?.modelId);
+    return this.questionsSvc.autoLoadSupplemental(this.assessSvc.assessment.maturityModel);
+  }
+
+  /**
+   * Returns a boolean indicating if ANY type of supplemental exists
+   */
+  supplementalExists() {
+    return (
+      !!this.tab?.requirementsData?.supplementalInfo
+      || !!this.myQuestion.scope
+      || !!this.myQuestion.recommendedAction
+      || !!this.myQuestion.services);
   }
 
   /**
@@ -577,7 +658,7 @@ export class QuestionExtrasComponent implements OnInit {
    * Do nothing if the user has already selected a mode or collapsed the extras.
    */
   forceLoadQuestionExtra(extra: string) {
-    if ((!!this.mode || this.mode === '') && (!this.assessSvc.usesMaturityModel('HYDRO') && extra != 'CMNT') ) {
+    if ((!!this.mode || this.mode === '') && (!this.assessSvc.usesMaturityModel('HYDRO') && extra != 'CMNT')) {
       return;
     }
 
@@ -604,80 +685,40 @@ export class QuestionExtrasComponent implements OnInit {
 
   /**
    * Encapsulates logic that determines whether an icon should be displayed.
-   * It can grow as new behaviors are required.
+   * Use "moduleBehaviors" configuration for the current module/model.
    */
   displayIcon(mode) {
-
-    // DETAIL & REVIEWED
-    if (this.myQuestion.is_Maturity
-      && (this.assessSvc.usesMaturityModel('EDM')
-        || this.assessSvc.usesMaturityModel('CRR')
-        || this.assessSvc.usesMaturityModel('CPG')
-        || this.assessSvc.usesMaturityModel('C2M2')
-        || this.assessSvc.isISE())) {
-      if (mode == 'DETAIL') {
-        return false;
-      }
-      if (mode == 'REVIEWED') {
-        return false;
-      }
+    //NCUA asked for specific behavior. See comment on displayIconISE function.
+    if (this.ncuaDisplay) {
+      let result = this.displayIconISE(mode);
+      return result;
     }
 
-    // RRA
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('RRA')) {
-      if (mode == 'DETAIL') {
-        return false;
-      }
-      if (mode == 'REVIEWED') {
-        return false;
-      }
+    const behavior = this.configSvc.config.moduleBehaviors.find(m => m.moduleName == this.assessSvc.assessment.maturityModel?.modelName)
+
+    if (mode == 'DETAIL') {
+      return behavior?.questionIcons?.showDetails ?? true;
     }
 
-    // CISA CIS
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('CIS')) {
-      if (mode == 'DETAIL') {
-        return false;
-      }
-      if (mode == 'REVIEWED') {
-        return false;
-      }
-      if (mode == 'DISC') {
-        return false;
-      }
-      if (mode == 'REFS') {
-        return false;
-      }
+    if (mode == 'SUPP') {
+      return behavior?.questionIcons?.showGuidance ?? true;
     }
 
-    // Renewables HYDRO
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('HYDRO')) {
-      if (mode == 'DETAIL') {
-        return false;
-      }
-      if (mode == 'SUPP') {
-        return false;
-      }
-      if (mode == 'DISC') {
-        return false;
-      }
-      if (mode == 'REFS') {
-        return false;
-      }
+    if (mode == 'REFS') {
+      return behavior?.questionIcons?.showReferences ?? true;
     }
 
-    // ISE model always hides Observations
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('ISE')) {
-      if (mode == 'DISC') {
-        return false;
-      }
+    if (mode == 'OBSV') {
+      return behavior?.questionIcons?.showObservations ?? true;
     }
 
-    // OBSERVATIONS
-    if (mode == 'DISC') {
-      return this.configSvc.behaviors.showObservations;
+    if (mode == 'REVIEWED') {
+      return behavior?.questionIcons?.showReviewed ?? true;
     }
 
-    // DOCUMENTS
+
+    // TODO:  define module-specific behaviors for these
+
     if (mode == 'DOCS') {
       return this.configSvc.behaviors.showAssessmentDocuments;
     }
@@ -694,30 +735,36 @@ export class QuestionExtrasComponent implements OnInit {
   }
 
   /**
+   * Custom show/hide functionality for ISE icons. Requires "this.ncuaDisplay" to be true.
+   * This function takes an array of strings ("this.iconsToDisplay") and if it finds the mode (icon)
+   * you want to show (['REFS', 'SUPP'], etc)
+   */
+  displayIconISE(mode) {
+    if (this.iconsToDisplay.includes(mode)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
    * Returns an "I" or "G", depending on which version of the suppemental icon
    * should be shown based on context.
    * @returns
    */
   whichSupplementalIcon() {
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('EDM')) {
+    const behavior = this.configSvc.config.moduleBehaviors.find(m => m.moduleName == this.assessSvc.assessment.maturityModel?.modelName);
+    if (!!behavior && behavior.questionIcons?.guidanceIcon?.toLowerCase() == 'g') {
       return "G";
+    } else {
+      return "I";
     }
-
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('RRA')) {
-      return "G";
-    }
-
-    if (this.myQuestion.is_Maturity && this.assessSvc.usesMaturityModel('CRR')) {
-      return "G";
-    }
-
-    return "I";
   }
 
   /**
    * Returns 'Observation' if the assessment is not ISE, 'Issue' if it is ISE
    */
-   observationOrIssue () {
+  observationOrIssue() {
     if (this.assessSvc.isISE()) {
       return 'Issue';
     }
@@ -731,7 +778,7 @@ export class QuestionExtrasComponent implements OnInit {
    */
   documentLabel(defaultLabel: string) {
     if (this.assessSvc.isISE()) {
-      if(defaultLabel === 'Source Documents') {
+      if (defaultLabel === 'Source Documents') {
         return 'Resources';
       } else if (defaultLabel === 'Additional Documents') {
         return 'References';
@@ -752,14 +799,8 @@ export class QuestionExtrasComponent implements OnInit {
    * @param document
    * @returns
    */
-  documentUrl(document: CustomDocument) {
-    var link = '';
-    if (document.is_Uploaded) {
-      link = this.configSvc.apiUrl + 'ReferenceDocument/' + document.file_Id + '#' + document.section_Ref;
-    } else {
-      link = this.configSvc.docUrl + document.file_Name + '#' + document.section_Ref;
-    }
-    return link;
+formatDocumentUrl(document: ReferenceDocLink, bookmark: any) {
+    return this.resourceLibSvc.formatDocumentUrl(document, bookmark);
   }
 
   /**
@@ -769,6 +810,32 @@ export class QuestionExtrasComponent implements OnInit {
     return (!this.tab?.referenceTextList || this.tab.referenceTextList.length === 0)
       && (!this.tab?.sourceDocumentsList || this.tab.sourceDocumentsList.length === 0)
       && (!this.tab?.additionalDocumentsList || this.tab.additionalDocumentsList.length === 0)
+  }
+
+  /**
+   * Returns if Supplemental Guidance should be
+   * independent from Examination Approach or not
+   * @returns
+   */
+  seperateGuidanceFromApproach() {
+    const behavior = this.configSvc.config.moduleBehaviors.find(m => m.moduleName == this.assessSvc.assessment.maturityModel?.modelName);
+    return behavior?.independentSuppGuidance;
+  }
+
+  /**
+   * For CIE, where feedback can be merged with other assessments
+   * @param q
+   * @returns
+   */
+  getFeedback(q: Question) {
+    if (this.cieSvc.feedbackMap.get(q.questionId) == null && q.feedback == null) {
+      return '';
+    }
+    else if (this.cieSvc.feedbackMap.get(q.questionId) == null && q.feedback != null) {
+      this.cieSvc.feedbackMap.set(q.questionId, this.cieSvc.applyContactAndEndTag(q.feedback, '\n- - End of Feedback - -\n'));
+    }
+
+    return this.cieSvc.feedbackMap.get(q.questionId);
   }
 
 }

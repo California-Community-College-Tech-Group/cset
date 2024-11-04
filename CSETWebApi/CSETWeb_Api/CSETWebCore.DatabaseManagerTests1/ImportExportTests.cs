@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -38,11 +38,11 @@ namespace CSETWebCore.DatabaseManager.Tests
     [TestClass()]
     public class ImportExportTests
     {
-        private CSETContext context;
-        private TokenManager tokenManager;
-        private LocalInstallationHelper localHelper;
-        private PasswordHash passwordHash;
-        private IConfiguration config;
+        private CSETContext? context;
+        private TokenManager? tokenManager;
+        private LocalInstallationHelper? localHelper;
+        private PasswordHash? passwordHash;
+        private IConfiguration? config;
 
         [TestInitialize()]
         public void Initialize()
@@ -63,35 +63,32 @@ namespace CSETWebCore.DatabaseManager.Tests
             localHelper = provider.GetRequiredService<LocalInstallationHelper>();
             passwordHash = provider.GetRequiredService<PasswordHash>();
             config = configuration;
-           
+
         }
 
         [TestMethod()]
         public void ImportAllAssessmentsTest()
-        {   
+        {
             string clientCode = "DHS";
             string appCode = "CSET";
-            DbManager manager = new DbManager(new Version("12.0.1.3"),clientCode, appCode);
-            //TODO finish this.
-            //manager.CopyDBAcrossServers();
+            DbManager manager = new DbManager(new Version("12.0.1.3"), clientCode, appCode);
         }
 
         [TestMethod()]
         public void ExportAllAssessmentsTest()
         {
             //setup a copy file
-            //setup a destination file
-            string clientCode = "DHS";
-            string appCode = "CSET";
-
+            //setup a destination file            
             UserAuthentication userAuth = new UserAuthentication(passwordHash, null, localHelper, tokenManager, null, config, context);
             Login login = new Login { Email = null, Password = null, TzOffset = "300", Scope = "CSET" };
 
             string loginToken = userAuth.AuthenticateStandalone(login, tokenManager).Token;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             var assessments = context.ASSESSMENTS.Select(x => x.Assessment_Id).AsEnumerable();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
-            for( int i=0; i<assessments.Count(); i++ )
+            for (int i = 0; i < assessments.Count(); i++)
             {
                 int assess_Id = assessments.ElementAt(i);
 
@@ -106,52 +103,52 @@ namespace CSETWebCore.DatabaseManager.Tests
             //    conn.Open();
             //    SqlCommand cmd = conn.CreateCommand();
 
-                //cmd.CommandText = "INSERT INTO [dbo].[ASSESSMENT_CONTACTS]\r\n           " +
-                //    "([Assessment_Id]\r\n\t\t    " +
-                //    ",[PrimaryEmail]\r\n           " +
-                //    ",[FirstName]\r\n           " +
-                //    ",[LastName]\r\n           " +
-                //    ",[Invited]\r\n           " +
-                //    ",[AssessmentRoleId]\r\n           " +
-                //    ",[UserId])\r\n" +
-                //    "select distinct e.* from assessment_contacts d right join (\r\n" +
-                //        "select a.assessment_id,c.* from assessments a, (\r\n" +
-                //        "SELECT \r\n       " +
-                //        "[PrimaryEmail]\r\n      " +
-                //        ",[FirstName]\r\n      " +
-                //        ",[LastName]\r\n      " +
-                //        ",[Invited]\r\n      " +
-                //        ",[AssessmentRoleId]\r\n      " +
-                //        ",[UserId]\t  \r\n  " +
-                //        "FROM [dbo].[ASSESSMENT_CONTACTS]\r\n  " +
-                //        "where assessment_contact_id = 31331\r\n" +
-                //    ") c ) e on d.assessment_id=e.assessment_id and d.userid = e.userid\r\n" +
-                //    "where d.assessment_id is null";
+            //cmd.CommandText = "INSERT INTO [dbo].[ASSESSMENT_CONTACTS]\r\n           " +
+            //    "([Assessment_Id]\r\n\t\t    " +
+            //    ",[PrimaryEmail]\r\n           " +
+            //    ",[FirstName]\r\n           " +
+            //    ",[LastName]\r\n           " +
+            //    ",[Invited]\r\n           " +
+            //    ",[AssessmentRoleId]\r\n           " +
+            //    ",[UserId])\r\n" +
+            //    "select distinct e.* from assessment_contacts d right join (\r\n" +
+            //        "select a.assessment_id,c.* from assessments a, (\r\n" +
+            //        "SELECT \r\n       " +
+            //        "[PrimaryEmail]\r\n      " +
+            //        ",[FirstName]\r\n      " +
+            //        ",[LastName]\r\n      " +
+            //        ",[Invited]\r\n      " +
+            //        ",[AssessmentRoleId]\r\n      " +
+            //        ",[UserId]\t  \r\n  " +
+            //        "FROM [dbo].[ASSESSMENT_CONTACTS]\r\n  " +
+            //        "where assessment_contact_id = 31331\r\n" +
+            //    ") c ) e on d.assessment_id=e.assessment_id and d.userid = e.userid\r\n" +
+            //    "where d.assessment_id is null";
 
-                //cmd.CommandText = "select * from ASSESSMENTS;";
-                //SqlDataReader reader = cmd.ExecuteReader();
-                //while (reader.Read())
-                //{
-                //    Assert.IsNotNull(reader.GetInt32(0)); //checks assess_id
-                //    Assert.IsNotNull(reader.GetInt32(2)); //checks creator_id
-                //    var context = new CSETContext();
+            //cmd.CommandText = "select * from ASSESSMENTS;";
+            //SqlDataReader reader = cmd.ExecuteReader();
+            //while (reader.Read())
+            //{
+            //    Assert.IsNotNull(reader.GetInt32(0)); //checks assess_id
+            //    Assert.IsNotNull(reader.GetInt32(2)); //checks creator_id
+            //    var context = new CSETContext();
 
-                //    var tokenManager = new TokenManager(null,null,null, context);
-                //    string token = tokenManager.GenerateToken(reader.GetInt32(2), null, "360", -1, null, null, "CSET");
+            //    var tokenManager = new TokenManager(null,null,null, context);
+            //    string token = tokenManager.GenerateToken(reader.GetInt32(2), null, "360", -1, null, null, "CSET");
 
-                //    //var tokenControl = new AuthController(null, null, null);
+            //    //var tokenControl = new AuthController(null, null, null);
 
-                //    var exportControl = new AssessmentExportController(null, context, null);
-                //    //var loginObject = new Login("email", "pass", "offset", "scope");
+            //    var exportControl = new AssessmentExportController(null, context, null);
+            //    //var loginObject = new Login("email", "pass", "offset", "scope");
 
-                //    //string tokenString = tokenControl.IssueToken(reader.GetInt32(0), -1, "*default*", 5000).ToString();
-                //    exportControl.ExportAssessment(token);
-                    
-                //}
+            //    //string tokenString = tokenControl.IssueToken(reader.GetInt32(0), -1, "*default*", 5000).ToString();
+            //    exportControl.ExportAssessment(token);
 
-                //manager.
+            //}
 
-            
+            //manager.
+
+
         }
 
         private IHostBuilder CreateDefaultBuilder()

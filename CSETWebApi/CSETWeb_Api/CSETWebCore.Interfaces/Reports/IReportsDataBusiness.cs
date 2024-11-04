@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -16,16 +16,20 @@ namespace CSETWebCore.Interfaces.Reports
     public interface IReportsDataBusiness
     {
         void SetReportsAssessmentId(int assessmentId);
-        List<MatRelevantAnswers> GetMaturityDeficiencies();
-        List<MatRelevantAnswers> GetCommentsList();
-        List<MatRelevantAnswers> GetMarkedForReviewList();
+
+        List<MatRelevantAnswers> GetMaturityDeficiencies(int? modelId = null);
+        List<MatRelevantAnswers> GetCommentsList(int? modelId = null);
+        List<MatRelevantAnswers> GetMarkedForReviewList(int? modelId = null);
         List<MatRelevantAnswers> GetAlternatesList();
-        List<MatRelevantAnswers> GetQuestionsList();
+        List<MatRelevantAnswers> GetQuestionsList(int? modelId = null);
         List<MatAnsweredQuestionDomain> GetAnsweredQuestionList();
         List<MatAnsweredQuestionDomain> GetIseAnsweredQuestionList();
+        BasicReportData.INFORMATION GetIseInformation();
         List<MatAnsweredQuestionDomain> GetIseAllQuestionList();
 
         List<SourceFiles> GetIseSourceFiles();
+        string GetCsetVersion();
+        string GetAssessmentGuid(int assessmentId);
         List<string> GetDomains();
 
         void BuildSubGroupings(MaturityGrouping g, int? parentID,
@@ -49,12 +53,16 @@ namespace CSETWebCore.Interfaces.Reports
         List<BasicReportData.CNSSSALJustificationsTable> GetNistInfoTypes();
         BasicReportData.OverallSALTable GetSals();
         BasicReportData.INFORMATION GetInformation();
-        List<Individual> GetFindingIndividuals();
+        List<Individual> GetObservationIndividuals();
         GenSALTable GetGenSals();
         MaturityReportData.MaturityModel GetBasicMaturityModel();
         List<MaturityReportData.MaturityModel> GetMaturityModelData();
         string FormatName(string firstName, string lastName);
 
         IEnumerable<CONFIDENTIAL_TYPE> GetConfidentialTypes();
+        List<BasicReportData.RequirementControl> GetControlsDiagram(string applicationMode);
+        List<MatAnsweredQuestionDomain> GetCieQuestionList(int matLevel, bool filterForNa = false);
+        List<MatAnsweredQuestionDomain> GetCieDocumentsForAssessment();
+        List<MatAnsweredQuestionDomain> GetCieMfrQuestionList();
     }
 }

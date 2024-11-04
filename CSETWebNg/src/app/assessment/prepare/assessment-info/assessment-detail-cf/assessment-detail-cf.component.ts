@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,9 @@ import { ConfigService } from '../../../../services/config.service';
 })
 export class AssessmentDetailCfComponent implements OnInit {
 
-  assessment: AssessmentDetail = {};
+  assessment: AssessmentDetail = {
+    assessmentName: ''
+  };
 
   /**
    * 
@@ -64,8 +66,9 @@ export class AssessmentDetailCfComponent implements OnInit {
 
     // a few things for a brand new assessment
     if (this.assessSvc.isBrandNew) {
+      this.assessSvc.clearFirstTime();
     }
-    
+
     this.assessSvc.isBrandNew = false;
 
 

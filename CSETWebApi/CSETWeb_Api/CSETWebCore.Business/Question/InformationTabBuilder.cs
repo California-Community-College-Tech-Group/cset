@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -9,6 +9,7 @@ using CSETWebCore.Interfaces.Common;
 using CSETWebCore.Interfaces.Standards;
 using CSETWebCore.Model.Question;
 using CSETWebCore.DataLayer.Model;
+using CSETWebCore.Interfaces.Helpers;
 
 namespace CSETWebCore.Business.Question
 {
@@ -16,11 +17,13 @@ namespace CSETWebCore.Business.Question
     {
         private CSETContext _context;
         private readonly IHtmlFromXamlConverter _converter;
+        private ITokenManager _tokenManager;
 
-        public InformationTabBuilder(CSETContext context, IHtmlFromXamlConverter converter)
+        public InformationTabBuilder(CSETContext context, IHtmlFromXamlConverter converter, ITokenManager tokenManager)
         {
             _context = context;
             _converter = converter;
+            _tokenManager = tokenManager;
         }
 
         /// <summary>
@@ -31,7 +34,7 @@ namespace CSETWebCore.Business.Question
         public List<QuestionInformationTabData> CreateFrameworkInformationTab(FrameworkInfoData frameworkData)
         {
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
-            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
             tab.BuildFrameworkInfoTab(frameworkData);
             tempTabDataList.Add(tab);
             return tempTabDataList;
@@ -48,7 +51,7 @@ namespace CSETWebCore.Business.Question
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
             foreach (var set in questionInfoData.Sets)
             {
-                QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+                QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
                 tab.BuildQuestionTab(questionInfoData, set.Value);
                 tempTabDataList.Add(tab);
             }
@@ -66,7 +69,7 @@ namespace CSETWebCore.Business.Question
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
             foreach (var set in questionInfoData.Sets)
             {
-                QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+                QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
                 tab.BuildRelatedQuestionTab(questionInfoData, set.Value);
                 tempTabDataList.Add(tab);
             }
@@ -83,7 +86,7 @@ namespace CSETWebCore.Business.Question
         public List<QuestionInformationTabData> CreateRequirementInformationTab(RequirementInfoData reqInfoData, IStandardSpecficLevelRepository levelManager)
         {
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
-            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
             tab.BuildRequirementInfoTab(reqInfoData, levelManager);
             tempTabDataList.Add(tab);
             return tempTabDataList;
@@ -98,7 +101,7 @@ namespace CSETWebCore.Business.Question
         public List<QuestionInformationTabData> CreateComponentInformationTab(ComponentQuestionInfoData questionInfoData)
         {
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
-            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
             tab.BuildComponentInfoTab(questionInfoData);
             tempTabDataList.Add(tab);
             return tempTabDataList;
@@ -113,7 +116,7 @@ namespace CSETWebCore.Business.Question
         public List<QuestionInformationTabData> CreateMaturityInformationTab(MaturityQuestionInfoData maturityInfoData)
         {
             List<QuestionInformationTabData> tempTabDataList = new List<QuestionInformationTabData>();
-            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context);
+            QuestionInformationTabData tab = new QuestionInformationTabData(_converter, _context, _tokenManager);
             tab.BuildMaturityInfoTab(maturityInfoData);
             tempTabDataList.Add(tab);
             return tempTabDataList;

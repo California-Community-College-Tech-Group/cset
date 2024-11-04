@@ -1,27 +1,15 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using Microsoft.AspNetCore.Mvc;
-using CSETWebCore.Business.Acet;
 using CSETWebCore.Business.Maturity;
-using CSETWebCore.Business.Reports;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.AdminTab;
-using CSETWebCore.Interfaces.Crr;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Reports;
-using CSETWebCore.Model.Maturity;
-using Microsoft.AspNetCore.Authorization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
-using System.Xml.XPath;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
 
 
 namespace CSETWebCore.Api.Controllers
@@ -36,6 +24,7 @@ namespace CSETWebCore.Api.Controllers
         private readonly IAssessmentUtil _assessmentUtil;
         private readonly IAdminTabBusiness _adminTabBusiness;
         private readonly IReportsDataBusiness _reports;
+
 
 
         /// <summary>
@@ -58,13 +47,34 @@ namespace CSETWebCore.Api.Controllers
         /// to a single domain.
         /// </summary>
         [HttpGet]
-        [Route("api/maturitystructure/cpg")]
+        [Route("api/maturity/structure/cpg")]
         public IActionResult GetQuestions()
         {
             int assessmentId = _tokenManager.AssessmentForUser();
+            var lang = _tokenManager.GetCurrentLanguage();
 
             var biz = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-            var x = biz.GetMaturityStructure(assessmentId, true);
+            var x = biz.GetMaturityStructure(assessmentId, true, lang);
+
+            return Ok(x);
+        }
+
+
+        /// <summary>
+        /// Returns the maturity grouping/question structure for an assessment.
+        /// Specifying a query parameter of domainAbbreviation will limit the response
+        /// to a single domain.
+        /// </summary>
+        [HttpGet]
+        [Route("api/maturity/structure/cpg/bonus")]
+        public IActionResult GetQuestionsForModel([FromQuery] int modelId)
+        {
+            int assessmentId = _tokenManager.AssessmentForUser();
+            var lang = _tokenManager.GetCurrentLanguage();
+
+            var biz = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
+            var x = biz.GetMaturityStructure(assessmentId, true, lang, modelId);
+
             return Ok(x);
         }
 
@@ -78,67 +88,31 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetAnswerDistribForDomains()
         {
             int assessmentId = _tokenManager.AssessmentForUser();
+            var lang = _tokenManager.GetCurrentLanguage();
 
-            var resp = new List<AnswerDistribDomain>();
-
-            var dbList = _context.GetAnswerDistribGroupings(assessmentId);
-
-            foreach (var item in dbList)
-            {
-                if (!resp.Exists(x => x.Name == item.title))
-                {
-                    var domain = new AnswerDistribDomain()
-                    {
-                        Name = item.title,
-                        Series = InitializeSeries()
-                    };
-
-                    resp.Add(domain);
-                }
-
-                double percent = CalculatePercent(dbList, item);
-
-                var r = resp.First(x => x.Name == item.title);
-                r.Series.First(x => x.Name == item.answer_text).Value = percent;
-            }
+            var cpgBiz = new CpgBusiness(_context, lang);
+            var resp = cpgBiz.GetAnswerDistribForDomains(assessmentId);
 
             return Ok(resp);
         }
 
 
         /// <summary>
-        /// Calculates the percentage based on all answer values for the domain
+        /// Returns the applicable SSG model ID (if any)
         /// </summary>
         /// <returns></returns>
-        private double CalculatePercent(IList<GetAnswerDistribGroupingsResult> r,
-            GetAnswerDistribGroupingsResult i)
+        [HttpGet]
+        [Route("api/ssg/modelid")]
+        public IActionResult GetSsgModelId()
         {
-            var sum = r.Where(x => x.title == i.title)
-                .Select(x => x.answer_count).Sum();
+            int assessmentId = _tokenManager.AssessmentForUser();
+            var lang = _tokenManager.GetCurrentLanguage();
 
-            return ((double)i.answer_count * 100d / (double)sum);
-        }
+            var cpgBiz = new CpgBusiness(_context, lang);
 
+            var ssgModelId = cpgBiz.DetermineSsgModel(assessmentId);
 
-        /// <summary>
-        /// Initializes 'empty' percentge slots for potential CPG answers.
-        /// </summary>
-        /// <returns></returns>
-        private List<Series> InitializeSeries()
-        {
-            var list = new List<Series>();
-
-            var values = new List<string>() { "Y", "I", "S", "N", "U" };
-            foreach (string s in values)
-            {
-                list.Add(new Series()
-                {
-                    Name = s,
-                    Value = 0
-                });
-            }
-
-            return list;
+            return Ok(ssgModelId);
         }
     }
 }

@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -20,7 +20,7 @@ namespace CSETWebCore.Business.Maturity.Tests
     [TestClass()]
     public class MaturityBusinessTests
     {
-        private CSETContext context;
+        private CSETContext? context;
 
         [TestInitialize()]
         public void Initialize()

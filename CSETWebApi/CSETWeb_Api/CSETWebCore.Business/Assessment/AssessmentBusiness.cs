@@ -1,13 +1,12 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CSETWebCore.Business.Sal;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Helpers;
 using CSETWebCore.Interfaces;
@@ -17,25 +16,30 @@ using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Maturity;
 using CSETWebCore.Interfaces.Sal;
 using CSETWebCore.Interfaces.Standards;
-using CSETWebCore.Model.Acet;
 using CSETWebCore.Model.Assessment;
+using CSETWebCore.Model.Document;
+using CSETWebCore.Model.Observations;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nelibur.ObjectMapper;
 
+
 namespace CSETWebCore.Business.Assessment
 {
-    public class AssessmentBusiness : IAssessmentBusiness
+    public class AssessmentBusiness : IAssessmentBusiness, ICreateAssessmentBusiness
     {
         private readonly ITokenManager _tokenManager;
         private readonly IUtilities _utilities;
         private readonly IContactBusiness _contactBusiness;
         private readonly ISalBusiness _salBusiness;
         private readonly IMaturityBusiness _maturityBusiness;
+        private readonly IACETMaturityBusiness _acetMaturityBusiness;
         private readonly IAssessmentUtil _assessmentUtil;
         private readonly IStandardsBusiness _standardsBusiness;
         private readonly IDiagramManager _diagramManager;
+
+        private readonly TranslationOverlay _overlay;
+
 
         private CSETContext _context;
 
@@ -51,24 +55,43 @@ namespace CSETWebCore.Business.Assessment
             _maturityBusiness = maturityBusiness;
             _assessmentUtil = assessmentUtil;
             _standardsBusiness = standardsBusiness;
-            _diagramManager = diagramManager;
             _context = context;
+            _diagramManager = new Diagram.DiagramManager(context);
+            _overlay = new TranslationOverlay();
         }
 
 
-        public AssessmentDetail CreateNewAssessment(int? currentUserId, string workflow, Guid galleryGuid)
+        public AssessmentDetail CreateNewAssessment(int? currentUserId, string workflow, GalleryConfig config)
         {
-            DateTime nowUTC = _utilities.UtcToLocal(DateTime.UtcNow);
+            DateTime nowUTC = DateTime.UtcNow;
 
             string defaultExecSumm = "Cyber terrorism is a real and growing threat. Standards and guides have been developed, vetted, and widely accepted" +
                                      " to assist with protection from cyber attacks. The Cyber Security Evaluation Tool (CSET) includes a selectable array of these standards for" +
                                      " a tailored assessment of cyber vulnerabilities. Once the standards were selected and the resulting question sets answered, the CSET created" +
                                      " a compliance summary, compiled variance statistics, ranked top areas of concern, and generated security recommendations.";
 
+            string defaultAssessmentName = "New Assessment";
+
+            var lang = _tokenManager.GetCurrentLanguage();
+            if (lang != "en")
+            {
+                var msg = _overlay.GetPropertyValue("GENERIC", "default exec summ", lang);
+                if (msg != null)
+                {
+                    defaultExecSumm = msg;
+                }
+
+                msg = _overlay.GetPropertyValue("GENERIC", "default assessment name", lang);
+                if (msg != null)
+                {
+                    defaultAssessmentName = msg;
+                }
+            }
+
+
             AssessmentDetail newAssessment = new AssessmentDetail
             {
-                AssessmentName = (workflow.ToLower() == "acet") ?
-                    "ACET 00000 " + DateTime.Now.ToString("MMddyy") : "New Assessment",
+                AssessmentName = defaultAssessmentName,
                 AssessmentDate = nowUTC,
                 CreatorId = currentUserId,
                 CreatedDate = nowUTC,
@@ -76,8 +99,9 @@ namespace CSETWebCore.Business.Assessment
                 AssessmentEffectiveDate = nowUTC,
                 Workflow = workflow,
                 ExecutiveSummary = defaultExecSumm,
-                GalleryItemGuid = galleryGuid,
+                GalleryItemGuid = config.GalleryGuid,
                 ISE_StateLed = false,
+                IseSubmitted = false,
             };
 
 
@@ -112,19 +136,24 @@ namespace CSETWebCore.Business.Assessment
 
             _standardsBusiness.PersistSelectedStandards(assessment_id, null);
 
-
-            CreateIrpHeaders(assessment_id);
-
             return newAssessment;
         }
 
 
-
-        public AssessmentDetail CreateNewAssessmentForImport(int? currentUserId, string accessKey)
+        /// <summary>
+        /// Creates a new assessment for import. The assessmentGuid parameter is optional. If specified, the newly created assessment
+        /// will use the provided guid value. Otherwise, it will be asssigned randomly.
+        /// </summary>
+        /// <param name="currentUserId"></param>
+        /// <param name="accessKey"></param>
+        /// <param name="assessmentGuid"></param>
+        /// <returns></returns>
+        public AssessmentDetail CreateNewAssessmentForImport(int? currentUserId, string accessKey, Guid assessmentGuid = new Guid())
         {
             DateTime nowUTC = DateTime.Now;
             AssessmentDetail newAssessment = new AssessmentDetail
             {
+                AssessmentGuid = assessmentGuid,
                 AssessmentName = "New Assessment",
                 AssessmentDate = nowUTC,
                 CreatorId = currentUserId,
@@ -175,8 +204,8 @@ namespace CSETWebCore.Business.Assessment
             list.ForEach(x =>
             {
                 x.LastModifiedDate = _utilities.UtcToLocal(x.LastModifiedDate ?? DateTime.UtcNow);
-                x.AssessmentCreatedDate = _utilities.UtcToLocal(x.AssessmentCreatedDate);
-                x.AssessmentDate = _utilities.UtcToLocal(x.AssessmentDate);
+                x.AssessmentCreatedDate = x.AssessmentCreatedDate;
+                x.AssessmentDate = x.AssessmentDate;
 
                 var query = from u in _context.USERS
                             where u.UserId == x.UserId
@@ -265,6 +294,30 @@ namespace CSETWebCore.Business.Assessment
             return list;
         }
 
+        public AggregationAssessment GetAggregationAssessmentDetail(int assessmentId)
+        {
+            AggregationAssessment aggregation = new AggregationAssessment();
+
+            var query = from aa in _context.ASSESSMENTS
+                        where aa.Assessment_Id == assessmentId
+                        select aa;
+
+            var result = query.ToList().FirstOrDefault();
+            if (result != null)
+            {
+                aggregation.Assessment = new ASSESSMENTS();
+                aggregation.Assessment = result;
+                aggregation.Answers = _context.ANSWER.Where(x => x.Assessment_Id == assessmentId).ToList();
+                aggregation.Demographics = _context.DEMOGRAPHICS.FirstOrDefault(x => x.Assessment_Id == assessmentId);
+                aggregation.Documents = _context.DOCUMENT_FILE.Where(x => x.Assessment_Id == assessmentId).ToList();
+                aggregation.Findings = (from a in aggregation.Answers
+                                        join f in _context.FINDING on a.Answer_Id equals f.Answer_Id
+                                        select f).ToList();
+
+            }
+            return aggregation;
+        }
+
 
         /// <summary>
         /// 
@@ -313,9 +366,9 @@ namespace CSETWebCore.Business.Assessment
                 assessment = new AnalyticsAssessment()
                 {
                     Alias = result.Alias,
-                    AssessmentCreatedDate = _utilities.UtcToLocal(result.AssessmentCreatedDate),
+                    AssessmentCreatedDate = result.AssessmentCreatedDate,
                     AssessmentCreatorId = tmpGuid.ToString(),
-                    Assessment_Date = _utilities.UtcToLocal(result.Assessment_Date),
+                    Assessment_Date = result.Assessment_Date,
                     Assessment_GUID = result.Assessment_GUID.ToString(),
                     LastModifiedDate = _utilities.UtcToLocal((DateTime)result.LastModifiedDate),
                     Mode = modeResult?.Application_Mode
@@ -324,6 +377,24 @@ namespace CSETWebCore.Business.Assessment
 
             return assessment;
 
+        }
+
+        /// <summary>
+        /// Returns the details for the specified Assessments given a GUID.
+        /// Returns null if no assessment with the provided GUID exists.
+        /// </summary>
+        /// <param name="assessmentGuid"></param>
+        /// <returns></returns>
+        public AssessmentDetail GetAssessmentDetail(Guid assessmentGuid)
+        {
+            var assessment = _context.ASSESSMENTS.FirstOrDefault(assessment => assessment.Assessment_GUID == assessmentGuid);
+
+            if (assessment == null)
+            {
+                return null;
+            }
+
+            return GetAssessmentDetail(assessment.Assessment_Id);
         }
 
         /// <summary>
@@ -347,9 +418,10 @@ namespace CSETWebCore.Business.Assessment
             if (result != null)
             {
                 assessment.Id = result.aa.Assessment_Id;
+                assessment.AssessmentGuid = result.aa.Assessment_GUID;
                 assessment.GalleryItemGuid = result.aa.GalleryItemGuid;
                 assessment.AssessmentName = result.ii.Assessment_Name;
-                assessment.AssessmentDate = _utilities.UtcToLocal(result.aa.Assessment_Date);
+                assessment.AssessmentDate = result.aa.Assessment_Date;
                 assessment.FacilityName = result.ii.Facility_Name;
                 assessment.CityOrSiteName = result.ii.City_Or_Site_Name;
                 assessment.StateProvRegion = result.ii.State_Province_Or_Region;
@@ -358,13 +430,16 @@ namespace CSETWebCore.Business.Assessment
                 assessment.AssessmentDescription = result.ii.Assessment_Description;
                 assessment.AdditionalNotesAndComments = result.ii.Additional_Notes_And_Comments;
                 assessment.CreatorId = result.aa.AssessmentCreatorId ?? 0;
-                assessment.CreatedDate = _utilities.UtcToLocal(result.aa.AssessmentCreatedDate);
+                assessment.CreatedDate = result.aa.AssessmentCreatedDate;
                 assessment.LastModifiedDate = _utilities.UtcToLocal((DateTime)result.aa.LastModifiedDate);
-                assessment.AssessmentEffectiveDate = _utilities.UtcToLocal(result.aa.AssessmentEffectiveDate ?? DateTime.UtcNow);
+                assessment.AssessmentEffectiveDate = result.aa.AssessmentEffectiveDate ?? DateTime.UtcNow;
                 assessment.DiagramMarkup = result.aa.Diagram_Markup;
                 assessment.DiagramImage = result.aa.Diagram_Image;
                 assessment.ISE_StateLed = result.aa.ISE_StateLed;
                 assessment.RegionCode = result.ii.Region_Code;
+                assessment.is_PCII = result.aa.Is_PCII;
+                assessment.PciiNumber = result.aa.PCII_Number;
+                assessment.IseSubmitted = result.ii.Ise_Submitted;
 
                 assessment.CreatorName = new User.UserBusiness(_context, null)
                     .GetUserDetail((int)assessment.CreatorId)?.FullName;
@@ -403,17 +478,45 @@ namespace CSETWebCore.Business.Assessment
                 // for older assessments, if no features are set, look for actual data and set them
                 if (!assessment.UseMaturity && !assessment.UseStandard && !assessment.UseDiagram)
                 {
-                    DetermineFeaturesFromData(ref assessment);
+                    SetFeaturesOnAssessmentRecord(assessment.Id);
+
+
+                    // populate assessment with feature values from DB
+                    var dbAssessment = _context.ASSESSMENTS.FirstOrDefault(x => x.Assessment_Id == assessmentId);
+
+                    assessment.UseStandard = dbAssessment.UseStandard;
+                    assessment.UseDiagram = dbAssessment.UseDiagram;
+                    assessment.UseMaturity = dbAssessment.UseMaturity;
+                    assessment.MaturityModel = _maturityBusiness.GetMaturityModel(assessmentId);
                 }
 
                 SetAssessmentTypeInfo(assessment);
 
 
                 var ss = _context.STANDARD_SELECTION.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
-                if (ss != null && ss.Hidden_Screens != null)
+                if (ss != null)
                 {
-                    assessment.HiddenScreens.AddRange(ss.Hidden_Screens.ToLower().Split(","));
+                    if (ss.Hidden_Screens != null)
+                    {
+                        assessment.HiddenScreens.AddRange(ss.Hidden_Screens.ToLower().Split(","));
+                    }
+
+                    assessment.ApplicationMode = ss.Application_Mode.Substring(0, 1).ToUpper();
                 }
+
+
+                // Some demographics
+                var d1 = new Demographic.DemographicBusiness(_context, _assessmentUtil);
+                var d1Sector = d1.GetDemographics(assessmentId).SectorId;
+                assessment.SectorId = d1Sector;
+
+                var d2 = new Demographic.DemographicExtBusiness(_context);
+                var d2Sector  = (int?)d2.GetX(assessmentId, "SECTOR");
+                if (d2Sector != null)
+                {
+                    assessment.SectorId = d2Sector;
+                }
+
 
                 bool defaultAcet = (app_code == "ACET");
                 assessment.IsAcetOnly = result.ii.IsAcetOnly != null ? result.ii.IsAcetOnly : defaultAcet;
@@ -499,60 +602,47 @@ namespace CSETWebCore.Business.Assessment
         /// created prior to incorporating features into the assessment data model.
         /// </summary>
         /// <param name="assessment"></param>
-        public void DetermineFeaturesFromData(ref AssessmentDetail assessment)
+        public void SetFeaturesOnAssessmentRecord(int assessmentId)
         {
-            var a = assessment;
+            var dbAssessment = _context.ASSESSMENTS.FirstOrDefault(x => x.Assessment_Id == assessmentId);
 
-            var dbAssessment = _context.ASSESSMENTS.FirstOrDefault(x => x.Assessment_Id == a.Id);
+            dbAssessment.UseStandard = _context.AVAILABLE_STANDARDS.Any(x => x.Assessment_Id == assessmentId);
 
-            if (_context.AVAILABLE_STANDARDS.Any(x => x.Assessment_Id == a.Id))
+            dbAssessment.UseDiagram = _context.ASSESSMENT_DIAGRAM_COMPONENTS.Any(x => x.Assessment_Id == assessmentId)
+               && _diagramManager.HasDiagram(assessmentId);
+
+            dbAssessment.UseMaturity = _context.AVAILABLE_MATURITY_MODELS.Any(x => x.Assessment_Id == assessmentId);
+
+            if (!dbAssessment.UseMaturity)
             {
-                assessment.UseStandard = true;
-                dbAssessment.UseStandard = true;
-                _context.SaveChanges();
-            }
-
-
-            if (_context.ASSESSMENT_DIAGRAM_COMPONENTS.Any(x => x.Assessment_Id == a.Id))
-            {
-
-                assessment.UseDiagram = _diagramManager.HasDiagram(a.Id);
-                dbAssessment.UseDiagram = assessment.UseDiagram;
-                _context.SaveChanges();
-            }
-
-
-            // determine if there are maturity answers and attach maturity models
-            var maturityAnswers = _context.ANSWER.Where(x => x.Assessment_Id == a.Id && x.Question_Type.ToLower() == "maturity").ToList();
-            if (maturityAnswers.Count > 0)
-            {
-                assessment.UseMaturity = true;
-                dbAssessment.UseMaturity = true;
-
-                if (!_context.AVAILABLE_MATURITY_MODELS.Any(x => x.Assessment_Id == a.Id))
+                // determine if there are maturity answers and attach maturity models
+                var maturityAnswers = _context.ANSWER.Where(x => x.Assessment_Id == assessmentId && x.Question_Type.ToLower() == "maturity").ToList();
+                if (maturityAnswers.Count > 0)
                 {
+                    dbAssessment.UseMaturity = true;
 
-                    // determine the maturity models represented by the questions that have been answered
-                    var qqq = _context.MATURITY_QUESTIONS.Where(q => maturityAnswers.Select(x => x.Question_Or_Requirement_Id).Contains(q.Mat_Question_Id)).ToList();
-                    var maturityModelIds = qqq.Select(x => x.Maturity_Model_Id).Distinct().ToList();
-                    foreach (var modelId in maturityModelIds)
+                    // if we have maturity answers but no selected model, assume the selected model
+                    if (!_context.AVAILABLE_MATURITY_MODELS.Any(x => x.Assessment_Id == assessmentId))
                     {
-                        var mm = new AVAILABLE_MATURITY_MODELS()
+                        // determine the maturity models represented by the questions that have been answered
+                        var qqq = _context.MATURITY_QUESTIONS.Where(q => maturityAnswers.Select(x => x.Question_Or_Requirement_Id).Contains(q.Mat_Question_Id)).ToList();
+                        var maturityModelIds = qqq.Select(x => x.Maturity_Model_Id).Distinct().ToList();
+                        foreach (var modelId in maturityModelIds)
                         {
-                            Assessment_Id = a.Id,
-                            model_id = modelId,
-                            Selected = true
-                        };
+                            var mm = new AVAILABLE_MATURITY_MODELS()
+                            {
+                                Assessment_Id = assessmentId,
+                                model_id = modelId,
+                                Selected = true
+                            };
 
-                        _context.AVAILABLE_MATURITY_MODELS.Add(mm);
-
-                        // get the newly-attached model for the response
-                        assessment.MaturityModel = _maturityBusiness.GetMaturityModel(a.Id);
+                            _context.AVAILABLE_MATURITY_MODELS.Add(mm);
+                        }
                     }
                 }
-
-                _context.SaveChanges();
             }
+
+            _context.SaveChanges();
         }
 
 
@@ -573,6 +663,16 @@ namespace CSETWebCore.Business.Assessment
             if (dbAssessment == null)
             {
                 dbAssessment = new ASSESSMENTS();
+
+                if (assessment.AssessmentGuid != Guid.Empty)
+                {
+                    dbAssessment.Assessment_GUID = assessment.AssessmentGuid;
+                }
+                else 
+                {
+                    dbAssessment.Assessment_GUID = Guid.NewGuid();
+                }
+
                 _context.ASSESSMENTS.Add(dbAssessment);
                 _context.SaveChanges();
                 assessmentId = dbAssessment.Assessment_Id;
@@ -590,22 +690,19 @@ namespace CSETWebCore.Business.Assessment
             dbAssessment.UseMaturity = assessment.UseMaturity;
             dbAssessment.UseStandard = assessment.UseStandard;
 
-            dbAssessment.Charter = string.IsNullOrEmpty(assessment.Charter) ? "00000" : assessment.Charter.PadLeft(5, '0');
-            dbAssessment.CreditUnionName = assessment.CreditUnion;
+            dbAssessment.Charter = "00000";
             dbAssessment.Assets = assessment.Assets.ToString();
-            dbAssessment.ISE_StateLed = assessment.ISE_StateLed;
-            dbAssessment.MatDetail_targetBandOnly = (app_code == "ACET");
-
             dbAssessment.Diagram_Markup = assessment.DiagramMarkup;
             dbAssessment.Diagram_Image = assessment.DiagramImage;
             dbAssessment.AnalyzeDiagram = false;
+            dbAssessment.PCII_Number = assessment.PciiNumber;
+            dbAssessment.Is_PCII = assessment.is_PCII;
 
             _context.ASSESSMENTS.Update(dbAssessment);
             _context.SaveChanges();
 
 
             var user = _context.USERS.FirstOrDefault(x => x.UserId == dbAssessment.AssessmentCreatorId);
-
 
             var dbInformation = _context.INFORMATION.Where(x => x.Id == assessmentId).FirstOrDefault();
             if (dbInformation == null)
@@ -617,18 +714,6 @@ namespace CSETWebCore.Business.Assessment
                 };
                 _context.INFORMATION.Add(dbInformation);
                 _context.SaveChanges();
-            }
-
-            if (app_code == "ACET")
-            {
-                if (!assessment.AssessmentName.StartsWith("ISE ") && (!assessment.AssessmentName.StartsWith("Merged ")))
-                {
-                    var creditUnion = string.IsNullOrEmpty(assessment.CreditUnion)
-                        ? string.Empty
-                        : assessment.CreditUnion + " ";
-                    assessment.AssessmentName =
-                        app_code + " " + dbAssessment.Charter + " " + creditUnion + dbAssessment.Assessment_Date.ToString("MMddyy");
-                }
             }
 
             // add or update the INFORMATION record
@@ -644,6 +729,7 @@ namespace CSETWebCore.Business.Assessment
             dbInformation.Workflow = assessment.Workflow;
             dbInformation.Origin = assessment.Origin;
             dbInformation.Region_Code = assessment.RegionCode;
+            dbInformation.Ise_Submitted = assessment.IseSubmitted;
 
             _context.INFORMATION.Update(dbInformation);
             _context.SaveChanges();
@@ -659,57 +745,17 @@ namespace CSETWebCore.Business.Assessment
                 _maturityBusiness.ClearMaturityModel(assessmentId);
             }
 
+            // No user is null here if accesskey login is used
+            if (user != null)
+            {
+                AssessmentNaming.ProcessName(_context, user.UserId, assessmentId);
+            }
             _assessmentUtil.TouchAssessment(assessmentId);
 
             return assessmentId;
         }
 
 
-        /// <summary>
-        /// Create new headers for IRP calculations
-        /// </summary>
-        /// <param name="assessmentId"></param>
-        public void CreateIrpHeaders(int assessmentId)
-        {
-            int idOffset = 1;
-
-            // now just properties on an Assessment
-            ASSESSMENTS assessment = _context.ASSESSMENTS.FirstOrDefault(a => a.Assessment_Id == assessmentId);
-
-            foreach (IRP_HEADER header in _context.IRP_HEADER)
-            {
-                IRPSummary summary = new IRPSummary();
-                summary.HeaderText = header.Header;
-
-                ASSESSMENT_IRP_HEADER headerInfo = _context.ASSESSMENT_IRP_HEADER.FirstOrDefault(h =>
-                    h.IRP_HEADER.IRP_Header_Id == header.IRP_Header_Id &&
-                    h.ASSESSMENT.Assessment_Id == assessmentId);
-
-                summary.RiskLevel = 0;
-                headerInfo = new ASSESSMENT_IRP_HEADER()
-                {
-                    RISK_LEVEL = 0,
-                    IRP_HEADER = header
-                };
-                headerInfo.ASSESSMENT = assessment;
-                if (_context.ASSESSMENT_IRP_HEADER.Count() == 0)
-                {
-                    headerInfo.HEADER_RISK_LEVEL_ID = header.IRP_Header_Id;
-                }
-                else
-                {
-                    headerInfo.HEADER_RISK_LEVEL_ID =
-                        _context.ASSESSMENT_IRP_HEADER.Max(i => i.HEADER_RISK_LEVEL_ID) + idOffset;
-                    idOffset++;
-                }
-
-                summary.RiskLevelId = headerInfo.HEADER_RISK_LEVEL_ID ?? 0;
-
-                _context.ASSESSMENT_IRP_HEADER.Add(headerInfo);
-            }
-
-            _context.SaveChanges();
-        }
 
 
         /// <summary>
@@ -719,10 +765,23 @@ namespace CSETWebCore.Business.Assessment
         /// <returns></returns>
         public List<DEMOGRAPHICS_ORGANIZATION_TYPE> GetOrganizationTypes()
         {
-            var orgType = new List<DEMOGRAPHICS_ORGANIZATION_TYPE>();
-            orgType = _context.DEMOGRAPHICS_ORGANIZATION_TYPE.ToList();
+            var list = new List<DEMOGRAPHICS_ORGANIZATION_TYPE>();
+            list = _context.DEMOGRAPHICS_ORGANIZATION_TYPE.ToList();
 
-            return orgType;
+            var lang = _tokenManager.GetCurrentLanguage();
+            if (lang != "en")
+            {
+                list.ForEach(x =>
+                {
+                    var val = _overlay.GetValue("DEMOGRAPHICS_ORGANIZATION_TYPE", x.OrganizationTypeId.ToString(), lang)?.Value;
+                    if (val != null)
+                    {
+                        x.OrganizationType = val;
+                    }
+                });
+            }
+
+            return list;
         }
 
         /// <summary>
@@ -751,21 +810,6 @@ namespace CSETWebCore.Business.Assessment
             return _context.ASSESSMENTS.FirstOrDefault(a => a.Assessment_Id == assessmentId);
         }
 
-        //public void GetMaturityDetails(ref AssessmentDetail assessment)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public void GetSelectedStandards(ref AssessmentDetail assessment)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public void DetermineFeaturesFromData(ref AssessmentDetail assessment)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
         /// <summary>
         /// Sets the assessment type title and description.
         /// </summary>
@@ -773,7 +817,7 @@ namespace CSETWebCore.Business.Assessment
         public void SetAssessmentTypeInfo(AssessmentDetail assessment)
         {
             // Check for old assessment with multiple assessment types.
-            bool multipleTypes = (assessment.UseStandard && assessment.Standards.Count > 1)
+            bool multipleTypes = (assessment.UseStandard && assessment.Standards?.Count > 1)
                                 || (assessment.UseDiagram && assessment.UseMaturity)
                                 || (assessment.UseDiagram && assessment.UseStandard)
                                 || (assessment.UseMaturity && assessment.UseStandard);
@@ -787,14 +831,28 @@ namespace CSETWebCore.Business.Assessment
 
             var result = query.ToList().FirstOrDefault();
 
+            var lang = _tokenManager.GetCurrentLanguage();
+
             if (result != null)
             {
+                // Translate if not English
+                if (lang != "en")
+                {
+                    var itemOverlay = _overlay.GetJObject("GALLERY_ITEM", "key", result.Gallery_Item_Guid.ToString(), lang);
+
+                    if (itemOverlay != null)
+                    {
+                        result.Title = itemOverlay.Value<string>("title");
+                        result.Description = itemOverlay.Value<string>("description");
+                    }
+                }
+
                 galleryCardDescription = result.Description;
             }
 
             if (assessment.UseMaturity)
             {
-                if (assessment.MaturityModel == null) 
+                if (assessment.MaturityModel == null)
                 {
                     // Try to get the maturity model if it's null for some reason
                     assessment.MaturityModel = _maturityBusiness.GetMaturityModel(assessment.Id);
@@ -802,6 +860,13 @@ namespace CSETWebCore.Business.Assessment
 
                 // Use shorter names on assessments with multiple types.
                 assessment.TypeTitle += ", " + assessment.MaturityModel?.ModelTitle;
+
+                var modelObject = _overlay.GetJObject("MATURITY_MODELS", "maturity_model_id", (assessment.MaturityModel.ModelId).ToString(), lang);
+                if (modelObject != null)
+                {
+                    assessment.TypeTitle = modelObject.Value<string>("model_title");
+                }
+
                 assessment.TypeDescription = galleryCardDescription;
             }
 
@@ -823,10 +888,12 @@ namespace CSETWebCore.Business.Assessment
             }
 
             if (assessment.TypeTitle != null)
-                if (assessment.TypeTitle.IndexOf(",") == 0)
+            {
+                if (assessment.TypeTitle.StartsWith(","))
                 {
-                    assessment.TypeTitle = assessment.TypeTitle.Substring(2);
+                    assessment.TypeTitle = assessment.TypeTitle.TrimStart(", ".ToCharArray());
                 }
+            }
 
             // Remove description for assessments with multiple types.
             if (multipleTypes)
@@ -835,13 +902,14 @@ namespace CSETWebCore.Business.Assessment
             }
         }
 
+
         public List<SetInfo> GatherSetsInfo(List<string> setNames)
         {
             var allSets = _context.SETS.ToList();
             List<SetInfo> processedSets = new List<SetInfo>();
             foreach (string setName in setNames)
             {
-                var set = allSets.Find(set => set.Set_Name == setName);
+                var set = allSets.Find(set => string.Equals(set.Set_Name, setName, StringComparison.CurrentCultureIgnoreCase));
                 processedSets.Add(new SetInfo { FullName = set.Full_Name, ShortName = set.Short_Name });
             }
             return processedSets;
@@ -873,6 +941,158 @@ namespace CSETWebCore.Business.Assessment
 
 
             return results;
+        }
+
+
+        /// <summary>
+        /// Gets the OTHER-REMARKS detail record 
+        /// </summary>
+        /// <returns></returns>
+        public string GetOtherRemarks(int assessmentId)
+        {
+            var dd = _context.DETAILS_DEMOGRAPHICS
+                .Where(x => x.Assessment_Id == assessmentId && x.DataItemName == "OTHER-REMARKS").FirstOrDefault();
+
+            if (dd != null)
+            {
+                return dd.StringValue;
+            }
+
+            return "";
+        }
+
+
+        /// <summary>
+        /// Persists OTHER-REMARKS.
+        /// </summary>
+        /// <param name="remark"></param>
+        public void SaveOtherRemarks(int assessmentId, string remark)
+        {
+            var dd = _context.DETAILS_DEMOGRAPHICS
+               .Where(x => x.Assessment_Id == assessmentId && x.DataItemName == "OTHER-REMARKS").FirstOrDefault();
+
+            if (dd == null)
+            {
+                dd = new DETAILS_DEMOGRAPHICS
+                {
+                    Assessment_Id = assessmentId,
+                    DataItemName = "OTHER-REMARKS"
+                };
+                _context.DETAILS_DEMOGRAPHICS.Add(dd);
+            }
+
+            dd.StringValue = remark;
+            _context.SaveChanges();
+        }
+
+        public void clearFirstTime(int userid, int assessment_id)
+        {
+            var us = _context.USERS.Where(x => x.UserId == userid).FirstOrDefault();
+            if (us != null)
+            {
+                us.IsFirstLogin = false;
+                _context.SaveChanges();
+            }
+        }
+
+        public void MoveHydroActionsOutOfIseActions()
+        {
+            _utilities.MoveActionItemsFrom_IseActions_To_HydroData(_context);
+        }
+
+        public IEnumerable<MergeObservation> GetAssessmentObservations(int id1, int id2, int? id3, int? id4, int? id5, int? id6, int? id7, int? id8, int? id9, int? id10)
+        {
+            int?[] myArray = new int?[]
+            {
+                id1,id2,id3,id4,id5,id6,id7,id8,id9,id10
+            };
+
+            List<int?> myList = new List<int?>();
+            foreach (int? item in myArray)
+            {
+                if (item != null && item != 0)
+                {
+                    myList.Add(item);
+                }
+            }
+
+            List<MergeObservation> observationsPerAssessment = new List<MergeObservation>();
+
+            foreach (int assessId in myList)
+            {
+                var results = (from a in _context.ANSWER
+                               join f in _context.FINDING on a.Answer_Id equals f.Answer_Id
+                               where a.Assessment_Id == assessId
+                               select new { a, f }).ToList();
+
+                var answerFindingPair = results.Select(x => new { x.a, x.f }).Distinct();
+
+                List<FINDING> observationList = new List<FINDING>();
+
+                foreach (var pair in answerFindingPair)
+                {
+                    observationList.Add(pair.f);
+                }
+
+                foreach (var obs in observationList)
+                {
+                    var findingContact = _context.FINDING_CONTACT.Where(x => x.Finding_Id == obs.Finding_Id).ToList();
+                    if (findingContact != null)
+                    {
+                        obs.FINDING_CONTACT = findingContact;
+                    }
+                }
+
+                observationsPerAssessment.Add(new MergeObservation(assessId, observationList));
+            }
+
+            return observationsPerAssessment;
+        }
+
+        public IEnumerable<MergeDocuments> GetAssessmentDocuments(int id1, int id2, int? id3, int? id4, int? id5, int? id6, int? id7, int? id8, int? id9, int? id10)
+        {
+            int?[] myArray = new int?[]
+            {
+                id1,id2,id3,id4,id5,id6,id7,id8,id9,id10
+            };
+
+            List<int?> myList = new List<int?>();
+            foreach (int? item in myArray)
+            {
+                if (item != null && item != 0)
+                {
+                    myList.Add(item);
+                }
+            }
+
+            List<MergeDocuments> documentsPerAssessment = new List<MergeDocuments>();
+            foreach (int assessId in myList)
+            {
+                var results = (from a in _context.ANSWER
+                               join da in _context.DOCUMENT_ANSWERS on a.Answer_Id equals da.Answer_Id
+                               join f in _context.DOCUMENT_FILE on da.Document_Id  equals f.Document_Id
+                               where a.Assessment_Id == assessId
+                               select new { a, da, f }).ToList();
+
+                var answerFindingPair = results.Select(x => new { x.a, x.da, x.f }).Distinct();
+
+                List<DocumentWithAnswerId> documentList = new List<DocumentWithAnswerId>();
+                foreach (var pair in answerFindingPair)
+                {
+                    DocumentWithAnswerId document = new DocumentWithAnswerId();
+                    document.Document_Id = pair.f.Document_Id;
+                    document.FileName = pair.f.Name;
+                    document.Title = pair.f.Title;
+                    document.Answer_Id = pair.da.Answer_Id;
+                    document.Question_Id = pair.a.Question_Or_Requirement_Id;
+                    
+                    documentList.Add(document);
+                }
+
+                documentsPerAssessment.Add(new MergeDocuments(assessId, documentList));
+            }
+
+            return documentsPerAssessment;
         }
     }
 }

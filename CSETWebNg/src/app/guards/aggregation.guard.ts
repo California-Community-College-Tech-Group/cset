@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,14 @@
 //
 ////////////////////////////////
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, CanActivateChild, Router, RouterStateSnapshot } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import { JwtParser } from '../helpers/jwt-parser';
 import { AuthenticationService } from '../services/authentication.service';
 import { AggregationService } from '../services/aggregation.service';
 
 @Injectable()
-export class AggregationGuard implements CanActivate, CanActivateChild {
+export class AggregationGuard {
   private parser = new JwtParser();
 
   constructor(

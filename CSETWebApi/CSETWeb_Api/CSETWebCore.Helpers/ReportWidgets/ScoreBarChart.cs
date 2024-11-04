@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -23,7 +23,7 @@ namespace CSETWebCore.Helpers.ReportWidgets
         {
             int maxAnswerCount = d.AnswerCounts.Max();
 
-            int barWidthInclGap = d.Width / d.AnswerCounts.Count;
+            float barWidthInclGap = (float)d.Width / (float)d.AnswerCounts.Count;
 
             int barTopY = 20;
 
@@ -43,11 +43,11 @@ namespace CSETWebCore.Helpers.ReportWidgets
 
 
             // leave a half gap on the left
-            var x = d.Gap / 2;
+            var x = (float)d.Gap / 2f;
 
             for (int i = 0; i < d.AnswerCounts.Count; i++)
             {
-                if (d.AnswerCounts[i] < 0)
+                if (d.AnswerCounts[i] < 0 || !double.IsFinite(d.AnswerCounts[i]))
                 {
                     d.AnswerCounts[i] = 0;
                 }
@@ -56,17 +56,18 @@ namespace CSETWebCore.Helpers.ReportWidgets
                 xSvg.Add(xRect);
 
                 double pct = (double)d.AnswerCounts[i] / (double)maxAnswerCount;
-                double barHeight = barSectionHeight * pct;                
+                double barHeight = barSectionHeight * pct;
                 // don't render a zero-height bar; provide some minimal color
-                if (barHeight < 1)
+                if (barHeight < 1 || !double.IsFinite(barHeight))
                 {
                     barHeight = 1;
                 }
                 double barTop = barTopY + barSectionHeight - barHeight;
 
+                var barWidth = barWidthInclGap - d.Gap;
 
                 xRect.SetAttributeValue("height", barHeight.ToString());
-                xRect.SetAttributeValue("width", (barWidthInclGap - d.Gap).ToString());
+                xRect.SetAttributeValue("width", barWidth.ToString());
                 xRect.SetAttributeValue("x", x.ToString());
                 xRect.SetAttributeValue("y", barTop.ToString());
                 var fillColor = WidgetResources.ColorMap[d.BarColors[i]];
@@ -76,7 +77,7 @@ namespace CSETWebCore.Helpers.ReportWidgets
                 var xBarLabel = new XElement("text");
                 xSvg.Add(xBarLabel);
                 xBarLabel.Value = d.AnswerCounts[i].ToString();
-                xBarLabel.SetAttributeValue("x", (x + (barWidthInclGap * 0.5f)).ToString());
+                xBarLabel.SetAttributeValue("x", (x + (barWidth * 0.5f)).ToString());
                 xBarLabel.SetAttributeValue("y", (barTop - 3).ToString());
                 xBarLabel.SetAttributeValue("text-anchor", "middle");
                 xBarLabel.SetAttributeValue("dominant-baseline", "auto");
@@ -106,6 +107,12 @@ namespace CSETWebCore.Helpers.ReportWidgets
 
                 var percentage = ((double)d.AnswerCounts[0] / (double)d.AnswerCounts.Sum()) * 100;
                 var value = (percentage >= 99 && percentage < 100 ? 99 : Math.Round(percentage, 0, MidpointRounding.AwayFromZero));
+
+                if (!double.IsFinite(value))
+                {
+                    value = 0;
+                }
+
                 xText.Value = $"{value}%".ToString();
                 xText.SetAttributeValue("class", "text-normal");
             }

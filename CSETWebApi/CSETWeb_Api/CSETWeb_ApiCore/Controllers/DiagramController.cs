@@ -1,12 +1,11 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -30,9 +29,8 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http.Extensions;
 using CSETWebCore.Helpers;
 using CSETWebCore.Model.Document;
-using DocumentFormat.OpenXml.Office2021.DocumentTasks;
-using System.ComponentModel.Design;
-using System.Numerics;
+using Microsoft.IdentityModel.Tokens;
+
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -43,6 +41,7 @@ namespace CSETWebCore.Api.Controllers
         private readonly ITokenManager _token;
         private readonly IAssessmentBusiness _assessment;
         private readonly IMaturityBusiness _maturity;
+        private readonly IACETMaturityBusiness _acetMaturity;
         private readonly IHttpContextAccessor _http;
         private readonly IDataHandling _dataHandling;
         private readonly IACETDashboardBusiness _acet;
@@ -52,8 +51,10 @@ namespace CSETWebCore.Api.Controllers
 
         private readonly object _object;
 
-        public DiagramController(IDiagramManager diagram, ITokenManager token, 
-            IAssessmentBusiness assessment, IDataHandling dataHandling, IMaturityBusiness maturity, 
+
+        public DiagramController(IDiagramManager diagram, ITokenManager token,
+            IAssessmentBusiness assessment, IDataHandling dataHandling, 
+            IMaturityBusiness maturity, IACETMaturityBusiness acetMaturity,
             IHttpContextAccessor http, IACETDashboardBusiness acet, IWebHostEnvironment webHost, CSETContext context)
         {
             _diagram = diagram;
@@ -61,12 +62,14 @@ namespace CSETWebCore.Api.Controllers
             _assessment = assessment;
             _dataHandling = dataHandling;
             _maturity = maturity;
+            _acetMaturity = acetMaturity;
             _http = http;
             _acet = acet;
             _webHost = webHost;
             _context = context;
             _object = new object();
         }
+
 
         [CsetAuthorize]
         [Route("api/diagram/save")]
@@ -96,6 +99,7 @@ namespace CSETWebCore.Api.Controllers
             }
         }
 
+
         [CsetAuthorize]
         [Route("api/diagram/saveComponent")]
         [HttpPost]
@@ -104,6 +108,7 @@ namespace CSETWebCore.Api.Controllers
             int? assessmentId = _token.PayloadInt(Constants.Constants.Token_AssessmentId);
             _diagram.SaveComponent(component, (int)assessmentId);
         }
+
 
         [CsetAuthorize]
         [Route("api/diagram/analysis")]
@@ -115,6 +120,7 @@ namespace CSETWebCore.Api.Controllers
             DecodeDiagram(req);
             return PerformAnalysis(req, assessmentId ?? 0);
         }
+
 
         private void DecodeDiagram(DiagramRequest req)
         {
@@ -134,6 +140,7 @@ namespace CSETWebCore.Api.Controllers
             }
         }
 
+
         private List<IDiagramAnalysisNodeMessage> PerformAnalysis(DiagramRequest req, int assessmentId)
         {
             try
@@ -142,15 +149,15 @@ namespace CSETWebCore.Api.Controllers
                 if (!string.IsNullOrEmpty(req.DiagramXml))
                 {
                     // persist the analysis switch setting
-                        var assessment = _context.ASSESSMENTS.Where(x => x.Assessment_Id == assessmentId).First();
-                        assessment.AnalyzeDiagram = req.AnalyzeDiagram;
-                        _context.SaveChanges();
+                    var assessment = _context.ASSESSMENTS.Where(x => x.Assessment_Id == assessmentId).First();
+                    assessment.AnalyzeDiagram = req.AnalyzeDiagram;
+                    _context.SaveChanges();
 
-                        XmlDocument xDoc = new XmlDocument();
-                        xDoc.LoadXml(req.DiagramXml);
+                    XmlDocument xDoc = new XmlDocument();
+                    xDoc.LoadXml(req.DiagramXml);
 
-                        DiagramAnalysis analysis = new DiagramAnalysis(_context, assessmentId);
-                        messages = analysis.PerformAnalysis(xDoc);
+                    DiagramAnalysis analysis = new DiagramAnalysis(_context, assessmentId);
+                    messages = analysis.PerformAnalysis(xDoc);
                 }
 
                 return messages;
@@ -179,7 +186,7 @@ namespace CSETWebCore.Api.Controllers
 
             var response = _diagram.GetDiagram((int)assessmentId);
 
-            var assessmentDetail = _assessment.GetAssessmentDetail((int) assessmentId);
+            var assessmentDetail = _assessment.GetAssessmentDetail((int)assessmentId);
             response.AssessmentName = assessmentDetail.AssessmentName;
 
             return response;
@@ -197,7 +204,7 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentId = _token.AssessmentForUser();
             string requestUrl = $"{Request.Scheme}://{Request.Host.Value}{Request.Path}";
-            return Ok(new { diagram = _diagram.GetDiagramImage(assessmentId, requestUrl)});
+            return Ok(new { diagram = _diagram.GetDiagramImage(assessmentId, requestUrl) });
         }
 
 
@@ -284,7 +291,8 @@ namespace CSETWebCore.Api.Controllers
         public List<mxGraphModelRootObject> GetComponents()
         {
             try
-            {int? assessmentId = _token.PayloadInt(Constants.Constants.Token_AssessmentId);
+            {
+                int? assessmentId = _token.PayloadInt(Constants.Constants.Token_AssessmentId);
                 var diagramXml = _diagram.GetDiagramXml((int)assessmentId);
                 var vertices = _diagram.ProcessDiagramVertices(diagramXml, assessmentId ?? 0);
 
@@ -414,6 +422,45 @@ namespace CSETWebCore.Api.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Changes the component type for a single component.
+        /// Normally called from the inventory when resolving unknowns.
+        /// </summary>
+        [CsetAuthorize]
+        [HttpPost]
+        [Route("api/diagram/assetType")]
+        public IActionResult UpdateComponentType([FromQuery] string guid, [FromQuery] string type, [FromQuery] string label)
+        {
+            int assessmentId = _token.AssessmentForUser();
+
+            _diagram.UpdateComponentType(assessmentId, guid, type);
+
+            if (!String.IsNullOrEmpty(label))
+            {
+                _diagram.UpdateComponentLabel(assessmentId, guid, label);
+            }
+
+            return Ok();
+        }
+
+
+        /// <summary>
+        /// Changes the component type for a single component.
+        /// Normally called from the inventory when resolving unknowns.
+        /// </summary>
+        [CsetAuthorize]
+        [HttpPost]
+        [Route("api/diagram/changeShapeToComponent")]
+        public IActionResult ChangeShapeToComponent([FromQuery] string type, [FromQuery] string id, [FromQuery] string label)
+        {
+            int assessmentId = _token.AssessmentForUser();
+            _diagram.ChangeShapeToComponent(assessmentId, type, id, label);
+
+            return Ok(GetComponents());
+        }
+
+
         /// <summary>
         /// Generates an Excel spreadsheet with a row for every assessment that
         /// the current user has access to that uses the ACET standard.
@@ -426,11 +473,12 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetExcelExportDiagram()
         {
             var assessmentId = _token.PayloadInt(Constants.Constants.Token_AssessmentId);
-            var stream = new ExcelExporter(_context,_dataHandling, _maturity, _acet, _http).ExportToExcellDiagram(assessmentId ?? 0);
+            var stream = new ExcelExporter(_context, _dataHandling, _acetMaturity, _acet, _http).ExportToExcellDiagram(assessmentId ?? 0);
             stream.Flush();
             stream.Seek(0, System.IO.SeekOrigin.Begin);
             return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
+
 
         /// <summary>
         /// get cset diagram templates
@@ -446,6 +494,7 @@ namespace CSETWebCore.Api.Controllers
             var templates = _diagram.GetDiagramTemplates();
             return templates;
         }
+
 
         /// <summary>
         /// Get all availabes alerts & advisories from the stored CSAF json files.
@@ -468,6 +517,7 @@ namespace CSETWebCore.Api.Controllers
                 return StatusCode(500);
             }
         }
+
 
         /// <summary>
         /// uploads new CSAF json files to Documents/DiagramVulnerabilities/CSAF to be used for network diagram alerts & advisories
@@ -508,12 +558,12 @@ namespace CSETWebCore.Api.Controllers
                     // Verfiy the json is a valid CommonSecurityAdvisoryFrameworkObject.
                     JsonSerializerSettings settings = new JsonSerializerSettings() { MissingMemberHandling = MissingMemberHandling.Error };
                     CommonSecurityAdvisoryFrameworkObject csafObj;
-                    try 
-                    { 
+                    try
+                    {
                         // This line will throw an error if the uploaded json does not follow the CSAF format.
                         csafObj = JsonConvert.DeserializeObject<CommonSecurityAdvisoryFrameworkObject>(Encoding.UTF8.GetString(file.FileBytes), settings);
                     }
-                    catch (Exception e) 
+                    catch (Exception e)
                     {
                         return BadRequest(e.Message);
                     }
@@ -542,13 +592,14 @@ namespace CSETWebCore.Api.Controllers
                     _context.SaveChanges();
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return StatusCode(500, e.Message);
             }
 
             return Ok("CSAF file upload success.");
         }
+
 
         /// <summary>
         /// Saves a new vendor / updates a vendor that was added manually by the user.
@@ -558,7 +609,7 @@ namespace CSETWebCore.Api.Controllers
         [CsetAuthorize]
         [Route("api/diagram/vulnerabilities/saveVendor")]
         [HttpPost]
-        public IActionResult SaveCsafVendor([FromBody] CommonSecurityAdvisoryFrameworkVendor vendor) 
+        public IActionResult SaveCsafVendor([FromBody] CommonSecurityAdvisoryFrameworkVendor vendor)
         {
             try
             {
@@ -572,6 +623,7 @@ namespace CSETWebCore.Api.Controllers
             }
         }
 
+
         /// <summary>
         /// Deletes all CSAF files than contain a given vendor (this assumes each CSAF file only contains a single vendor).
         /// </summary>
@@ -580,7 +632,7 @@ namespace CSETWebCore.Api.Controllers
         [CsetAuthorize]
         [Route("api/diagram/vulnerabilities/deleteVendor")]
         [HttpPost]
-        public IActionResult DeleteCsafVendor([FromQuery] string vendorName) 
+        public IActionResult DeleteCsafVendor([FromQuery] string vendorName)
         {
             try
             {

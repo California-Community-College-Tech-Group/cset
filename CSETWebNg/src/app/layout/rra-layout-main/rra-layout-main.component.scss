@@ -1,6 +1,6 @@
 /*
 
-  Copyright 2023 Battelle Energy Alliance, LLC
+  Copyright 2024 Battelle Energy Alliance, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -410,12 +410,15 @@ label[required]::after {
 }
 
 .accordion-header {
-  padding: 0.2em;
+  padding-top: 0.2em;
+  margin-bottom:0;
+  background-color: $primary-900;
 }
 
 .footer .bg-primary {
   background-color: $primary-900 !important;
 }
+
 .footer .card-header:first-child {
   border-radius: 0rem;
   text-align: center;
@@ -531,60 +534,16 @@ table.assessment-summary th:nth-child(1) {
   padding-left: 12px;
 }
 
-table.assessment-summary td,
-table.assessment-summary th {
-  padding: 0.5em 0.4em 0.5em 0;
+table.assessment-summary td {
+  padding: 0.2rem 0.5rem;
 }
 
 table.assessment-summary th {
   background-color: $secondary-color;
   color: $gray-50;
   font-weight: 500;
+  padding: .5rem;
 }
-@media only screen and (max-width: 767px) {
-  .navbar-collapse.collapse.show {
-    background-color: $primary-color;
-    z-index: 10000;
-    padding: 10px;
-  }
-}
-/*
-@media only screen and (max-width: 1200px) {
-  table.assessment-summary td > button > span {
-    display: none;
-  }
-}
-@media only screen and (max-width: 992px) {
-  table.assessment-summary td > button > span {
-    display: none;
-  }
-}
-@media only screen and (max-width: 767px) {
-  table.assessment-summary td:nth-child(2),
-  table.assessment-summary th:nth-child(2) {
-    display: none;
-  }
-
-  table.assessment-summary td:nth-child(3),
-  table.assessment-summary th:nth-child(3) {
-    display: none;
-  }
-}
-
-@media only screen and (max-width: 360px) {
-  table.assessment-summary td:nth-child(2),
-  table.assessment-summary th:nth-child(2) {
-    display: none;
-  }
-  table.assessment-summary td:nth-child(3),
-  table.assessment-summary th:nth-child(3) {
-    display: none;
-  }
-  table.assessment-summary td:nth-child(4),
-  table.assessment-summary th:nth-child(4) {
-    display: none;
-  }
-}*/
 
 table.paddingBetweenCols td,
 table.paddingBetweenCols th {
@@ -1063,6 +1022,10 @@ table.td-align-top td {
   line-height: 1.5em !important;
 }
 
+.mat-mdc-tab-label-container {
+  margin-bottom: 1rem;
+}
+
 ul.mat-tree-node {
   display: block;
 }
@@ -1413,11 +1376,6 @@ ul.nav-tabs li.active button .tab-icon {
   flex: 0 0 auto;
   padding: 5px;
 }
-
-#csetNavbarCollapse {
-  margin-top: 4px;
-}
-
 .navbar-toggler-icon:before {
   content: "\e5d2";
 }
@@ -1535,15 +1493,6 @@ ul.mat-tree-node {
   padding-left: 20px;
 }
 
-.rl .close-button-position-bandaid {
-  position: absolute;
-  right: 140px;
-  padding: 0;
-  z-index: 100;
-  background-color: white;
-  height: 30px;
-  width: 30px;
-}
 
 // Resource Library
 /////////////////////////////////////////////
@@ -1829,7 +1778,7 @@ input[type="checkbox"] + label {
   margin-left: 0.5em;
 }
 
-// Findings
+// Observations
 ///////////////////////////////////////////////////////////////////////
 .bigitem {
   /* This will be twice as */
@@ -2088,12 +2037,12 @@ tooltip.glossary-definition.tooltip-left::after {
 
 .extras-button.active {
   background-color: $gray-50;
-  border: 1px solid $primary-450;
+  border: 3px solid $primary-450;
 }
 
 .extras-button:focus {
   background-color: $gray-50;
-  border: 1px solid $primary-250;
+  border: 3px solid $primary-250;
 }
 
 .extras-button.empty {
@@ -2458,6 +2407,14 @@ mat-sidenav {
   max-width: 600px;
 }
 
+.component-override-dialog {
+  max-width: 600px;
+
+  @media screen and (max-width: 800px) {
+    max-width: 90vw;
+  }
+}
+
 // Terms
 .terms-dialog {
   //max-height: 300px;
@@ -2614,6 +2571,7 @@ table.assessment-documents th {
   top: 0;
   z-index: 999;
   background-color: $gray-50;
+  padding-top: 0.5rem;
 }
 
 .fips-instructions {
@@ -2644,6 +2602,12 @@ table.assessment-documents th {
   font-weight: bold;
   font-size: 1.1rem;
   color: $primary-900;
+}
+
+.sub-header-2 {
+  font-weight: bold;
+  font-size: 1rem;
+  color: $primary-550;
 }
 
 
@@ -2900,6 +2864,10 @@ hr.ranked-questions {
 }
 .br-standard {
   border-radius: 0.4rem;
+}
+
+.o45 {
+  opacity: 0.45;
 }
 
 .o65 {
@@ -3464,6 +3432,18 @@ div.tutorial h6 {
   margin-top: 0.2rem;
   margin-bottom: 0.2rem;
 }
+
+.tutorial .img-frame {
+  border: 1px solid #ddd;
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
+.tutorial .img-frame .img-title {
+  font-style: italic;
+  text-align: center;
+}
+
 .max-1000{
   max-width:1000px;
 }
@@ -3561,7 +3541,7 @@ div.tutorial h6 {
     font-size: 22px !important;
   }
   .swiper-wrapper {
-    padding: 35px 0 20px 0;
+    padding: 0 0 20px 0;
   }
 
   .gallery-card-body{
@@ -3587,7 +3567,7 @@ div.tutorial h6 {
 
   @media screen and (max-width:500px){
 
-    .swiper-slide {
+    .swiper-slide-disabled-for-now{
       transition: 300ms all;
       min-width:230px;
 
@@ -3619,7 +3599,7 @@ div.tutorial h6 {
     }
   }
   @media screen and (min-width:500px){
-  .swiper-slide {
+  .swiper-slide-disabled-for-now{
     transition: 300ms all;
     min-width:230px;
 

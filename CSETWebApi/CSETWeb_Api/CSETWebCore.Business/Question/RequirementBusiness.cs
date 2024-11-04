@@ -1,17 +1,20 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
+using CSETWebCore.Api.Models;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Helpers;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Question;
 using CSETWebCore.Model.Question;
 using Nelibur.ObjectMapper;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CSETWebCore.Business.Question
@@ -115,6 +118,12 @@ namespace CSETWebCore.Business.Question
         public QuestionResponse BuildResponse(List<RequirementPlus> requirements,
             List<FullAnswer> answers, List<DomainAssessmentFactor> domains)
         {
+            // get the user's language
+            var lang = _tokenManager.GetCurrentLanguage();
+
+            var overlay = new TranslationOverlay();
+
+
             var response = new QuestionResponse();
 
             foreach (var req in requirements.OrderBy(x => x.SetShortName).ToList())
@@ -138,6 +147,13 @@ namespace CSETWebCore.Business.Question
                 }
 
 
+                // translate the Category
+                var translatedCategory = overlay.GetPropertyValue("STANDARD_CATEGORY", dbR.Standard_Category.ToLower(), lang);
+                if (translatedCategory != null)
+                {
+                    dbR.Standard_Category = translatedCategory;
+                }
+
 
                 // find or create the category
                 var category = response.Categories.Where(cat => cat.SetName == req.SetName && cat.GroupHeadingText == dbR.Standard_Category).FirstOrDefault();
@@ -149,7 +165,16 @@ namespace CSETWebCore.Business.Question
                         SetName = req.SetName,
                         StandardShortName = req.SetShortName
                     };
+
                     response.Categories.Add(category);
+                }
+
+
+                // translate the Subcategory using the CATEGORIES translation object
+                var translatedSubcategory = overlay.GetPropertyValue("STANDARD_CATEGORY", dbR.Standard_Sub_Category.ToLower(), lang);
+                if (translatedSubcategory != null)
+                {
+                    dbR.Standard_Sub_Category = translatedSubcategory;
                 }
 
 
@@ -159,7 +184,7 @@ namespace CSETWebCore.Business.Question
                 {
                     subcat = new QuestionSubCategory()
                     {
-                        SubCategoryId = 0,
+                        SubCategoryId = null,
                         SubCategoryHeadingText = dbR.Standard_Sub_Category
                     };
 
@@ -189,6 +214,13 @@ namespace CSETWebCore.Business.Question
                     QuestionType = answer?.a.Question_Type
                 };
 
+
+                var reqOverlay = overlay.GetRequirement(dbR.Requirement_Id, lang);
+                if (reqOverlay != null)
+                {
+                    qa.QuestionText = reqOverlay.RequirementText;
+                }
+
                 if (string.IsNullOrEmpty(qa.QuestionType))
                 {
                     qa.QuestionType = _questionRequirement.DetermineQuestionType(qa.Is_Requirement, qa.Is_Component, false, qa.Is_Maturity);
@@ -198,6 +230,9 @@ namespace CSETWebCore.Business.Question
                 {
                     TinyMapper.Bind<VIEW_QUESTIONS_STATUS, QuestionAnswer>();
                     TinyMapper.Map<VIEW_QUESTIONS_STATUS, QuestionAnswer>(answer.b, qa);
+
+                    // db view still uses the term "HasDiscovery" - map to "HasObservation"
+                    qa.HasObservation = answer.b.HasDiscovery ?? false;
                 }
 
                 qa.ParmSubs = GetTokensForRequirement(qa.QuestionId, (answer != null) ? answer.a.Answer_Id : 0);
@@ -238,125 +273,6 @@ namespace CSETWebCore.Business.Question
             return new QuestionSubCategory();
         }
 
-
-        /// <summary>
-        /// Construct a response containing the applicable requirement questions with their answers.
-        /// </summary>
-        /// <param name="requirements"></param>
-        /// <param name="answers"></param>
-        /// <returns></returns>
-        public QuestionResponse BuildResponseOLD(List<RequirementPlus> requirements,
-        List<FullAnswer> answers, List<DomainAssessmentFactor> domains)
-        {
-            List<QuestionGroup> groupList = new List<QuestionGroup>();
-            QuestionGroup g = new QuestionGroup();
-            QuestionSubCategory sg = new QuestionSubCategory();
-            QuestionAnswer qa = new QuestionAnswer();
-
-            string currentGroupHeading = string.Empty;
-            string currentSubcategoryHeading = string.Empty;
-
-            try
-            {
-                foreach (var dbRPlus in requirements)
-                {
-                    var dbR = dbRPlus.Requirement;
-
-                    // Make sure there are no leading or trailing spaces - it will affect the tree structure that is built
-                    dbR.Standard_Category = dbR.Standard_Category == null ? null : dbR.Standard_Category.Trim();
-                    dbR.Standard_Sub_Category = dbR.Standard_Sub_Category == null ? null : dbR.Standard_Sub_Category.Trim();
-
-                    // If the Standard_Sub_Category is null (like CSC_V6), default it to the Standard_Category
-                    if (dbR.Standard_Sub_Category == null)
-                    {
-                        dbR.Standard_Sub_Category = dbR.Standard_Category;
-                    }
-
-
-                    if (dbR.Standard_Category != currentGroupHeading)
-                    {
-                        g = new QuestionGroup()
-                        {
-                            GroupHeadingId = dbR.Question_Group_Heading_Id,
-                            GroupHeadingText = dbR.Standard_Category,
-                            StandardShortName = dbRPlus.SetShortName,
-                        };
-
-                        groupList.Add(g);
-
-                        currentGroupHeading = g.GroupHeadingText;
-                    }
-
-                    // new subcategory
-                    if (dbR.Standard_Sub_Category != currentSubcategoryHeading)
-                    {
-                        sg = new QuestionSubCategory()
-                        {
-                            SubCategoryId = 0,
-                            SubCategoryHeadingText = dbR.Standard_Sub_Category,
-                            GroupHeadingId = g.GroupHeadingId
-                        };
-
-                        g.SubCategories.Add(sg);
-
-                        currentSubcategoryHeading = dbR.Standard_Sub_Category;
-                    }
-
-
-                    FullAnswer answer = answers.Where(x => x.a.Question_Or_Requirement_Id == dbR.Requirement_Id).FirstOrDefault();
-
-                    qa = new QuestionAnswer()
-                    {
-                        DisplayNumber = dbR.Requirement_Title,
-                        QuestionId = dbR.Requirement_Id,
-                        QuestionText = dbR.Requirement_Text.Replace("\r\n", "<br/>").Replace("\n", "<br/>").Replace("\r", "<br/>"),
-                        Answer = answer?.a.Answer_Text,
-                        AltAnswerText = answer?.a.Alternate_Justification,
-                        FreeResponseAnswer = answer?.a.Free_Response_Answer,
-                        Comment = answer?.a.Comment,
-                        Feedback = answer?.a.FeedBack,
-                        MarkForReview = answer?.a.Mark_For_Review ?? false,
-                        Reviewed = answer?.a.Reviewed ?? false,
-                        SetName = dbRPlus.SetName,
-                        ShortName = dbRPlus.SetShortName,
-                        Is_Component = answer?.a.Is_Component ?? false,
-                        Is_Requirement = answer?.a.Is_Requirement ?? true
-                    };
-
-                    if (string.IsNullOrEmpty(qa.QuestionType))
-                    {
-                        qa.QuestionType = _questionRequirement.DetermineQuestionType(qa.Is_Requirement, qa.Is_Component, false, qa.Is_Maturity);
-                    }
-
-                    if (answer != null)
-                    {
-                        TinyMapper.Map<VIEW_QUESTIONS_STATUS, QuestionAnswer>(answer.b, qa);
-                    }
-
-                    qa.ParmSubs = GetTokensForRequirement(qa.QuestionId, (answer != null) ? answer.a.Answer_Id : 0);
-
-                    sg.Questions.Add(qa);
-                }
-
-                QuestionResponse resp = new QuestionResponse
-                {
-                    Categories = groupList,
-                    ApplicationMode = _questionRequirement.ApplicationMode,
-                    QuestionCount = _questionRequirement.NumberOfQuestions(),
-                    RequirementCount = _questionRequirement.NumberOfRequirements()
-                };
-
-                _questionRequirement.BuildComponentsResponse(resp);
-
-                return resp;
-            }
-            catch (Exception exc)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Error($"... {exc}");
-
-                throw;
-            }
-        }
 
         /// <summary>
         /// Returns a list of answer IDs that are currently 'active' on the

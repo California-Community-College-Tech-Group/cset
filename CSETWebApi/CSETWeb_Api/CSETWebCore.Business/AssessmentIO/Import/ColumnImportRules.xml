@@ -10,6 +10,9 @@
     <Column name="AssessmentCreatorId">
       <Rule action="ignore" />
     </Column>
+	<Column name="Assessment_GUID">
+	  <Rule action="ignoreIfExists" />
+	</Column>
   </Table>
 
   <Table name="INFORMATION">
@@ -60,6 +63,19 @@
       <Rule action="useMap" sourcetable="ASSESSMENT_CONTACTS" />
     </Column>
   </Table>
+  
+  <Table name="DETAILS_DEMOGRAPHICS" />
+
+  <Table name="CIS_CSI_SERVICE_COMPOSITION"/>
+  
+  <Table name="CIS_CSI_SERVICE_COMPOSITION_SECONDARY_DEFINING_SYSTEMS"/>
+  
+  <Table name="CIS_CSI_ORGANIZATION_DEMOGRAPHICS"/>
+  
+  <Table name="CIS_CSI_SERVICE_DEMOGRAPHICS"/>
+  
+  
+  
   
   <Table name="DOCUMENT_FILE">
     <Column name="CreatedTimestamp">

@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -19,6 +19,14 @@ namespace CSETWebCore.Model.Demographic
         public int? SectorId { get; set; }
         public int? SubSectorId { get; set; }
 
+        public string Hb7055 { get; set; }
+        public string Hb7055Party { get; set; }
+
+        /// <summary>
+        /// Is the primary infrastructure IT or OT?
+        /// </summary>
+        public string InfrastructureItOt { get; set; }
+
         public string Employees { get; set; }
         public string CustomersSupported { get; set; }
 
@@ -26,7 +34,8 @@ namespace CSETWebCore.Model.Demographic
         public string CioExists { get; set; }
         public string CisoExists { get; set; }
         public string CyberTrainingProgramExists { get; set; }
-        public string cyberRiskService { get; set; }
+        public string CyberRiskService { get; set; }
+        public string Hb7055Grant { get; set; }
     }
 
 
@@ -52,6 +61,13 @@ namespace CSETWebCore.Model.Demographic
         public int Id { get; set; }
         public string Value { get; set; }
     }
+
+    public class ListItem2
+    {
+        public int OptionValue { get; set; }
+        public string OptionText { get; set; }
+    }
+
 
     public class GeographicSelections
     {

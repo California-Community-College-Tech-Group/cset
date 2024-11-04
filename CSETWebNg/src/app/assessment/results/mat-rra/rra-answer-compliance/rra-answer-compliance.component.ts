@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,9 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { RraDataService } from '../../../../services/rra-data.service';
+import { TranslocoService } from '@ngneat/transloco';
 @Component({
   selector: 'app-rra-answer-compliance',
   templateUrl: './rra-answer-compliance.component.html',
@@ -35,8 +36,13 @@ export class RraAnswerComplianceComponent implements OnInit {
 
   colorScheme1 = { domain: ['#007BFF'] };
   xAxisTicks = [0, 25, 50, 75, 100];
+  view: any[] = [800, 350];
+  animation: boolean = false;
 
-  constructor(public rraDataSvc: RraDataService) { }
+  constructor(
+    public rraDataSvc: RraDataService, 
+    public tSvc: TranslocoService
+    ) { }
 
   ngOnInit(): void {
     this.rraDataSvc.getRRADetail().subscribe((r: any) => {
@@ -106,4 +112,13 @@ export class RraAnswerComplianceComponent implements OnInit {
     return x + '%';
   }
 
+  @HostListener('window:beforeprint')
+  beforePrint() {
+    this.view = [1300, 600];
+  }
+
+  @HostListener('window:afterprint')
+  afterPrint() {
+    this.view = null;
+  }
 }

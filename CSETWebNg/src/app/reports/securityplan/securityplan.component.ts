@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,9 @@ import { ConfigService } from '../../services/config.service';
 import { ReportAnalysisService } from '../../services/report-analysis.service';
 import { AcetDashboard } from '../../models/acet-dashboard.model';
 import { ACETService } from '../../services/acet.service';
+import { AssessmentService } from '../../services/assessment.service';
+import { TranslocoService } from '@ngneat/transloco';
+
 
 @Component({
   selector: 'securityplan',
@@ -35,7 +38,7 @@ import { ACETService } from '../../services/acet.service';
   styleUrls: ['../reports.scss']
 })
 export class SecurityplanComponent implements OnInit {
-
+  translationSub: any;
   response: any;
 
   componentCount = 0;
@@ -53,19 +56,24 @@ export class SecurityplanComponent implements OnInit {
     public analysisSvc: ReportAnalysisService,
     public configSvc: ConfigService,
     public acetSvc: ACETService,
-    private sanitizer: DomSanitizer
+    private assessmentSvc: AssessmentService,
+    private sanitizer: DomSanitizer,
+    public tSvc: TranslocoService,
+    private translocoService: TranslocoService
   ) { }
 
   /**
    *
    */
   ngOnInit() {
-    this.titleService.setTitle("Site Cybersecurity Plan - " + this.configSvc.behaviors.defaultTitle);
+    
+    this.translationSub = this.translocoService.selectTranslate('reports.core.security plan.report title')
+      .subscribe(value =>
+        this.titleService.setTitle(this.tSvc.translate('reports.core.security plan.report title') + ' - ' + this.configSvc.behaviors.defaultTitle));
 
     this.reportSvc.getReport('securityplan').subscribe(
       (r: any) => {
         this.response = r;
-
         // convert line breaks to HTML
         this.response.controlList.forEach(control => {
           control.controlDescription = control.controlDescription.replace(/\r/g, '<br/>');
@@ -88,21 +96,27 @@ export class SecurityplanComponent implements OnInit {
       this.responseResultsByCategory = x;
     });
 
-    this.acetSvc.getAcetDashboard().subscribe(
-      (data: AcetDashboard) => {
-        this.acetDashboard = data;
+    if (['ACET', 'ISE'].includes(this.assessmentSvc.assessment?.maturityModel?.modelName)) {
+      this.acetSvc.getAcetDashboard().subscribe(
+        (data: AcetDashboard) => {
+          this.acetDashboard = data;
 
-        for (let i = 0; i < this.acetDashboard.irps.length; i++) {
-          this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
-        }
-      },
-      error => {
-        console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
-        console.log('Error getting all documents: ' + (<Error>error).stack);
-      });
+          for (let i = 0; i < this.acetDashboard.irps.length; i++) {
+            this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
+          }
+        },
+        error => {
+          console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
+          console.log('Error getting all documents: ' + (<Error>error).stack);
+        });
+    }
   }
 
   usesRAC() {
     return !!this.responseResultsByCategory?.dataSets.find(e => e.label === 'RAC');
+  }
+
+  ngOnDestroy() {
+    this.translationSub.unsubscribe()
   }
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,8 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { ConfigService } from './config.service';
 import { BehaviorSubject } from 'rxjs';
 
-
 const headers = {
-  headers: new HttpHeaders()
-  .set('Content-Type', 'application/json'),
+  headers: new HttpHeaders().set('Content-Type', 'application/json'),
   params: new HttpParams()
 };
 
@@ -38,30 +36,30 @@ export class EnableFeatureService {
   apiUrl: string;
 
   featuresEnabled: BehaviorSubject<boolean> = new BehaviorSubject(true);
- 
+
   /**
-   * 
-   * @param http 
-   * @param configSvc 
+   *
+   * @param http
+   * @param configSvc
    */
   constructor(private http: HttpClient, private configSvc: ConfigService) {
     this.apiUrl = this.configSvc.apiUrl + 'EnableProtectedFeature/';
   }
 
   /**
-   * 
-   * @returns 
+   *
+   * @returns
    */
   getEnabledFeatures(): any {
     return this.http.get(this.apiUrl + 'Features');
   }
 
   /**
-   * 
-   * @returns 
+   *
+   * @returns
    */
-  enableFeature(): any {
-    return this.http.post(this.apiUrl + 'unlockFeature/', "", headers);
+  enableModules(): any {
+    return this.http.post(this.apiUrl + 'enableModules/', '', headers);
   }
 
   /**

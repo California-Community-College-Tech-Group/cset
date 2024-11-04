@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ConfigService } from './config.service';
 import { ExtendedDemographics, Geographics } from '../models/demographics-extended.model';
+import { forkJoin } from 'rxjs';
 
 
 const headers = {
@@ -34,14 +35,18 @@ const headers = {
 
 @Injectable()
 export class DemographicExtendedService {
+
+
   apiUrl: string;
   id: number;
+  lastGeographics: Geographics;
+  lastDemograph: ExtendedDemographics;
 
   constructor(private http: HttpClient, private configSvc: ConfigService) {
     this.apiUrl = this.configSvc.apiUrl + 'demographics/ext';
   }
 
- 
+
 
   getDemographics() {
     return this.http.get(this.apiUrl);
@@ -103,15 +108,61 @@ export class DemographicExtendedService {
    * Persist the model to the API.
    */
   updateExtendedDemographics(demographic: ExtendedDemographics) {
+    this.lastDemograph = demographic;
     this.http.post(this.apiUrl, JSON.stringify(demographic), headers)
-    .subscribe();
+      .subscribe();
   }
 
   /**
    * 
    */
   persistGeographicSelections(x: Geographics) {
+    this.lastGeographics = x;
     this.http.post(this.apiUrl + '/geographics', JSON.stringify(x), headers)
-    .subscribe();
+      .subscribe();
+  }
+
+  getThePropertyCompleteList(obj) {
+    var keys = [];
+    var exceptList = ["subSector", "sector", "assessment", "hb7055Party", "hb7055Grant",'cyberRiskService'];
+    for (var key in obj) {
+      if (!exceptList.includes(key)) {
+        keys.push(key);
+      }
+    }
+    return keys;
+  }
+
+
+  preloadDemoAndGeo() {
+    var sources = [this.getDemographics(), this.getGeographics()];
+    forkJoin(sources).subscribe(results => {
+      this.lastDemograph = results[0];
+      this.lastGeographics = results[1];
+    });
+  }
+
+  AreDemographicsCompleteNav() {
+    return this.AreDemographicsComplete(this.lastDemograph, this.lastGeographics);
+  }
+
+  AreDemographicsComplete(demoGraphics, geoGraphics): boolean {
+
+    if (demoGraphics && geoGraphics) {
+      var complete = true;
+      var entered = false;
+      for (var a of this.getThePropertyCompleteList(demoGraphics)) {
+        entered = true;
+        complete = complete && Boolean(demoGraphics[a]);
+      }
+      for (var b of this.getThePropertyCompleteList(geoGraphics)) {
+        entered = true;
+        complete = complete && Boolean(geoGraphics[b]);
+      }
+
+      return complete && entered;
+    }
+
+    return false;
   }
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -109,5 +109,49 @@ export class ColorService {
       default:
         return '#FFFFFF';
     }
+  }
+
+  /**
+   * Returns a hex color code of black or white,
+   * depending on the specified background color.
+   */
+  textColor(bgColor) {
+    bgColor = this.normalizeHexColor(bgColor);
+
+    bgColor = bgColor.replace('#', '');
+
+    let r = parseInt(bgColor.substring(0, 2), 16);
+    let g = parseInt(bgColor.substring(2, 4), 16);
+    let b = parseInt(bgColor.substring(4, 6), 16);
+
+    // Calculate the luminance
+    let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+    // Return white for dark backgrounds and black for light backgrounds
+    return luminance < 140 ? '#ffffff' : '#000000';
+  }
+
+  /**
+   * Normalizes shorter hex color codes to 6 or 8 characters.
+   */
+  normalizeHexColor(hex) {
+    hex = hex.replace('#', '');
+
+    // Expand shorthand form (3 digits) to full form (6 digits)
+    if (hex.length === 3) {
+      hex = hex.split('').map(char => char + char).join('');
+    }
+
+    // Expand shorthand form with alpha (4 digits) to full form (8 digits)
+    if (hex.length === 4) {
+      hex = hex.split('').map(char => char + char).join('');
+    }
+
+    // If the color has 6 or 8 digits, it's already in full form
+    if (hex.length === 6 || hex.length === 8) {
+      return `#${hex}`;
+    }
+
+    throw new Error('Invalid hex color format');
   }
 }

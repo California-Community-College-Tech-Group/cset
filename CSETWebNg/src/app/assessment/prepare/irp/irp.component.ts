@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@ import { AssessmentService } from '../../../services/assessment.service';
 import { IRPService } from '../../../services/irp.service';
 import { IRPResponse, IRP } from '../../../models/irp.model';
 import { NavigationService } from '../../../services/navigation/navigation.service';
+import { ACETService } from '../../../services/acet.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
     selector: 'app-irp',
@@ -40,11 +42,15 @@ export class IRPComponent implements OnInit {
     constructor(private router: Router,
         public assessSvc: AssessmentService,
         public navSvc: NavigationService,
-        private irpSvc: IRPService
+        private irpSvc: IRPService,
+        public acetSvc: ACETService,
+        public tSvc: TranslocoService
     ) { }
 
     ngOnInit() {
-        this.loadFrameworks();
+        this.tSvc.langChanges$.subscribe((event) => {
+            this.loadFrameworks();
+        });
     }
 
     loadFrameworks() {
@@ -62,4 +68,5 @@ export class IRPComponent implements OnInit {
         irp.response = val;
         this.irpSvc.postSelection(irp).subscribe();
     }
+
 }

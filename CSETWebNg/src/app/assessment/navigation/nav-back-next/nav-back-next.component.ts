@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 //
 ////////////////////////////////
 import { Component, Input, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { NavigationService } from '../../../services/navigation/navigation.service';
 
 @Component({
@@ -36,9 +37,29 @@ export class NavBackNextComponent implements OnInit {
 
   constructor(
     public navSvc: NavigationService
-  ) { }
+  ) {
 
-  ngOnInit(): void {
   }
 
+  nextMode = true;
+  subscription: Subscription;
+  ngOnInit(): void {
+    this.subscription = this.navSvc.disableNext
+      .asObservable()
+      .subscribe(
+        (tgt: boolean) => {
+          this.nextMode = tgt;
+        }
+      );
+
+    const isFirstVisible = this.navSvc.isFirstVisiblePage(this.page);
+    if (isFirstVisible) {
+      this.hide = 'back';
+    }
+    this.nextMode = this.navSvc.isNextEnabled(this.page);
+
+  }
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
 }

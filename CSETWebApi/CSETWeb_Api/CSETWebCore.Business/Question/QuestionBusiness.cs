@@ -1,10 +1,11 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using CSETWebCore.Business.Standards;
+using CSETWebCore.DataLayer.Manual;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Common;
 using CSETWebCore.Interfaces.Document;
@@ -13,8 +14,13 @@ using CSETWebCore.Interfaces.Question;
 using CSETWebCore.Model.Hydro;
 using CSETWebCore.Model.Question;
 using Nelibur.ObjectMapper;
+using Npoi.Mapper;
+using NPOI.HPSF;
+using NPOI.SS.UserModel;
+using NPOI.Util;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CSETWebCore.Business.Question
@@ -129,7 +135,7 @@ namespace CSETWebCore.Business.Question
             var answers = from a in _context.ANSWER.Where(x => x.Assessment_Id == _questionRequirement.AssessmentId && x.Question_Type == "Question")
                           from b in _context.VIEW_QUESTIONS_STATUS.Where(x => x.Answer_Id == a.Answer_Id).DefaultIfEmpty()
                           from c in _context.FINDING.Where(x => x.Answer_Id == a.Answer_Id).DefaultIfEmpty()
-                          select new FullAnswer() { a = a, b = b, FindingsExist = c != null };
+                          select new FullAnswer() { a = a, b = b, ObservationsExist = c != null };
 
             this.questions = query.Distinct().ToList();
             this.Answers = answers.ToList();
@@ -212,7 +218,7 @@ namespace CSETWebCore.Business.Question
             var answers = from a in _context.ANSWER.Where(x => x.Assessment_Id == _questionRequirement.AssessmentId && x.Question_Type == "Question")
                           from b in _context.VIEW_QUESTIONS_STATUS.Where(x => x.Answer_Id == a.Answer_Id).DefaultIfEmpty()
                           from c in _context.FINDING.Where(x => x.Answer_Id == a.Answer_Id).DefaultIfEmpty()
-                          select new FullAnswer() { a = a, b = b, FindingsExist = c != null };
+                          select new FullAnswer() { a = a, b = b, ObservationsExist = c != null };
 
             this.questions = query.Distinct().ToList();
             this.Answers = answers.ToList();
@@ -243,7 +249,7 @@ namespace CSETWebCore.Business.Question
                             AnswerText = question.Answer,
                             CategoryId = questionGroup.GroupHeadingId,
                             CategoryText = questionGroup.GroupHeadingText,
-                            SubCategoryId = subCategory.SubCategoryId,
+                            SubCategoryId = (int)subCategory.SubCategoryId,
                             SubCategoryText = subCategory.SubCategoryHeadingText,
                             SetName = questionGroup.SetName,
                             IsRequirement = question.Is_Requirement,
@@ -287,7 +293,7 @@ namespace CSETWebCore.Business.Question
         {
             var qvm = new QuestionDetailsBusiness(
                 new StandardSpecficLevelRepository(_context),
-                new InformationTabBuilder(_context, _htmlConverter),
+                new InformationTabBuilder(_context, _htmlConverter, _tokenManager),
                 _context, _tokenManager, _document
             );
 
@@ -366,7 +372,7 @@ namespace CSETWebCore.Business.Question
                     DisplayNumber = (++displayNumber).ToString(),
                     QuestionId = dbQ.QuestionId,
                     QuestionType = dbQ.QuestionType,
-                    QuestionText = _questionRequirement.FormatLineBreaks(dbQ.SimpleQuestion),
+                    QuestionText = dbQ.SimpleQuestion,
                     Answer = answer?.a?.Answer_Text,
                     Answer_Id = answer?.a?.Answer_Id,
                     AltAnswerText = answer?.a?.Alternate_Justification,
@@ -388,6 +394,9 @@ namespace CSETWebCore.Business.Question
                 {
                     TinyMapper.Bind<VIEW_QUESTIONS_STATUS, QuestionAnswer>();
                     TinyMapper.Map(answer.b, qa);
+
+                    // db view still uses the term "HasDiscovery" - map to "HasObservation"
+                    qa.HasObservation = answer.b.HasDiscovery ?? false;
                 }
 
                 sc.Questions.Add(qa);
@@ -493,20 +502,21 @@ namespace CSETWebCore.Business.Question
             var usch = _context.UNIVERSAL_SUB_CATEGORY_HEADINGS.FirstOrDefault(u => u.Question_Group_Heading_Id == subCatAnswerBlock.GroupHeadingId
                                                                            && u.Universal_Sub_Category_Id == subCatAnswerBlock.SubCategoryId);
 
-            var subCatAnswer = _context.SUB_CATEGORY_ANSWERS.FirstOrDefault(sca => sca.Assessement_Id == _questionRequirement.AssessmentId
+            var subCatAnswer = _context.SUB_CATEGORY_ANSWERS.FirstOrDefault(sca => sca.Assessment_Id == _questionRequirement.AssessmentId
                                                                           && sca.Heading_Pair_Id == usch.Heading_Pair_Id);
 
             if (subCatAnswer == null)
             {
                 subCatAnswer = new SUB_CATEGORY_ANSWERS();
-                subCatAnswer.Assessement_Id = _questionRequirement.AssessmentId;
+                subCatAnswer.Assessment_Id = _questionRequirement.AssessmentId;
                 subCatAnswer.Heading_Pair_Id = usch.Heading_Pair_Id;
                 subCatAnswer.Answer_Text = subCatAnswerBlock.SubCategoryAnswer;
+                subCatAnswer.Component_Guid = new Guid().ToString();
                 _context.SUB_CATEGORY_ANSWERS.Add(subCatAnswer);
             }
             else
             {
-                subCatAnswer.Assessement_Id = _questionRequirement.AssessmentId;
+                subCatAnswer.Assessment_Id = _questionRequirement.AssessmentId;
                 subCatAnswer.Heading_Pair_Id = usch.Heading_Pair_Id;
                 subCatAnswer.Answer_Text = subCatAnswerBlock.SubCategoryAnswer;
                 _context.SUB_CATEGORY_ANSWERS.Update(subCatAnswer);
@@ -541,21 +551,21 @@ namespace CSETWebCore.Business.Question
             List<int> distinctParentGroupingIdList = parentGroupingIdList.Distinct().ToList();
 
             var ansResults = from q in _context.MATURITY_QUESTIONS.Where(g => g.Maturity_Model_Id == modelId && groupingIdList.Contains((int)g.Grouping_Id))
-                                  join a in _context.ANSWER on q.Mat_Question_Id equals a.Question_Or_Requirement_Id
-                                  where a.Assessment_Id == assessmentId
+                             join a in _context.ANSWER on q.Mat_Question_Id equals a.Question_Or_Requirement_Id
+                             where a.Assessment_Id == assessmentId
                              select new { a };
 
-            List < MATURITY_QUESTIONS > questionList = _context.MATURITY_QUESTIONS.Where(g => g.Maturity_Model_Id == modelId && groupingIdList.Contains((int)g.Grouping_Id)).ToList();
+            List<MATURITY_QUESTIONS> questionList = _context.MATURITY_QUESTIONS.Where(g => g.Maturity_Model_Id == modelId && groupingIdList.Contains((int)g.Grouping_Id)).ToList();
 
             List<HydroGroupingInfo> info = new List<HydroGroupingInfo>();
 
-            for (int i = 0; i < groupingIdList.Count; i++) 
+            for (int i = 0; i < groupingIdList.Count; i++)
             {
                 List<MATURITY_QUESTIONS> questionsInGroup = questionList.FindAll(q => q.Grouping_Id == groupingIdList[i]);
 
                 List<QuestionWithAnswers> questionWithAnswers = new List<QuestionWithAnswers>();
 
-                foreach(MATURITY_QUESTIONS question in questionsInGroup)
+                foreach (MATURITY_QUESTIONS question in questionsInGroup)
                 {
                     QuestionWithAnswers questionAnswers = new QuestionWithAnswers();
                     List<ANSWER> answerListPerQuestion = _context.ANSWER.Where(a => a.Question_Or_Requirement_Id == question.Mat_Question_Id && a.Answer_Text == "S" && a.Assessment_Id == assessmentId).ToList();
@@ -595,9 +605,15 @@ namespace CSETWebCore.Business.Question
                     Progress_Id = progressId,
                     Comment = comment
                 });
-            } 
-            catch (Exception ex)
+            }
+            catch (Exception)
             {
+                //TODO: It is a big pet peeve of mine to have empty try catches
+                //Please atleast log the error.  
+                //if it is something you expect to see often and you know it is not an error
+                //then exception tossing and catching is really expensive please refactor 
+                //such that it is not necessary such as test for containment before adding.
+
                 HYDRO_DATA_ACTIONS hda = new HYDRO_DATA_ACTIONS()
                 {
                     Answer = answer,

@@ -6,23 +6,32 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace CSETWebCore.DataLayer.Model
+namespace CSETWebCore.DataLayer.Model;
+
+[Keyless]
+public partial class vFinancialGroups
 {
-    [Keyless]
-    public partial class vFinancialGroups
-    {
-        public int FinancialGroupId { get; set; }
-        [Required]
-        [StringLength(255)]
-        public string Domain { get; set; }
-        [Required]
-        [StringLength(255)]
-        public string MaturityLevel { get; set; }
-        [Required]
-        [StringLength(255)]
-        public string AssessmentFactor { get; set; }
-        [Required]
-        [StringLength(255)]
-        public string FinComponent { get; set; }
-    }
+    public int FinancialGroupId { get; set; }
+
+    public int DomainId { get; set; }
+
+    [Required]
+    [StringLength(255)]
+    public string Domain { get; set; }
+
+    [Required]
+    [StringLength(255)]
+    public string MaturityLevel { get; set; }
+
+    public int AssessmentFactorId { get; set; }
+
+    [Required]
+    [StringLength(255)]
+    public string AssessmentFactor { get; set; }
+
+    public int FinComponentId { get; set; }
+
+    [Required]
+    [StringLength(255)]
+    public string FinComponent { get; set; }
 }

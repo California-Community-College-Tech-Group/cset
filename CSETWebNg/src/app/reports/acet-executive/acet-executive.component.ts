@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,13 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit, AfterViewChecked, AfterViewInit } from '@angular/core';
-import { Title, DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Component, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { ReportService } from '../../services/report.service';
 import { ACETService } from '../../services/acet.service';
 import { MatDetailResponse, MaturityDomain, MaturityComponent, MaturityAssessment } from '../../models/mat-detail.model';
 import { AcetDashboard } from '../../models/acet-dashboard.model';
+import { TranslocoService } from '@ngneat/transloco';
 
 
 
@@ -40,11 +41,7 @@ export class AcetExecutiveComponent implements OnInit {
   graphdata: any = [];
   maturityDetail: MaturityDomain[];
   domainDataList: any = [];
-  sortDomainListKey: string[] = ["Cyber Risk Management & Oversight",
-    "Threat Intelligence & Collaboration",
-    "Cybersecurity Controls",
-    "External Dependency Management",
-    "Cyber Incident Management and Resilience"]
+  sortDomainListKey: string[] = [];
 
   sortedDomainList: any = []
 
@@ -64,17 +61,24 @@ export class AcetExecutiveComponent implements OnInit {
     public reportSvc: ReportService,
     public acetSvc: ACETService,
     private titleService: Title,
-
+    private tSvc: TranslocoService
   ) { }
 
   ngOnInit(): void {
-    this.titleService.setTitle("Executive Report - ACET");
+    if (this.tSvc.getActiveLang() == "es") {
+      this.sortDomainListKey = this.acetSvc.spanishSortDomainListKey;
+    }
+    else {
+      this.sortDomainListKey = this.acetSvc.englishSortDomainListKey;
+    }
+    //this.titleService.setTitle(this.tSvc.translate('reports.acet.executive summary.page tab title'));
 
     this.getMatRange();
 
     this.acetSvc.getAssessmentInformation().subscribe(
       (r: any) => {
         this.response = r;
+        this.titleService.setTitle(this.tSvc.translate('reports.acet.executive summary.tab title'));
       },
       error => console.log('Assessment Information Error: ' + (<Error>error).message)
     );
@@ -121,7 +125,7 @@ export class AcetExecutiveComponent implements OnInit {
                 "name": component.componentName,
                 "data": sectionData,
                 "assessedMaturityLevel": this.updateMaturity(component.assessedMaturityLevel),
-                "levelDisplay": this.acetSvc.translateMaturity(this.updateMaturity(component.assessedMaturityLevel)), 
+                "levelDisplay": this.acetSvc.translateMaturity(this.updateMaturity(component.assessedMaturityLevel)),
               }
               assesmentData.sections.push(sectonInfo);
             })
@@ -139,7 +143,6 @@ export class AcetExecutiveComponent implements OnInit {
           })
         })
         this.domainDataList = this.sortedDomainList;
-
       },
       error => {
         console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
@@ -150,6 +153,19 @@ export class AcetExecutiveComponent implements OnInit {
       (data: AcetDashboard) => {
         this.acetDashboard = data;
 
+        // Subtracts ISE irp answers from the ACET irp results so they don't mess things up.
+        let lastHeader = this.acetDashboard.irps.length - 1;
+        let iseRisk = this.acetDashboard.irps[lastHeader].riskCount;
+        let acetRisk = this.acetDashboard.sumRisk;
+        let result = acetRisk.map((item, index) => item - iseRisk[index]);
+        this.acetDashboard.sumRisk = result;
+
+        let highest = Math.max(...this.acetDashboard.sumRisk);
+        let index = this.acetDashboard.sumRisk.indexOf(highest);
+        this.acetDashboard.sumRiskLevel = (index + 1);
+
+        // Remove the ISE irp from ACET IRP's results table.
+        this.acetDashboard.irps.pop();
         for (let i = 0; i < this.acetDashboard.irps.length; i++) {
           this.acetDashboard.irps[i].comment = this.acetSvc.interpretRiskLevel(this.acetDashboard.irps[i].riskLevel);
         }

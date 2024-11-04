@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -60,6 +60,15 @@ namespace CSETWebCore.Helpers.ReportWidgets
             _xSvg.Add(xDomainStrip);
             totalWidth = qWidth;
 
+
+            // populate a dummy placeholder 'question' if there are none
+            // for this domain.  This will build an "NA" heatmap.
+            if (xDomain.Descendants("Question").Count() == 0)
+            {
+                var naQ = new XElement("Question");
+                naQ.SetAttributeValue("title", "NA");
+                xDomain.Add(naQ);
+            }
 
             // each question follows vertically
             foreach (var xQ in xDomain.Descendants("Question"))

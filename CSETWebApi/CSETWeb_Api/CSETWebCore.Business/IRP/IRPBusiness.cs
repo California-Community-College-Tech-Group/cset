@@ -1,14 +1,22 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
+using System.IO;
+using System;
 using System.Linq;
+using CSETWebCore.DataLayer.Manual;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.IRP;
 using CSETWebCore.Model.Acet;
+using CSETWebCore.Business.Acet;
+using Npoi.Mapper;
+using NPOI.SS.UserModel;
+using System.Collections.Generic;
+using CSETWebCore.Helpers;
 
 namespace CSETWebCore.Business.IRP
 {
@@ -16,15 +24,26 @@ namespace CSETWebCore.Business.IRP
     {
         private CSETContext _context;
         private readonly IAssessmentUtil _assessmentUtil;
+        private readonly TranslationOverlay _overlay;
+
 
         public IRPBusiness(CSETContext context, IAssessmentUtil assessmentUtil)
         {
             _context = context;
             _assessmentUtil = assessmentUtil;
+
+            _overlay = new TranslationOverlay();
         }
-        public IRPResponse GetIRPList(int assessmentId)
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IRPResponse GetIRPList(int assessmentId, string lang)
         {
             IRPResponse response = new IRPResponse();
+            Dictionary<int, IRPModel> dictionary = new Dictionary<int, IRPModel>();
+
 
             foreach (IRP_HEADER header in _context.IRP_HEADER)
             {
@@ -32,6 +51,16 @@ namespace CSETWebCore.Business.IRP
                 {
                     header = header.Header
                 };
+
+                // overlay
+                if (lang != "en")
+                {
+                    var o = _overlay.GetValue("IRP_HEADER", header.IRP_Header_Id.ToString(), lang);
+                    if (o != null)
+                    {
+                        tempHeader.header = o.Value;
+                    }
+                }
 
                 foreach (DataLayer.Model.IRP irp in _context.IRP.Where(x => x.Header_Id == header.IRP_Header_Id).ToList())
                 {
@@ -49,6 +78,24 @@ namespace CSETWebCore.Business.IRP
                         Validation_Approach = irp.Validation_Approach,
                         Risk_Type = irp.Risk_Type
                     };
+
+                    // overlay
+                    if (lang != "en")
+                    {
+                        var o = _overlay.GetJObject("IRP", "IRP_ID", tempIRP.IRP_Id.ToString(), lang);
+                        if (o != null)
+                        {
+                            tempIRP.Description = o.Value<string>("Description");
+                            tempIRP.Risk_1_Description = o.Value<string>("Risk_1_Description");
+                            tempIRP.Risk_2_Description = o.Value<string>("Risk_2_Description");
+                            tempIRP.Risk_3_Description = o.Value<string>("Risk_3_Description");
+                            tempIRP.Risk_4_Description = o.Value<string>("Risk_4_Description");
+                            tempIRP.Risk_5_Description = o.Value<string>("Risk_5_Description");
+                            tempIRP.DescriptionComment = o.Value<string>("DescriptionComment");
+                            tempIRP.Validation_Approach = o.Value<string>("Validation_Approach");
+                        }
+                    }
+
 
                     // Get the existing answer or create a blank 
                     ASSESSMENT_IRP answer = _context.ASSESSMENT_IRP.FirstOrDefault(ans =>
@@ -82,6 +129,10 @@ namespace CSETWebCore.Business.IRP
             return response;
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
         public void PersistSelectedIRP(int assessmentId, IRPModel irp)
         {
             if (assessmentId == 0) { return; }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,15 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { Component, OnInit, AfterViewChecked, HostListener, ElementRef, ViewChild } from '@angular/core';
-import { ReportAnalysisService } from '../../../services/report-analysis.service';
+import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { ReportService } from '../../../services/report.service';
 import { Title } from '@angular/platform-browser';
 import { CmmcStyleService } from '../../../services/cmmc-style.service';
 import { BehaviorSubject } from 'rxjs';
 import { RraDataService } from '../../../services/rra-data.service';
-import  Chart  from 'chart.js/auto';
+import Chart from 'chart.js/auto';
 import { ConfigService } from '../../../services/config.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'rra-report',
@@ -38,6 +38,7 @@ import { ConfigService } from '../../../services/config.service';
 })
 export class RraReportComponent implements OnInit {
   response: any;
+  translationTabTitle: any;
 
   overallScoreDisplay: string;
   standardBasedScore: number;
@@ -62,6 +63,8 @@ export class RraReportComponent implements OnInit {
   questionReferenceTable = [];
 
   xAxisTicks = [0, 25, 50, 75, 100];
+  view: any[] = [800, 350];
+  animation: boolean = false;
 
   // Charts for Components
   componentCount = 0;
@@ -84,11 +87,11 @@ export class RraReportComponent implements OnInit {
 
   constructor(
     public reportSvc: ReportService,
-    private analysisSvc: ReportAnalysisService,
     private titleService: Title,
     public cmmcStyleSvc: CmmcStyleService,
     public rraDataSvc: RraDataService,
-    public configSvc: ConfigService
+    public configSvc: ConfigService, 
+    public tSvc: TranslocoService
   ) {
     this.columnWidthEmitter = new BehaviorSubject<number>(25)
   }
@@ -102,12 +105,11 @@ export class RraReportComponent implements OnInit {
     this.rraDataSvc.getRRADetail().subscribe((r: any) => {
       this.response = r;
 
-      console.log(this.response);
-
       // this should be called first because it creates a normalized object that others use
       this.createAnswerDistribByGoal(r);
 
       this.createChart1(r);
+      
 
       this.createTopRankedGoals(r);
 
@@ -122,14 +124,16 @@ export class RraReportComponent implements OnInit {
     });
 
 
-    this.titleService.setTitle("Ransomware Readiness Report - " + this.configSvc.behaviors.defaultTitle);
-
     this.reportSvc.getReport('rramain').subscribe(
       (r: any) => {
         this.response = r;
       },
       error => console.log('Main RRA report load Error: ' + (<Error>error).message)
     );
+
+    this.translationTabTitle = this.tSvc.selectTranslate('reports.core.rra.tab title')
+      .subscribe(value =>
+        this.titleService.setTitle(this.tSvc.translate('reports.core.rra.tab title') + ' - ' + this.configSvc.behaviors.defaultTitle));
   }
 
   /**
@@ -173,6 +177,9 @@ export class RraReportComponent implements OnInit {
     });
 
     this.complianceGraph1 = levelList;
+    for (let i of this.complianceGraph1){
+      i.name = this.tSvc.translate('level.'+ i.name.toLowerCase())
+     }
   }
 
 
@@ -199,6 +206,11 @@ export class RraReportComponent implements OnInit {
     });
 
     this.answerDistribByGoal = goalList;
+    for (let i of this.answerDistribByGoal){
+      for (let j of i.series){
+        j.name = this.tSvc.translate('answer-options.button-labels.'+ j.name.toLowerCase())
+      }
+    }
   }
 
   /**
@@ -209,7 +221,7 @@ export class RraReportComponent implements OnInit {
   createTopRankedGoals(r: any) {
     let goalList = [];
     this.answerDistribByGoal.forEach(element => {
-      var yesPercent = element.series.find(x => x.name == 'Yes').value;
+      var yesPercent = element.series.find(x => x.name == this.tSvc.translate('answer-options.button-labels.yes')).value;
       var goal = {
         name: element.name, value: (100 - Math.round(yesPercent))
       };
@@ -238,8 +250,8 @@ export class RraReportComponent implements OnInit {
    */
   zeroDeficiencies(): boolean {
     return this.questionReferenceTable
-    && this.questionReferenceTable.length > 0
-    && this.questionReferenceTable.every(q => q.answer.answer_Text == 'Y');
+      && this.questionReferenceTable.length > 0
+      && this.questionReferenceTable.every(q => q.answer.answer_Text == 'Y');
   }
 
   /**
@@ -249,5 +261,15 @@ export class RraReportComponent implements OnInit {
     */
   formatPercent(x: any) {
     return x + '%';
+  }
+
+  @HostListener('window:beforeprint')
+  beforePrint() {
+    this.view = [1300, 600];
+  }
+
+  @HostListener('window:afterprint')
+  afterPrint() {
+    this.view = null;
   }
 }

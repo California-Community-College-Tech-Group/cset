@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -23,6 +23,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using CSETWebCore.Model.Auth;
 using CSETWebCore.Api.Models;
+using NLog;
+using Microsoft.AspNetCore.Hosting;
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -39,10 +41,11 @@ namespace CSETWebCore.Api.Controllers
         private readonly IUserBusiness _userBusiness;
         private readonly INotificationBusiness _notificationBusiness;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _webHost;
 
         public ResetPasswordController(IUserAuthentication userAuthentication, ITokenManager tokenManager, CSETContext context,
              IAssessmentUtil assessmentUtil, IAdminTabBusiness adminTabBusiness, IReportsDataBusiness reports,
-             IUserBusiness userBusiness, INotificationBusiness notificationBusiness, IConfiguration configuration)
+             IUserBusiness userBusiness, INotificationBusiness notificationBusiness, IConfiguration configuration, IWebHostEnvironment webHost)
         {
             _userAuthentication = userAuthentication;
             _tokenManager = tokenManager;
@@ -53,6 +56,7 @@ namespace CSETWebCore.Api.Controllers
             _userBusiness = userBusiness;
             _notificationBusiness = notificationBusiness;
             _configuration = configuration;
+            _webHost = webHost;
         }
 
 
@@ -137,7 +141,7 @@ namespace CSETWebCore.Api.Controllers
                         new PasswordResponse()
                         {
                             IsValid = false,
-                            Message = "Current password is invalid.<br>Correct it or request a new temporary password."
+                            Message = "current invalid"
                         });
                 }
 
@@ -149,7 +153,7 @@ namespace CSETWebCore.Api.Controllers
                     !respComplex.PasswordContainsSpecial || !respComplex.PasswordNotReused)
                 {
                     respComplex.IsValid = false;
-                    respComplex.Message = "New password does not satisfy all password policy requirements.";
+                    respComplex.Message = "rules not satisfied";
                     return Ok(respComplex);
                 }
 
@@ -217,23 +221,37 @@ namespace CSETWebCore.Api.Controllers
                 {
                     return BadRequest("Invalid Model State");
                 }
+
                 if (String.IsNullOrWhiteSpace(user.PrimaryEmail))
-                    return BadRequest("Invalid PrimaryEmail");
+                {
+                    return BadRequest("missing email");
+                }
 
                 if (!emailvalidator.IsMatch(user.PrimaryEmail))
                 {
-                    return BadRequest("Invalid PrimaryEmail");
+                    return BadRequest("invalid email format");
                 }
+
                 if (!emailvalidator.IsMatch(user.ConfirmEmail.Trim()))
                 {
-                    return BadRequest("Invalid PrimaryEmail");
+                    return BadRequest("invalid email format");
                 }
+
                 if (user.PrimaryEmail != user.ConfirmEmail)
-                    return BadRequest("Invalid PrimaryEmail");
+                {
+                    return BadRequest("emails do not match");
+                }
 
                 if (_userBusiness.GetUserDetail(user.PrimaryEmail) != null)
                 {
-                    return BadRequest("An account already exists for that email address");
+                    return BadRequest("account already exists");
+                }
+
+                // Validate the email against an allowlist (if defined by the host)
+                var securityManager = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
+                if (!securityManager.EmailIsAllowed(user.PrimaryEmail, _webHost))
+                {
+                    return BadRequest("email not allowed");
                 }
 
                 var resetter = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
@@ -243,6 +261,8 @@ namespace CSETWebCore.Api.Controllers
 
                 if (beta)
                 {
+                    LogManager.GetCurrentClassLogger().Info("CreateUser - CSET is set to 'online beta' mode - no email sent to new user");
+
                     // create the user but DO NOT send the temp password email (test/beta)
                     var rval = resetter.CreateUser(user, false);
                     if (rval)
@@ -289,13 +309,13 @@ namespace CSETWebCore.Api.Controllers
 
                 if (!_userBusiness.GetUserDetail(answer.PrimaryEmail).IsActive)
                 {
-                    return BadRequest("user-inactive");
+                    return BadRequest("user inactive");
                 }
 
                 if (IsSecurityAnswerCorrect(answer))
                 {
                     UserAccountSecurityManager resetter = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
-                    bool rval = resetter.ResetPassword(answer.PrimaryEmail, "Password Reset", answer.AppCode);
+                    bool rval = resetter.ResetPassword(answer.PrimaryEmail, "Password Reset", answer.AppName);
 
                     if (rval)
                     {
@@ -321,12 +341,12 @@ namespace CSETWebCore.Api.Controllers
 
         [HttpGet]
         [Route("api/ResetPassword/PotentialQuestions")]
-        public IActionResult GetPotentialQuestions()
+        public IActionResult GetPotentialQuestions([FromQuery] string lang)
         {
             try
             {
                 UserAccountSecurityManager resetter = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
-                return Ok(resetter.GetSecurityQuestionList());
+                return Ok(resetter.GetSecurityQuestionList(lang));
             }
             catch (Exception e)
             {
@@ -337,7 +357,7 @@ namespace CSETWebCore.Api.Controllers
 
         [HttpGet]
         [Route("api/ResetPassword/SecurityQuestions")]
-        public IActionResult GetSecurityQuestions([FromQuery] string email, [FromQuery] string appCode)
+        public IActionResult GetSecurityQuestions([FromQuery] string email, [FromQuery] string appName)
         {
             try
             {
@@ -350,9 +370,9 @@ namespace CSETWebCore.Api.Controllers
                     return BadRequest();
                 }
 
-                if (!user.IsActive.GetValueOrDefault(true))
+                if (!user.IsActive)
                 {
-                    return BadRequest("user-inactive");
+                    return BadRequest("user inactive");
                 }
 
 
@@ -373,7 +393,7 @@ namespace CSETWebCore.Api.Controllers
                     || (questions[0].SecurityQuestion1 == null && questions[0].SecurityQuestion2 == null))
                 {
                     UserAccountSecurityManager resetter = new UserAccountSecurityManager(_context, _userBusiness, _notificationBusiness, _configuration);
-                    bool rval = resetter.ResetPassword(email, "Password Reset", appCode);
+                    bool rval = resetter.ResetPassword(email, "Password Reset", appName);
 
                     return Ok(new List<SecurityQuestions>());
                 }

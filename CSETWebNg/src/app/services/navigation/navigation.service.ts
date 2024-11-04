@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +23,14 @@
 ////////////////////////////////
 import { Router } from '@angular/router';
 import { AssessmentService } from '../assessment.service';
-import { EventEmitter, Injectable, Output, Directive } from "@angular/core";
-import { of as observableOf, BehaviorSubject } from "rxjs";
+import { EventEmitter, Injectable, OnDestroy, OnInit, Output } from "@angular/core";
 import { ConfigService } from '../config.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { MaturityService } from '../maturity.service';
 import { PageVisibilityService } from '../navigation/page-visibility.service';
 import { NavTreeService } from './nav-tree.service';
+import { CieService } from '../cie.service';
+import { QuestionsService } from '../questions.service';
 
 
 export interface NavTreeNode {
@@ -45,13 +46,13 @@ export interface NavTreeNode {
   expandable: boolean;
   visible: boolean;
   index?: number;
+  enabled?: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
-export class NavigationService {
-
+export class NavigationService implements OnDestroy, OnInit {
   /**
    * The workflow is stored in a DOM so that we can easily navigate around the tree
    */
@@ -59,6 +60,7 @@ export class NavigationService {
 
   currentPage = '';
 
+  destinationId = '';
 
 
   @Output()
@@ -67,8 +69,8 @@ export class NavigationService {
   @Output()
   scrollToQuestion = new EventEmitter<string>();
 
-
-  isNavLoading = false;
+  @Output()
+  disableNext = new EventEmitter<boolean>();
 
   activeResultsView: string;
 
@@ -77,6 +79,11 @@ export class NavigationService {
   diagramSelected = true;
 
   cisSubnodes = null;
+
+  /**
+   * Defines the grouping or question to scroll to when "resuming"
+   */
+  resumeQuestionsTarget: string = null;
 
 
 
@@ -90,13 +97,51 @@ export class NavigationService {
     private http: HttpClient,
     private maturitySvc: MaturityService,
     private pageVisibliltySvc: PageVisibilityService,
-    private navTreeSvc: NavTreeService
+    private navTreeSvc: NavTreeService,
+    private questionsSvc: QuestionsService    
   ) {
     this.setWorkflow('omni');
+    this.assessSvc.assessmentStateChanged$.subscribe((reloadState) => {
+      switch (reloadState) {
+        case 123:
+          // remembers state of ToC dropdown for CIE
+          if (this.assessSvc.usesMaturityModel('CIE')) {
+            this.navTreeSvc.applyCieToCStates();
+          }
+          break;
+        case 124:
+          this.buildTree();
+          this.setNextEnabled(true);
+          //this.navDirect('dashboard');
+          break;
+        case 125:
+          if (this.assessSvc.usesMaturityModel('CIE')) {
+            this.navTreeSvc.applyCieToCStates();
+          }
+          this.buildTree();
+          this.navDirect('phase-prepare');
+          
+          break;
+        case 126:
+          // refresh tree only
+          this.buildTree();
+          break;
+      }
+    });
   }
 
-  private getChildren = (node: NavTreeNode) => { return observableOf(node.children); };
+  ngOnInit(): void {
+    // remembers state of ToC dropdown for CIE
+    if (this.assessSvc.usesMaturityModel('CIE')) {
+      this.navTreeSvc.applyCieToCStates();
+      this.buildTree();
 
+    }
+  }
+
+  ngOnDestroy() {
+    this.assessSvc.assessmentStateChanged$.unsubscribe()
+  }
 
   /**
    * Generates a random 'magic number'.
@@ -110,18 +155,16 @@ export class NavigationService {
    *
    */
   getFramework() {
-    return this.http.get(this.configSvc.apiUrl + "standard/IsFramework");
+    return this.http.get(this.configSvc.apiUrl + 'standard/IsFramework');
   }
 
   setACETSelected(acet: boolean) {
     this.acetSelected = acet;
-    localStorage.removeItem('tree');
     this.navTreeSvc.buildTree(this.workflow, this.getMagic());
   }
 
   setFrameworkSelected(framework: boolean) {
     this.frameworkSelected = framework;
-    localStorage.removeItem('tree');
     this.navTreeSvc.buildTree(this.workflow, this.getMagic());
   }
 
@@ -135,7 +178,6 @@ export class NavigationService {
       // build the workflow DOM
       let d = new DOMParser();
       this.workflow = d.parseFromString(xml, 'text/xml');
-
 
       // populate displaytext for CIS and MVRA using API-sourced grouping titles
       this.maturitySvc.mvraGroupings.forEach(t => {
@@ -158,12 +200,38 @@ export class NavigationService {
 
 
       // build the sidenav tree
-      localStorage.removeItem('tree');
       this.navTreeSvc.buildTree(this.workflow, this.getMagic());
     },
       (err: HttpErrorResponse) => {
-        console.log(err);
+        console.error(err);
       });
+  }
+
+  /**
+   * Loads an assessment and navigates to the Prepare tab
+   * so that the user starts on the first page of the workflow.
+   */
+  beginAssessment(assessmentId: number) {
+    this.assessSvc.loadAssessment(assessmentId).then(() => {
+      if (this.configSvc.installationMode == "CF") {
+        this.assessSvc.initCyberFlorida(assessmentId);
+      }
+      else {
+        if (this.assessSvc.usesMaturityModel('CIE')) {
+          this.navTreeSvc.applyCieToCStates();
+        }
+        this.navDirect('phase-prepare');
+      }
+    });
+  }
+
+  beginNewAssessmentGallery(item: any) {
+    this.assessSvc.newAssessmentGallery(item).then(() => {
+      if (this.assessSvc.usesMaturityModel('CIE')) {
+        this.navTreeSvc.applyCieToCStates();
+      }
+      this.navDirect('phase-prepare');
+    });
   }
 
   /**
@@ -184,49 +252,97 @@ export class NavigationService {
    * Crawls the workflow document to determine the next viewable page.
    */
   navNext(cur: string) {
-    const currentPage = this.workflow.getElementById(cur);
-
-    if (currentPage == null) {
+    const originPage = this.workflow.getElementById(cur);
+    if (originPage == null) {
+      console.error('navNext: cannot find node ' + cur);
       return;
     }
 
-    if (currentPage.children.length == 0 && currentPage.nextElementSibling == null && currentPage.parentElement.tagName == 'nav') {
+    if (originPage.children.length == 0 && originPage.nextElementSibling == null && originPage.parentElement.tagName == 'nav') {
       // we are at the last page, nothing to do
       return;
     }
 
-    let target = currentPage;
+    let target = originPage;
 
-    do {
-      if (target.children.length > 0) {
-        target = <HTMLElement>target.firstElementChild;
-      } else {
-        while (!target.nextElementSibling) {
-          target = <HTMLElement>target.parentElement;
+    try {
+      do {
+        if (target.children.length > 0) {
+          target = <HTMLElement>target.firstElementChild;
+        } else {
+          while (!target.nextElementSibling) {
+            target = <HTMLElement>target.parentElement;
+          }
+          target = <HTMLElement>target.nextElementSibling;
         }
-        target = <HTMLElement>target.nextElementSibling;
-      }
-    } while (!this.pageVisibliltySvc.canLandOn(target) || !this.pageVisibliltySvc.showPage(target));
+      } while (!this.pageVisibliltySvc.canLandOn(target) || !this.pageVisibliltySvc.showPage(target));
+    } catch (e) {
+      //TODO:  Check to see if we are in a CF assessment and if so then disable the next button
+      this.setNextEnabled(false);
+    }
 
     this.routeToTarget(target);
+  }
+
+  isNextEnabled(cur: string): boolean {
+    if (!this.workflow) return true;
+    const originPage = this.workflow.getElementById(cur);
+
+    if (originPage == null) {
+      return true;
+    }
+
+    if (originPage.children.length == 0 && originPage.nextElementSibling == null && originPage.parentElement.tagName == 'nav') {
+      // we are at the last page, nothing to do
+      return false;
+    }
+
+    let target = originPage;
+
+    try {
+      do {
+        if (target.children.length > 0) {
+          target = <HTMLElement>target.firstElementChild;
+        } else {
+          while (!target.nextElementSibling) {
+            target = <HTMLElement>target.parentElement;
+          }
+          target = <HTMLElement>target.nextElementSibling;
+        }
+      } while (!(this.pageVisibliltySvc.canLandOn(target)
+        && this.pageVisibliltySvc.showPage(target)
+        && this.pageVisibliltySvc.isEnabled(target)));
+    } catch (e) {
+      //TODO:  Check to see if we are in a CF assessment and if so then disable the next button
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Enables or disables the next button
+   * @param enableNext 
+   */
+  setNextEnabled(enableNext: boolean) {
+    this.disableNext.emit(enableNext);
   }
 
   /**
    * Crawls the workflow document to determine the previous viewable page.
    */
   navBack(cur: string) {
-    const currentPage = this.workflow.getElementById(cur);
+    const originPage = this.workflow.getElementById(cur);
 
-    if (currentPage == null) {
+    if (originPage == null) {
       return;
     }
 
-    if (currentPage.previousElementSibling == null && currentPage.parentElement.tagName == 'nav') {
+    if (originPage.previousElementSibling == null && originPage.parentElement.tagName == 'nav') {
       // we are at the first page, nothing to do
       return;
     }
 
-    let target = currentPage;
+    let target = originPage;
 
     do {
       if (target.children.length > 0) {
@@ -240,6 +356,14 @@ export class NavigationService {
     } while (!this.pageVisibliltySvc.canLandOn(target) || !this.pageVisibliltySvc.showPage(target));
 
     this.routeToTarget(target);
+  }
+
+  /**
+   * Routes to the first available node in the workflow
+   */
+  navFirst() {
+    debugger;
+    const startPage = this.workflow.firstElementChild;
   }
 
   /**
@@ -271,12 +395,50 @@ export class NavigationService {
   /**
    * Navigates to the path specified in the target node.
    */
-  routeToTarget(target: HTMLElement) {
-    this.navTreeSvc.setCurrentPage(target.id);
+  routeToTarget(targetNode: HTMLElement) {
+    this.navTreeSvc.setCurrentPage(targetNode.id);
+    this.destinationId = targetNode.id;
+
+    this.buildTree();
 
     // determine the route path
-    const targetPath = target.attributes['path'].value.replace('{:id}', this.assessSvc.id().toString());
+    const targetPath = targetNode.attributes['path'].value.replace('{:id}', this.assessSvc.id().toString());
     this.router.navigate([targetPath]);
+  }
+
+  /**
+   * Determines if the specified page is the first visible page in the nav flow.
+   * Used to hide the "Back" button.
+   * @returns
+   */
+  isFirstVisiblePage(id: string): boolean {
+    if (!this.workflow) {
+      return false;
+    }
+
+    let target = this.workflow.getElementById(id);
+
+    if (!target) {
+      console.error(`No workflow element found for id '${id}'`);
+      return false;
+    }
+
+    do {
+      if (!target.previousElementSibling) {
+        while (!target.previousElementSibling && target.tagName != 'nav') {
+          target = <HTMLElement>target.parentElement;
+        }
+        target = <HTMLElement>target.previousElementSibling;
+      } else {
+        target = <HTMLElement>target.previousElementSibling;
+      }
+    } while (!!target && !this.pageVisibliltySvc.showPage(target));
+
+    if (!target) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -290,6 +452,10 @@ export class NavigationService {
     }
 
     let target = this.workflow.getElementById(id);
+    if (!target) {
+      console.error(`No workflow element found for id ${id}`);
+      return false;
+    }
 
     do {
       if (target.children.length > 0) {
@@ -316,5 +482,64 @@ export class NavigationService {
    */
   setCurrentPage(id: string) {
     this.navTreeSvc.setCurrentPage(id);
+  }
+
+  /**
+   * 
+   */
+  clearNoMatterWhat() {
+    this.navTreeSvc.clearNoMatterWhat();
+  }
+
+  /**
+   * Jump to the last question answered.
+   */
+  resumeQuestions() {
+    this.http.get(this.configSvc.apiUrl + 'contacts/bookmark', { responseType: 'text' }).subscribe(x => {
+
+      if (!x) {
+        this.navDirect('phase-assessment');
+        return;
+      }
+
+
+      // set the target so that the question page will know where to scroll to
+      this.resumeQuestionsTarget = x;
+
+
+      // is there a specific nav node for the grouping? (nested)
+      var g = x.split(',').find(x => x.startsWith('MG:'))?.replace('MG:', '');
+      let e = this.workflow.getElementById('maturity-questions-nested-' + g);
+      if (!!e) {
+        this.navDirect(e.id);
+        return;
+      }
+
+      // is there a specific nav node for the grouping? (CIE nested)
+      // get the parent grouping if it exists
+      var pg = x.split(',').find(x => x.startsWith('PG:'))?.replace('PG:', '');
+      if (pg != null) {
+        e = this.workflow.getElementById('maturity-questions-cie-' + pg);
+      } else {
+        e = this.workflow.getElementById('maturity-questions-cie-' + g);
+      }
+
+      if (!!e) {
+        // set to Principle scope
+        if (+g <= 2632) {
+          this.questionsSvc.setMode('P')
+        }
+        //set to Principle-Phase scope
+        else {
+          this.questionsSvc.setMode('F')
+        }
+        this.navDirect(e.id);
+        return;
+      }
+
+
+      // if we don't have to land on a specific nested page, we should be able to just jump to the assessment phase
+      this.navDirect('phase-assessment');
+    });
   }
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -64,16 +64,6 @@ export class QuestionListComponent implements OnInit {
       this.questionResponse = data;
       this.initialized = true;
     });
-  }
-
-  /**
-   * Converts linebreak characters to HTML <br> tag.
-   */
-  formatLinebreaks(text: string) {
-    if (!text) {
-      return '';
-    }
-    return text.replace(/(?:\r\n|\r|\n)/g, '<br />');
   }
 
   /**
@@ -141,7 +131,7 @@ export class QuestionListComponent implements OnInit {
       },
       error => {
         this.dialog
-          .open(AlertComponent, { data: {title: "Error removing question from set" }})
+          .open(AlertComponent, { data: { title: "Error removing question from set" } })
           .afterClosed()
           .subscribe();
         console.log(

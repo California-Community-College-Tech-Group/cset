@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -83,9 +83,7 @@ namespace CSETWebCore.Business.User
 
                     throw;
                 }
-
-                //TODO: Add logging
-                Console.WriteLine(ex);
+                NLog.LogManager.GetCurrentClassLogger().Error(ex);
                 tmpContext.USERS.Remove(u);
             }
 
@@ -212,10 +210,10 @@ namespace CSETWebCore.Business.User
                 UserId = result.UserId,
                 Email = result.PrimaryEmail,
                 IsSuperUser = result.IsSuperUser,
-                PasswordResetRequired = result.PasswordResetRequired ?? true,
+                PasswordResetRequired = result.PasswordResetRequired,
                 FirstName = result.FirstName,
                 LastName = result.LastName,
-                IsActive = result.IsActive ?? true
+                IsActive = result.IsActive
             };
 
             return u;
@@ -295,7 +293,11 @@ namespace CSETWebCore.Business.User
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 IsSuperUser = user.IsSuperUser,
-                PasswordResetRequired = user.PasswordResetRequired ?? true
+                PasswordResetRequired = user.PasswordResetRequired,
+                IsActive = user.IsActive,
+                PreventEncrypt = user.PreventEncrypt,
+                CisaAssessorWorkflow = user.CisaAssessorWorkflow,
+                Lang = user.Lang
             };
 
             return ud;

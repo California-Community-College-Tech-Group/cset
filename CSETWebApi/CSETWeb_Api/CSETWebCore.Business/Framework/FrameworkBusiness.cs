@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -33,13 +33,9 @@ namespace CSETWebCore.Business.Framework
         {
             FrameworkResponse resp = new FrameworkResponse();
 
-          
+
             // get any existing answers for this assessment
             var answers = _context.FRAMEWORK_TIER_TYPE_ANSWER.Where(ans => ans.Assessment_Id == assessmentId);
-            // TODO:  If we add a 'sequence' column to this table, we can sort the sections
-            //        because they appear in a different order in CSET 8.1.  Does the order even matter?
-
-
             foreach (FRAMEWORK_TIER_TYPE ftt in _context.FRAMEWORK_TIER_TYPE.ToList())
             {
                 FrameworkTierType f = new FrameworkTierType()

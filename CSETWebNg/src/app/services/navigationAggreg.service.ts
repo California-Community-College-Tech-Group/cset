@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -35,20 +35,23 @@ import { AggregationService } from './aggregation.service';
   providedIn: 'root'
 })
 export class NavigationAggregService {
+  compareType: string = "standards-based";
 
   pages = [
-    { pageId: 'trend', path: 'trend',
-      condition:  () => this.aggregationSvc.mode === 'TREND'
+    {
+      pageId: 'trend', path: 'trend',
+      condition: () => this.aggregationSvc.mode === 'TREND'
     },
-    { pageId: 'compare', path: 'compare',
-      condition:  () => this.aggregationSvc.mode === 'COMPARE'
+    {
+      pageId: 'compare', path: 'compare',
+      condition: () => this.aggregationSvc.mode === 'COMPARE'
     },
     {
       pageId: 'alias-assessments', path: 'alias-assessments/{:id}'
     },
     {
-      pageId: 'compare-analytics', path: 'compare-analytics/{:id}',
-      condition: () => this.aggregationSvc.mode === 'COMPARE'
+      pageId: 'compare-analytics', path: 'compare-analytics/{:id}/{:type}',
+      condition: () => this.aggregationSvc.mode === 'COMPARE',
     },
     {
       pageId: 'trend-analytics', path: 'trend-analytics/{:id}',
@@ -63,8 +66,8 @@ export class NavigationAggregService {
   constructor(
     private aggregationSvc: AggregationService,
     private router: Router
-  ) { }
-
+  ) {
+  }
 
   /**
    *
@@ -117,11 +120,14 @@ export class NavigationAggregService {
       newPageIndex = newPageIndex + 1;
       showPage = this.shouldIShow(this.pages[newPageIndex].condition);
     }
-
-    const newPath = this.pages[newPageIndex].path.replace('{:id}', this.aggregationSvc.id().toString());
-    this.router.navigate([newPath]);
+    this.aggregationSvc.getAssessments().subscribe({
+      next: (data: any) => {
+        this.compareType = data.assessments[0].useMaturity ? "maturity-based" : "standards-based";
+        const newPath = this.pages[newPageIndex].path.replace('{:id}', this.aggregationSvc.id().toString()).replace('{:type}', this.compareType);
+        this.router.navigate([newPath]);
+      }
+    });
   }
-
 
   /**
    * If there is no condition, show.  Otherwise evaluate the condition.

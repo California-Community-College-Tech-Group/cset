@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,8 @@ import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ImportPasswordComponent } from '../assessment-encryption/import-password/import-password.component';
+import { ConfigService } from '../../services/config.service';
+import { NCUAService } from '../../services/ncua.service';
 
 @Component({
   selector: 'app-upload-export',
@@ -55,12 +57,15 @@ export class UploadExportComponent implements OnInit {
   successfulAssessmentIndexes = [];
 
   xCount = 0; // Quick and dirty hack to prevent multiple red "x" appearing on the upload dialog
+  appName: string = "";
 
   constructor(private dialog: MatDialogRef<UploadExportComponent>,
     public newDialog: MatDialog,
     private importSvc: ImportAssessmentService,
     private fileSvc: FileUploadClientService,
     private diagramSvc: DiagramService,
+    private configSvc: ConfigService,
+    private ncuaSvc: NCUAService,
     @Inject(MAT_DIALOG_DATA) public data: any) {
   }
 
@@ -69,6 +74,8 @@ export class UploadExportComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.appName = this.configSvc.installationMode;
+
     if (this.data) {
       const files: { [key: string]: File } = this.data.files;
       for (const key in files) {
@@ -113,7 +120,7 @@ export class UploadExportComponent implements OnInit {
   progressDialog() {
     // if everything was uploaded already, just close the dialog
     if (this.uploadSuccessful) {
-      return this.dialog.close();
+      //return this.dialog.close();
     }
 
     // set the component state to "uploading"
@@ -177,7 +184,7 @@ export class UploadExportComponent implements OnInit {
           this.successfulAssessmentIndexes.push(i);
           this.files.delete(fileToRemove);
 
-          if (count >= allProgressObservables.length){
+          if (count >= allProgressObservables.length) {
             if (this.data.isCsafUpload) {
               this.canBeClosed = true;
               this.dialog.disableClose = false;
@@ -189,17 +196,6 @@ export class UploadExportComponent implements OnInit {
         }
       )
     });
-
-    // forkJoin(allProgressObservables).subscribe(end => {
-    //   // ... the dialog can be closed again...
-    //   this.canBeClosed = true;
-    //   this.dialog.disableClose = false;
-    //   // ... the upload was successful...
-    //   this.uploadSuccessful = true;
-    //   // ... and the component is no longer uploading
-    //   this.uploading = false;
-    //   this.dialog.close();
-    // });
   }
 
   enterPassword() {

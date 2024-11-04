@@ -1,30 +1,24 @@
-﻿//////////////////////////////// 
+//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
-using CSETWebCore.Business.Acet;
 using CSETWebCore.Business.Maturity;
 using CSETWebCore.Business.Reports;
 using CSETWebCore.DataLayer.Model;
 using CSETWebCore.Interfaces.AdminTab;
-using CSETWebCore.Interfaces.Crr;
 using CSETWebCore.Interfaces.Helpers;
 using CSETWebCore.Interfaces.Reports;
 using CSETWebCore.Model.Maturity;
+using CSETWebCore.Model.Nested;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using System.Xml.XPath;
-using Newtonsoft.Json;
-using CSETWebCore.Api.Interfaces;
-using NLog;
-using CSETWebCore.Model.Nested;
-using J2N.Numerics;
+
 
 namespace CSETWebCore.Api.Controllers
 {
@@ -35,17 +29,15 @@ namespace CSETWebCore.Api.Controllers
         private readonly IAssessmentUtil _assessmentUtil;
         private readonly IAdminTabBusiness _adminTabBusiness;
         private readonly IReportsDataBusiness _reports;
-        private readonly ICrrScoringHelper _crr;        
 
-        public MaturityController(ITokenManager tokenManager, CSETContext context, IAssessmentUtil assessmentUtil, 
-            IAdminTabBusiness adminTabBusiness, IReportsDataBusiness reports, ICrrScoringHelper crr)
+        public MaturityController(ITokenManager tokenManager, CSETContext context, IAssessmentUtil assessmentUtil,
+            IAdminTabBusiness adminTabBusiness, IReportsDataBusiness reports)
         {
             _tokenManager = tokenManager;
             _context = context;
             _assessmentUtil = assessmentUtil;
             _adminTabBusiness = adminTabBusiness;
             _reports = reports;
-            _crr = crr;
         }
 
 
@@ -75,6 +67,7 @@ namespace CSETWebCore.Api.Controllers
             return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetMaturityModel(assessmentId));
         }
 
+
         /// <summary>
         /// Set selected maturity models for the assessment.
         /// </summary>
@@ -86,6 +79,7 @@ namespace CSETWebCore.Api.Controllers
             int assessmentId = _tokenManager.AssessmentForUser();
             return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetDomainRemarks(assessmentId));
         }
+
 
         /// <summary>
         /// Set selected maturity models for the assessment.
@@ -99,6 +93,7 @@ namespace CSETWebCore.Api.Controllers
             new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).SetDomainRemarks(assessmentId, remarks);
             return Ok();
         }
+
 
         /// <summary>
         /// Return the current maturity level for an assessment.
@@ -123,7 +118,7 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult SetMaturityLevel([FromBody] int level)
         {
             int assessmentId = _tokenManager.AssessmentForUser();
-            new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).PersistMaturityLevel(assessmentId, level);
+            new ACETMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).PersistMaturityLevel(assessmentId, level);
             return Ok();
         }
 
@@ -132,13 +127,39 @@ namespace CSETWebCore.Api.Controllers
         /// 
         /// </summary>
         [HttpGet]
-        [Route("api/MaturityQuestions")]
-        public IActionResult GetQuestions([FromQuery] string installationMode, bool fill, int groupingId = 0)
+        [Route("api/maturity/questions")]
+        public IActionResult GetQuestions(bool fill, int groupingId = 0)
         {
             int assessmentId = _tokenManager.AssessmentForUser();
+            string lang = _tokenManager.GetCurrentLanguage();
+            string installationMode = _tokenManager.Payload("scope");
 
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetMaturityQuestions(assessmentId, installationMode, fill, groupingId));
+            if (installationMode == "ACET")
+            {
+                return Ok(new ACETMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetMaturityQuestions(assessmentId, fill, groupingId, lang));
+            }
+
+            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetMaturityQuestions(assessmentId, fill, groupingId, lang));
         }
+
+
+        /// <summary>
+        /// Returns a "bonus" maturity model.  This is the generic term being used
+        /// for the Sector-Specific Goal (SSG) models that are appended to a CPG assessment.
+        /// </summary>
+        [HttpGet]
+        [Route("api/maturity/questions/bonus")]
+        public IActionResult GetBonusModelQuestions([FromQuery] int m)
+        {
+            int assessmentId = _tokenManager.AssessmentForUser();
+            string lang = _tokenManager.GetCurrentLanguage();
+
+            MaturityResponse resp = new();
+
+            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetMaturityQuestions(
+                assessmentId, false, 0, resp, m, lang));
+        }
+
 
         [HttpGet]
         [Route("api/maturity/targetlevel")]
@@ -149,6 +170,7 @@ namespace CSETWebCore.Api.Controllers
             return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetTargetLevel(assessmentId));
         }
 
+
         [HttpGet]
         [Route("api/MaturityModel/GetLevelScoresByGroup")]
         public IActionResult GetLevelScoresByGroup(int mat_model_id)
@@ -157,6 +179,7 @@ namespace CSETWebCore.Api.Controllers
             return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness)
                 .Get_LevelScoresByGroup(assessmentId, mat_model_id));
         }
+
 
         /// <summary>        
         /// </summary>
@@ -229,6 +252,14 @@ namespace CSETWebCore.Api.Controllers
             try
             {
                 assessmentId = _tokenManager.AssessmentForUser();
+                _context.FillEmptyMaturityQuestionsForAnalysis(assessmentId);
+
+                // if the assessment ID is provided we will derive the modelId
+                var xy = _context.AVAILABLE_MATURITY_MODELS.Where(x => x.Assessment_Id == assessmentId).FirstOrDefault();
+                if (xy != null)
+                {
+                    modelId = xy.model_id;
+                }
             }
             catch (Exception)
             {
@@ -238,6 +269,7 @@ namespace CSETWebCore.Api.Controllers
 
             var biz = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
             var x = biz.GetMaturityStructureForModel(modelId, assessmentId);
+
             return Ok(x.Model);
         }
 
@@ -246,8 +278,11 @@ namespace CSETWebCore.Api.Controllers
         [Route("api/maturity/groupingtitles")]
         public IActionResult GetGroupingTitles([FromQuery] int modelId)
         {
+            var lang = _tokenManager.GetCurrentLanguage();
+
             var biz = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-            var x = biz.GetGroupingTitles(modelId);
+            var x = biz.GetGroupingTitles(modelId, lang);
+
             return Ok(x);
         }
 
@@ -264,6 +299,7 @@ namespace CSETWebCore.Api.Controllers
             int assessmentId = _tokenManager.AssessmentForUser();
 
             var biz = new NestedStructure(assessmentId, sectionId, _context);
+
             return Ok(biz.MyModel);
         }
 
@@ -299,7 +335,7 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentId = _tokenManager.AssessmentForUser();
 
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetResultsData(assessmentId));
+            return Ok(new HydroMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetResultsData(assessmentId));
         }
 
 
@@ -309,7 +345,7 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentId = _tokenManager.AssessmentForUser();
 
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetHydroProgress());
+            return Ok(new HydroMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetHydroProgress());
         }
 
 
@@ -340,7 +376,7 @@ namespace CSETWebCore.Api.Controllers
 
             // convert it to a MaturityResponse
             MaturityResponse resp = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).ConvertToMaturityResponse(resp1);
-
+            var excel = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
 
             var model = _context.MATURITY_MODELS.FirstOrDefault(x => x.Maturity_Model_Id == grouping.Maturity_Model_Id);
             resp.ModelName = model.Model_Name;
@@ -354,10 +390,30 @@ namespace CSETWebCore.Api.Controllers
             }
 
             resp.Title = grouping.Title;
+            resp.Description = grouping.Description;
+            resp.Description_Extended = grouping.Description_Extended;
 
             return Ok(resp);
-
         }
+
+
+        /// <summary>
+        /// Returns list of CIE assessments accessible to the current user.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("api/maturity/cie/myCieAssessments")]
+        public IActionResult GetCieAssessments()
+        {
+            var assessmentId = _tokenManager.AssessmentForUser();
+            var userId = _tokenManager.PayloadInt(Constants.Constants.Token_UserId);
+
+            var biz = new CieQuestionsBusiness(_context, _assessmentUtil, assessmentId);
+            var x = biz.GetMyCieAssessments(assessmentId, userId);
+
+            return Ok(x);
+        }
+
 
         /// <summary>
         /// Returns list of CIS assessments accessible to the current user.
@@ -372,6 +428,7 @@ namespace CSETWebCore.Api.Controllers
 
             var biz = new CisQuestionsBusiness(_context, _assessmentUtil, assessmentId);
             var x = biz.GetMyCisAssessments(assessmentId, userId);
+
             return Ok(x);
         }
 
@@ -403,6 +460,7 @@ namespace CSETWebCore.Api.Controllers
             var assessmentId = _tokenManager.AssessmentForUser();
             var cisBiz = new CisQuestionsBusiness(_context, _assessmentUtil, assessmentId);
             var chartData = cisBiz.GetDeficiencyChartData();
+
             return Ok(chartData);
         }
 
@@ -414,6 +472,7 @@ namespace CSETWebCore.Api.Controllers
             var assessmentId = _tokenManager.AssessmentForUser();
             var cisBiz = new CisQuestionsBusiness(_context, _assessmentUtil, assessmentId);
             var chartData = cisBiz.GetSectionScoringCharts();
+
             return Ok(chartData);
         }
 
@@ -427,15 +486,9 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult ImportSurvey([FromBody] Model.Nested.CisImportRequest request)
         {
             var assessmentId = _tokenManager.AssessmentForUser();
-
-
-            // TODO: verify that the user has permission to both assessments
-
-
-
-
             var biz = new CisQuestionsBusiness(_context, _assessmentUtil, assessmentId);
             biz.ImportCisAnswers(request.Dest, request.Source);
+
             return Ok();
         }
 
@@ -446,12 +499,13 @@ namespace CSETWebCore.Api.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("api/maturity/cis/integritycheck")]
-        public IActionResult GetIntegrityCheckOptions() 
+        public IActionResult GetIntegrityCheckOptions()
         {
             var assessmentId = _tokenManager.AssessmentForUser();
 
             var cisBiz = new CisQuestionsBusiness(_context, _assessmentUtil, assessmentId);
             var integrityCheckOptions = cisBiz.GetIntegrityCheckOptions();
+
             return Ok(integrityCheckOptions);
         }
 
@@ -479,7 +533,7 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentId = _tokenManager.AssessmentForUser();
 
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetAnswerCompletionRate(assessmentId));
+            return Ok(new ACETMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetAnswerCompletionRate(assessmentId));
         }
 
 
@@ -493,7 +547,7 @@ namespace CSETWebCore.Api.Controllers
         {
             int assessmentId = _tokenManager.AssessmentForUser();
 
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetIseAnswerCompletionRate(assessmentId));
+            return Ok(new ACETMaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetIseAnswerCompletionRate(assessmentId));
         }
 
 
@@ -518,111 +572,52 @@ namespace CSETWebCore.Api.Controllers
         // --------------------------------------
 
 
-        /// <summary>
-        /// Get maturity calculations
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/getMaturityResults")]
-        public IActionResult GetMaturityResults()
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            MaturityBusiness manager = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-            var maturity = manager.GetMaturityAnswers(assessmentId);
-
-            return Ok(maturity);
-        }
-
-        /// <summary>
-        /// Get maturity calculations
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/getIseMaturityResults")]
-        public IActionResult GetIseMaturityResults()
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            MaturityBusiness manager = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-            var maturity = manager.GetIseMaturityAnswers(assessmentId);
-
-            return Ok(maturity);
-        }
 
 
         /// <summary>
-        /// Get maturity range based on IRP rating
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/getMaturityRange")]
-        public IActionResult GetMaturityRange()
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            MaturityBusiness manager = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-            var maturityRange = manager.GetMaturityRange(assessmentId);
-            return Ok(maturityRange);
-        }
-
-
-        /// <summary>
-        /// Get IRP total for maturity
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/getOverallIrpForMaturity")]
-        public IActionResult GetOverallIrp()
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            return Ok(new AcetBusiness(_context, _assessmentUtil, _adminTabBusiness).GetOverallIrp(assessmentId));
-        }
-
-
-        /// <summary>
-        /// Get target band for maturity
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/getTargetBand")]
-        public IActionResult GetTargetBand()
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            return Ok(new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).GetTargetBandOnly(assessmentId));
-        }
-
-
-        /// <summary>
-        /// Set target band for maturity rating
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost]
-        [Route("api/setTargetBand")]
-        public IActionResult SetTargetBand([FromBody] bool value)
-        {
-            int assessmentId = _tokenManager.AssessmentForUser();
-            new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness).SetTargetBandOnly(assessmentId, value);
-            return Ok();
-        }
-
-
-        /// <summary>
-        /// get maturity definiciency list
+        /// Get maturity definiciency list.  
+        /// If the maturity query parm is null, gets the main model for the assessment.
+        /// If the parm is specified, gets that model's deficient answers for the assessment.  This is used for SSG bonus models.
         /// </summary>
         /// <param name="maturity"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("api/getMaturityDeficiencyList")]
-        public IActionResult GetDeficiencyList()
+        [Route("api/maturity/deficiency")]
+        public IActionResult GetDeficiencyList([FromQuery] string model)
         {
             try
             {
                 int assessmentId = _tokenManager.AssessmentForUser();
+                var lang = _tokenManager.GetCurrentLanguage();
+
                 _reports.SetReportsAssessmentId(assessmentId);
+
+
+                int? modelId = null;
+                if (model != null)
+                {
+                    if (int.TryParse(model, out int value))
+                    {
+                        modelId = value;
+                    }
+                }
+
 
                 var data = new MaturityBasicReportData
                 {
-                    DeficienciesList = _reports.GetMaturityDeficiencies(),
+                    DeficienciesList = _reports.GetMaturityDeficiencies(modelId),
                     Information = _reports.GetInformation()
                 };
+
+
+
+                // If the assessment is a CPG and the asset's sector warrants SSG questions, include them
+                var ssgModelId = new CpgBusiness(_context, lang).DetermineSsgModel(assessmentId);
+                if (ssgModelId != null)
+                {
+                    var ssgDeficiencies = _reports.GetMaturityDeficiencies(ssgModelId);
+                    data.DeficienciesList.AddRange(ssgDeficiencies);
+                }
 
 
                 // null out a few navigation properties to avoid circular references that blow up the JSON stringifier
@@ -651,7 +646,207 @@ namespace CSETWebCore.Api.Controllers
                 return Ok();
             }
         }
-        
+
+
+        [HttpGet]
+        [Route("api/getMaturityDeficiencyListSd")]
+        public IActionResult GetDeficiencyListSd()
+        {
+            int assessmentId = _tokenManager.AssessmentForUser();
+
+            var biz = new NestedStructure(assessmentId, 0, _context);
+            List<Grouping> filteredGroupingsU = new List<Grouping>();
+            List<Grouping> filteredGroupingsS = new List<Grouping>();
+
+            foreach (var b in biz.MyModel.Groupings)
+            {
+                var questionsU = new List<Question>();
+                var questionsS = new List<Question>();
+                foreach (var q in b.Questions)
+                {
+
+                    var question = new Question();
+                    if (q.AnswerText == "U")
+                    {
+                        if (q.Options.Any(x => x.OptionType.ToLower() == "radio"))
+                        {
+                            question = new Question()
+                            {
+                                QuestionType = q.QuestionType,
+                                DisplayNumber = q.DisplayNumber,
+                                QuestionText = q.QuestionText,
+                                MarkForReview = q.MarkForReview,
+                                AnswerText = "Unanswered"
+                            };
+                            questionsU.Add(question);
+                        }
+                    }
+
+                    if (q.AnswerText == "S")
+                    {
+                        if (q.Options.Any(x =>
+                                x.Selected && x.OptionText == "No" && x.OptionType.ToLower() == "radio"))
+                        {
+                            question = new Question()
+                            {
+                                QuestionType = q.QuestionType,
+                                DisplayNumber = q.DisplayNumber,
+                                QuestionText = q.QuestionText,
+                                MarkForReview = q.MarkForReview,
+                                AnswerText = "No"
+                            };
+                            questionsS.Add(question);
+                        }
+                    }
+                }
+
+                if (questionsU.Any())
+                {
+                    filteredGroupingsU.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsU
+                    });
+                }
+                if (questionsS.Any())
+                {
+                    filteredGroupingsS.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsS
+                    });
+                }
+
+                questionsU = new List<Question>();
+                questionsS = new List<Question>();
+            }
+
+            return Ok(new { no = filteredGroupingsS, unanswered = filteredGroupingsU });
+        }
+
+
+        [HttpGet]
+        [Route("api/getMaturityDeficiencyListSdOwner")]
+        public IActionResult GetDeficiencyListSdOwner()
+        {
+            int assessmentId = _tokenManager.AssessmentForUser();
+
+            var biz = new NestedStructure(assessmentId, 0, _context);
+            List<Grouping> filteredGroupingsYes = new List<Grouping>();
+            List<Grouping> filteredGroupingsNo = new List<Grouping>();
+            List<Grouping> filteredGroupingsNa = new List<Grouping>();
+            List<Grouping> filteredGroupingsU = new List<Grouping>();
+
+            foreach (var b in biz.MyModel.Groupings)
+            {
+                var questionsYes = new List<Question>();
+                var questionsNo = new List<Question>();
+                var questionsNa = new List<Question>();
+                var questionsU = new List<Question>();
+
+                foreach (var q in b.Questions)
+                {
+                    var question = new Question();
+
+                    if (q.AnswerText == "Y")
+                    {
+                        question = new Question()
+                        {
+                            QuestionType = q.QuestionType,
+                            DisplayNumber = q.DisplayNumber,
+                            QuestionText = q.QuestionText,
+                            MarkForReview = q.MarkForReview,
+                            AnswerText = "Yes"
+                        };
+                        questionsYes.Add(question);
+                    }
+
+                    if (q.AnswerText == "N")
+                    {
+                        question = new Question()
+                        {
+                            QuestionType = q.QuestionType,
+                            DisplayNumber = q.DisplayNumber,
+                            QuestionText = q.QuestionText,
+                            MarkForReview = q.MarkForReview,
+                            AnswerText = "No"
+                        };
+                        questionsNo.Add(question);
+                    }
+
+                    if (q.AnswerText == "NA")
+                    {
+                        question = new Question()
+                        {
+                            QuestionType = q.QuestionType,
+                            DisplayNumber = q.DisplayNumber,
+                            QuestionText = q.QuestionText,
+                            MarkForReview = q.MarkForReview,
+                            AnswerText = "NA"
+                        };
+                        questionsNa.Add(question);
+                    }
+
+                    if (q.AnswerText == "U")
+                    {
+                        question = new Question()
+                        {
+                            QuestionType = q.QuestionType,
+                            DisplayNumber = q.DisplayNumber,
+                            QuestionText = q.QuestionText,
+                            MarkForReview = q.MarkForReview,
+                            AnswerText = "Unanswered"
+                        };
+                        questionsU.Add(question);
+                    }
+                }
+
+                if (questionsYes.Any())
+                {
+                    filteredGroupingsYes.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsYes
+                    });
+                }
+
+                if (questionsNo.Any())
+                {
+                    filteredGroupingsNo.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsNo
+                    });
+                }
+
+                if (questionsNa.Any())
+                {
+                    filteredGroupingsNa.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsNa
+                    });
+                }
+
+                if (questionsU.Any())
+                {
+                    filteredGroupingsU.Add(new Grouping
+                    {
+                        Title = b.Title,
+                        Questions = questionsU
+                    });
+                }
+
+                questionsYes = new List<Question>();
+                questionsNo = new List<Question>();
+                questionsNa = new List<Question>();
+                questionsU = new List<Question>();
+            }
+
+            return Ok(new { yes = filteredGroupingsYes, no = filteredGroupingsNo, na = filteredGroupingsNa, unanswered = filteredGroupingsU });
+        }
+
+
         /// <summary>
         /// get all comments and marked for review
         /// </summary>
@@ -662,8 +857,10 @@ namespace CSETWebCore.Api.Controllers
         public IActionResult GetCommentsMarked()
         {
             int assessmentId = _tokenManager.AssessmentForUser();
-            _reports.SetReportsAssessmentId(assessmentId);
+            string lang = _tokenManager.GetCurrentLanguage();
 
+
+            _reports.SetReportsAssessmentId(assessmentId);
 
 
             // if this is a CIS assessment, don't include questions that
@@ -682,10 +879,22 @@ namespace CSETWebCore.Api.Controllers
                 MarkedForReviewList = _reports.GetMarkedForReviewList(),
                 Information = _reports.GetInformation()
             };
-            
 
-           data.Comments.RemoveAll(x => oos.Contains(x.Mat.Mat_Question_Id));
-           data.MarkedForReviewList.RemoveAll(x => oos.Contains(x.Mat.Mat_Question_Id));
+
+            // If the assessment is a CPG and the asset's sector warrants SSG questions, include them
+            var ssgModelId = new CpgBusiness(_context, lang).DetermineSsgModel(assessmentId);
+            if (ssgModelId != null)
+            {
+                var ssgComments = _reports.GetCommentsList(ssgModelId);
+                data.Comments.AddRange(ssgComments);
+
+                var ssgMarked = _reports.GetMarkedForReviewList(ssgModelId);
+                data.MarkedForReviewList.AddRange(ssgMarked);
+            }
+
+
+            data.Comments.RemoveAll(x => oos.Contains(x.Mat.Mat_Question_Id));
+            data.MarkedForReviewList.RemoveAll(x => oos.Contains(x.Mat.Mat_Question_Id));
 
 
             // null out a few navigation properties to avoid circular references that blow up the JSON stringifier
@@ -814,19 +1023,18 @@ namespace CSETWebCore.Api.Controllers
             var scoring = maturity.GetMvraScoring(model);
             return Ok(scoring);
         }
-        
+
         [HttpGet]
         [Route("api/maturity/mvra/mvraTree")]
         public IActionResult GetMvraTree([FromQuery] int id)
         {
             //int assessemntId = _tokenManager.AssessmentForUser();
             //var maturity = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
-           
+
             var maturity = new MaturityBusiness(_context, _assessmentUtil, _adminTabBusiness);
             var model = maturity.GetMaturityStructureForModel(9, id);
             //var scoring = maturity.GetMvraScoring(model);
             return Ok(model);
         }
-
     }
 }

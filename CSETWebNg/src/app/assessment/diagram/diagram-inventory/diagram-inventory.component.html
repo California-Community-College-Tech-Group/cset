@@ -1,6 +1,6 @@
 <!----------------------
 
-   Copyright 2023 Battelle Energy Alliance, LLC
+   Copyright 2024 Battelle Energy Alliance, LLC
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 -------------------------->
-<div>
+<div class="mb-5">
   <h5>Component Inventory</h5>
 
   <div *ngIf="componentsExist">
@@ -30,27 +30,26 @@
         Export to Excel</button>
 
       <button *ngIf="showCsafUploadButton()" class="btn btn-primary" (click)="openFileBrowserForCsafUpload()"
-      matTooltip="Select CSAF JSON files to upload.">
+        matTooltip="Select CSAF JSON files to upload.">
         <i class="cset-icons-import mr-2"></i>
         Update Vulnerabilities Database</button>
-        <input id="csafUpload" type="file" accept=".json" multiple (change)="fileSelect($event)"
-        class="display-none">
+      <input id="csafUpload" type="file" accept=".json" multiple (change)="fileSelect($event)" class="display-none">
     </div>
     <div class="row stretch mb-3">
       <div class="col-12">
-        <mat-tab-group style="overflow: auto">
-          <mat-tab *ngIf="showVulnerabilitiesTab()"
-          label="Vulnerabilities">
+        <mat-tab-group style="overflow: auto" class="mb-3">
+          <mat-tab *ngIf="showVulnerabilitiesTab()" label="Vulnerabilities">
             <app-diagram-vulnerabilities (componentsChange)="onChange($event)"></app-diagram-vulnerabilities>
           </mat-tab>
           <mat-tab label="Components">
-            <app-diagram-components (componentsChange)="onChange($event)"></app-diagram-components>
+            <app-diagram-components (componentsChange)="onChange($event)"
+              [diagramComponentList]="compListUpdateFromShapesTab"></app-diagram-components>
           </mat-tab>
           <mat-tab label="Zones">
             <zones></zones>
           </mat-tab>
           <mat-tab label="Shapes">
-            <shapes></shapes>
+            <shapes (componentsChange)="onShapeChange($event)"></shapes>
           </mat-tab>
           <mat-tab label="Text"><diagram-text></diagram-text></mat-tab>
           <mat-tab label="Links">

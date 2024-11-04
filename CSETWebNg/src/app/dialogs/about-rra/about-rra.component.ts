@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@
 ////////////////////////////////
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { environment } from '../../../environments/environment';
 import { ConfigService } from '../../services/config.service';
+import { VersionService } from '../../services/version.service';
 
 @Component({
   selector: 'app-about-rra',
@@ -32,7 +32,7 @@ import { ConfigService } from '../../services/config.service';
 })
 export class AboutRraComponent implements OnInit {
 
-  version = environment.visibleVersion;
+  version: any;
   helpContactEmail = this.configSvc.helpContactEmail;
   helpContactPhone = this.configSvc.helpContactPhone;
 
@@ -40,8 +40,13 @@ export class AboutRraComponent implements OnInit {
   constructor(
     private dialog: MatDialogRef<AboutRraComponent>,
     public configSvc: ConfigService,
+    public versionSvc: VersionService,
     @Inject(MAT_DIALOG_DATA) public data: any
-  ) { }
+  ) { 
+    this.versionSvc.localVersionObservable$.subscribe(localVersion => {
+      this.version = localVersion;
+    });
+  }
 
   ngOnInit(): void {
     if (this.configSvc.config.debug.showBuildTime ?? false) {

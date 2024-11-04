@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,11 @@
 ////////////////////////////////
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AssessmentService } from '../../services/assessment.service';
-import { NavigationService } from '../../services/navigation/navigation.service';
-import { ConfigService } from '../../services/config.service';
-import { AuthenticationService } from '../../services/authentication.service';
 import { AssessmentDetail } from '../../models/assessment-info.model';
+import { AssessmentService } from '../../services/assessment.service';
+import { AuthenticationService } from '../../services/authentication.service';
+import { ConfigService } from '../../services/config.service';
+import { NavigationService } from '../../services/navigation/navigation.service';
 
 @Component({
     selector: 'app-diagram',
@@ -60,9 +60,8 @@ export class DiagramComponent implements OnInit {
             this.assessSvc.getAssessmentDetail().subscribe(
                 (data: AssessmentDetail) => {
                     this.assessSvc.assessment = data;
-
+                    this.assessSvc.currentTab = 'prepare';
                     this.navSvc.setCurrentPage('diagram');
-                    localStorage.removeItem('tree');
                     this.navSvc.buildTree();
                 });
         }

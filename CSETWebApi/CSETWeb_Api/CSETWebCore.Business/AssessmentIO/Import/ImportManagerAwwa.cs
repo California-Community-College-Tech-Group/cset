@@ -1,6 +1,6 @@
 ﻿//////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -47,6 +47,7 @@ namespace CSETWebCore.Business.AssessmentIO.Import
             this._context = context;
         }
 
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public string XXXXXX()
         {
             var x = new ExcelReader(@"\\vmware-host\Shared Folders\Documents\$SHARED\CSET\CSET TSA\VADR Assessment Parameters for Reference Section.xlsx");
@@ -156,13 +157,13 @@ namespace CSETWebCore.Business.AssessmentIO.Import
 
                 // at this point, CSET assessment answers can be built from the 'mappedAnswers' collection ...
                 var queryAwwaReqQuestions = from r in _context.NEW_REQUIREMENT
-                             from rq in _context.REQUIREMENT_QUESTIONS
-                             where r.Requirement_Id == rq.Requirement_Id
-                             from nq in _context.NEW_QUESTION
-                             where rq.Question_Id == nq.Question_Id
-                             where r.Original_Set_Name == "AWWA"
-                             orderby r.Requirement_Title
-                             select new { r.Requirement_Title, r.Requirement_Id, nq.Question_Id };
+                                            from rq in _context.REQUIREMENT_QUESTIONS_SETS
+                                            where r.Requirement_Id == rq.Requirement_Id
+                                            from nq in _context.NEW_QUESTION
+                                            where rq.Question_Id == nq.Question_Id
+                                            where r.Original_Set_Name == "AWWA"
+                                            orderby r.Requirement_Title
+                                            select new { r.Requirement_Title, r.Requirement_Id, nq.Question_Id };
 
                 var listAwwaReqQuestions = queryAwwaReqQuestions.ToList();
 
@@ -345,39 +346,37 @@ namespace CSETWebCore.Business.AssessmentIO.Import
                 // the words TRUE or FALSE.
                 if (theCell.DataType != null)
                 {
-                    switch (theCell.DataType.Value)
+                    if (theCell.DataType.Value == CellValues.SharedString)
                     {
-                        case CellValues.SharedString:
+                        // For shared strings, look up the value in the
+                        // shared strings table.
+                        var stringTable =
+                            doc.WorkbookPart.GetPartsOfType<SharedStringTablePart>()
+                            .FirstOrDefault();
 
-                            // For shared strings, look up the value in the
-                            // shared strings table.
-                            var stringTable =
-                                doc.WorkbookPart.GetPartsOfType<SharedStringTablePart>()
-                                .FirstOrDefault();
+                        // If the shared string table is missing, something 
+                        // is wrong. Return the index that is in
+                        // the cell. Otherwise, look up the correct text in 
+                        // the table.
+                        if (stringTable != null)
+                        {
+                            value =
+                                stringTable.SharedStringTable
+                                .ElementAt(int.Parse(value)).InnerText;
+                        }
+                    }
 
-                            // If the shared string table is missing, something 
-                            // is wrong. Return the index that is in
-                            // the cell. Otherwise, look up the correct text in 
-                            // the table.
-                            if (stringTable != null)
-                            {
-                                value =
-                                    stringTable.SharedStringTable
-                                    .ElementAt(int.Parse(value)).InnerText;
-                            }
-                            break;
-
-                        case CellValues.Boolean:
-                            switch (value)
-                            {
-                                case "0":
-                                    value = "FALSE";
-                                    break;
-                                default:
-                                    value = "TRUE";
-                                    break;
-                            }
-                            break;
+                    if (theCell.DataType.Value == CellValues.Boolean)
+                    {
+                        switch (value)
+                        {
+                            case "0":
+                                value = "FALSE";
+                                break;
+                            default:
+                                value = "TRUE";
+                                break;
+                        }
                     }
                 }
             }
@@ -413,7 +412,7 @@ namespace CSETWebCore.Business.AssessmentIO.Import
             string value = cell.CellValue?.InnerText;
             if (cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
             {
-                return doc.WorkbookPart.SharedStringTablePart.SharedStringTable.ChildElements.GetItem(int.Parse(value)).InnerText;
+                return doc.WorkbookPart.SharedStringTablePart.SharedStringTable.ChildElements[int.Parse(value)].InnerText;
             }
             return value;
         }
@@ -462,6 +461,7 @@ namespace CSETWebCore.Business.AssessmentIO.Import
         /// Sheet1$
         /// </summary>
         /// <returns></returns>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public DataTable ReadWorksheet(string sheet)
         {
             string conn = string.Empty;

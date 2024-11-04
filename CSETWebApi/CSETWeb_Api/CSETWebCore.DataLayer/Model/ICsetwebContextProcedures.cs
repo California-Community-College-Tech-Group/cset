@@ -30,6 +30,7 @@ namespace CSETWebCore.DataLayer.Model
         Task<int> FillNetworkDiagramQuestionsAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<final_data_movesResult>> final_data_movesAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<Get_Assess_Detail_Filter_DataResult>> Get_Assess_Detail_Filter_DataAsync(string model, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<Get_Cie_Merge_ConflictsResult>> Get_Cie_Merge_ConflictsAsync(int? id1, int? id2, int? id3, int? id4, int? id5, int? id6, int? id7, int? id8, int? id9, int? id10, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<Get_Merge_ConflictsResult>> Get_Merge_ConflictsAsync(int? id1, int? id2, int? id3, int? id4, int? id5, int? id6, int? id7, int? id8, int? id9, int? id10, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<Get_RecommendationsResult>> Get_RecommendationsAsync(int? value, int? industry, string organization, string assetvalue, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetAnswerDistribGroupingsResult>> GetAnswerDistribGroupingsAsync(int? assessmentId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -40,7 +41,7 @@ namespace CSETWebCore.DataLayer.Model
         Task<List<GetChildrenAnswersResult>> GetChildrenAnswersAsync(int? Parent_Id, int? Assess_Id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetCombinedOverallsResult>> GetCombinedOverallsAsync(int? Assessment_Id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetComparisonAreasFileResult>> GetComparisonAreasFileAsync(int? assessment_id, string applicationMode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<GetComparisonBestToWorstResult>> GetComparisonBestToWorstAsync(int? assessment_id, string applicationMode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<GetComparisonBestToWorstResult>> GetMaturityComparisonBestToWorstAsync(int? assessment_id, string applicationMode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetComparisonFileOverallsResult>> GetComparisonFileOverallsAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetComparisonFilePercentageResult>> GetComparisonFilePercentageAsync(int? Assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetComparisonFileSummaryResult>> GetComparisonFileSummaryAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -57,6 +58,7 @@ namespace CSETWebCore.DataLayer.Model
         Task<List<requirement_final_movesResult>> requirement_final_movesAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<SearchAllTablesResult>> SearchAllTablesAsync(string SearchStr, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<SP_SearchTablesResult>> SP_SearchTablesAsync(string Tablenames, string SearchStr, bool? GenerateSQLOnly, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<spEXECsp_RECOMPILEResult>> spEXECsp_RECOMPILEAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_AggregationCustomQuestionnaireLoadResult>> usp_AggregationCustomQuestionnaireLoadAsync(string AssessmentDBName, string entity_name, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_Answer_Components_DefaultResult>> usp_Answer_Components_DefaultAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_Assessments_Completion_For_Access_KeyResult>> usp_Assessments_Completion_For_Access_KeyAsync(string accessKey, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -78,6 +80,7 @@ namespace CSETWebCore.DataLayer.Model
         Task<List<usp_GetComponentsSummaryPageResult>> usp_GetComponentsSummaryPageAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getComponentTypesResult>> usp_getComponentTypesAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_GetComponentTypesPageResult>> usp_GetComponentTypesPageAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<usp_getCSETQuestionsForCRRMResult>> usp_getCSETQuestionsForCRRMAsync(string setname, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getExplodedComponentResult>> usp_getExplodedComponentAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getFinancialQuestionsResult>> usp_getFinancialQuestionsAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getFirstPageResult>> usp_getFirstPageAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
@@ -104,6 +107,7 @@ namespace CSETWebCore.DataLayer.Model
         Task<List<usp_getStandardsSummaryResult>> usp_getStandardsSummaryAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_GetStandardsSummaryPageResult>> usp_GetStandardsSummaryPageAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getStandardSummaryOverallResult>> usp_getStandardSummaryOverallAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<usp_getStandardSummaryOverallResult>> usp_getMaturitySummaryOverallAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_GetTop5AreasResult>> usp_GetTop5AreasAsync(int? Aggregation_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getVADRSummaryResult>> usp_getVADRSummaryAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_getVADRSummaryByGoalResult>> usp_getVADRSummaryByGoalAsync(int? assessment_id, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

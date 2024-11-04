@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,9 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { AfterViewInit, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, ViewEncapsulation, isDevMode } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { NgbAccordion } from '@ng-bootstrap/ng-bootstrap';
 import { AggregationService } from '../../services/aggregation.service';
 import { AssessmentService } from '../../services/assessment.service';
 import { AuthenticationService } from '../../services/authentication.service';
@@ -34,7 +33,6 @@ import { LayoutService } from '../../services/layout.service';
 
 
 @Component({
-  moduleId: module.id,
   selector: 'rra-layout-main',
   templateUrl: './rra-layout-main.component.html',
   styleUrls: ['./rra-layout-main.component.scss', '../styles-rra.scss'],
@@ -42,12 +40,12 @@ import { LayoutService } from '../../services/layout.service';
   // eslint-disable-next-line
   host: { class: 'd-flex flex-column flex-11a w-100 h-100' }
 })
-export class RraLayoutMainComponent implements OnInit, AfterViewInit {
+export class RraLayoutMainComponent {
 
   docUrl: string;
   dialogRef: MatDialogRef<any>;
-
-  @ViewChild('acc') accordion: NgbAccordion;
+  footerClosed: boolean = true;
+  devMode: boolean = isDevMode();
 
   constructor(
     public auth: AuthenticationService,
@@ -59,14 +57,6 @@ export class RraLayoutMainComponent implements OnInit, AfterViewInit {
     public dialog: MatDialog,
     public router: Router
   ) { }
-
-  ngOnInit() { }
-
-  ngAfterViewInit() {
-    setTimeout(() => {
-      this.isFooterOpen();
-    }, 200);
-  }
 
   /**
    * Indicates if the user is currently within the Module Builder pages.
@@ -96,10 +86,10 @@ export class RraLayoutMainComponent implements OnInit, AfterViewInit {
   }
 
   isFooterOpen() {
-    if (!!this.accordion) {
-      return this.accordion.isExpanded('footerPanel');
+    if (!this.footerClosed) {
+      return this.footerClosed = true;
     }
-    return false;
+    return this.footerClosed = false;
   }
 
 }

@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using CSETWebCore.DataLayer.Model;
+using CSETWebCore.Model.Maturity;
 using CSETWebCore.Model.Question;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -24,7 +25,7 @@ namespace CSETWebCore.Helpers
     /// in their grouping structure.
     /// 
     /// </summary>
-    public class MaturityStructureAsXml 
+    public class MaturityStructureAsXml
     {
         private readonly CSETContext _context;
 
@@ -114,8 +115,24 @@ namespace CSETWebCore.Helpers
 
             // Get all subgroupings for this maturity model
             var allGroupings = _context.MATURITY_GROUPINGS
-                .Include(x => x.Type)
                 .Where(x => x.Maturity_Model_Id == model.model_id).ToList();
+
+
+            // manually populate grouping data.  Using a .Include() in the previous query was not working consistently
+            var allGroupingTypes = _context.MATURITY_GROUPING_TYPES.ToList();
+
+            foreach (var item in allGroupings)
+            {
+                if (item.Type == null)
+                {
+                    item.Type = new MATURITY_GROUPING_TYPES()
+                    {
+                        Type_Id = item.Type_Id,
+                        Grouping_Type_Name = allGroupingTypes.Where(x => x.Type_Id == item.Type_Id).FirstOrDefault()?.Grouping_Type_Name
+                    };
+                }
+            }
+
 
             // Get all remarks
             var allRemarks = _context.MATURITY_DOMAIN_REMARKS
@@ -160,7 +177,7 @@ namespace CSETWebCore.Helpers
 
                 var remark = remarks.FirstOrDefault(r => r.Grouping_ID == sg.Grouping_Id);
                 xGrouping.SetAttributeValue("remarks", remark != null ? remark.DomainRemarks : "");
-                
+
 
 
                 // are there any questions that belong to this grouping?
@@ -187,9 +204,13 @@ namespace CSETWebCore.Helpers
 
                         xQuestion.SetAttributeValue("supplemental", myQ.Supplemental_Info);
 
+                        // CPG question elements
+                        xQuestion.SetAttributeValue("securitypractice", myQ.Security_Practice);
+                        xQuestion.SetAttributeValue("outcome", myQ.Outcome);
                         xQuestion.SetAttributeValue("scope", myQ.Scope);
                         xQuestion.SetAttributeValue("recommendedaction", myQ.Recommend_Action);
                         xQuestion.SetAttributeValue("services", myQ.Services);
+                        xQuestion.SetAttributeValue("implementationguides", myQ.Implementation_Guides);
                         xQuestion.SetAttributeValue("riskaddressed", myQ.Risk_Addressed);
 
                         // Include CSF mappings

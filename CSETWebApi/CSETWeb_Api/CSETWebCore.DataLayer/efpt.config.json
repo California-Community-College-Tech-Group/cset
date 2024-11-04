@@ -1,5 +1,5 @@
 ﻿{
-   "CodeGenerationMode": 2,
+   "CodeGenerationMode": 4,
    "ContextClassName": "CsetwebContext",
    "ContextNamespace": null,
    "DefaultDacpacSchema": null,
@@ -13,6 +13,7 @@
    "Schemas": null,
    "SelectedHandlebarsLanguage": 0,
    "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
    "Tables": [
       {
          "Name": "[dbo].[ACCESS_KEY]",
@@ -187,6 +188,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[COMPONENT_SYMBOLS_MAPPINGS]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[CONFIDENTIAL_TYPE]",
          "ObjectType": 0
       },
@@ -252,6 +257,14 @@
       },
       {
          "Name": "[dbo].[DEMOGRAPHICS_SIZE]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DETAILS_DEMOGRAPHICS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DETAILS_DEMOGRAPHICS_OPTIONS]",
          "ObjectType": 0
       },
       {
@@ -511,6 +524,18 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[LU_WEIGHTS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MALCOLM_ANSWERS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MALCOLM_MAPPING]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MATURITY_ANSWER_OPTIONS]",
          "ObjectType": 0
       },
@@ -575,6 +600,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MATURITY_SUB_MODEL_QUESTIONS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MATURITY_SUB_MODELS]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[METRO_ANSWERS]",
          "ObjectType": 0
       },
@@ -596,6 +629,10 @@
       },
       {
          "Name": "[dbo].[NCSF_FUNCTIONS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[NCSF_MIGRATION]",
          "ObjectType": 0
       },
       {
@@ -748,10 +785,6 @@
       },
       {
          "Name": "[dbo].[REQUIREMENT_LEVELS]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[REQUIREMENT_QUESTIONS]",
          "ObjectType": 0
       },
       {
@@ -955,6 +988,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[vAllSimpleQuestions]",
+         "ObjectType": 3
+      },
+      {
          "Name": "[dbo].[vFinancialGroups]",
          "ObjectType": 3
       },
@@ -1040,6 +1077,10 @@
       },
       {
          "Name": "[dbo].[Get_Assess_Detail_Filter_Data]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[Get_Cie_Merge_Conflicts]",
          "ObjectType": 1
       },
       {
@@ -1151,6 +1192,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[spEXECsp_RECOMPILE]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[usp_AggregationCustomQuestionnaireLoad]",
          "ObjectType": 1
       },
@@ -1232,6 +1277,10 @@
       },
       {
          "Name": "[dbo].[usp_GetComponentTypesPage]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[usp_getCSETQuestionsForCRRM]",
          "ObjectType": 1
       },
       {
@@ -1377,14 +1426,35 @@
       {
          "Name": "[dbo].[usp_StatementsReviewedTabTotals]",
          "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[convert_sal_short]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[convert_sal]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[func_AM]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[func_MQ]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[Split]",
+         "ObjectType": 2
       }
    ],
-   "UiHint": "(localdb)\\mssqllocaldb.CSETWeb",
+   "UiHint": "(localdb)\\inllocaldb2022.CSETWeb",
    "UncountableWords": null,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,
    "UseDateOnlyTimeOnly": false,
    "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
    "UseFluentApiOnly": false,
    "UseHandleBars": false,
    "UseHierarchyId": false,
@@ -1392,10 +1462,12 @@
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": true,
    "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
    "UseNoObjectFilter": false,
    "UseNodaTime": false,
    "UseNullableReferences": false,
    "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
    "UseSpatial": false,
    "UseT4": false
 }

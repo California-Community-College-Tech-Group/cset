@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AssessmentService } from '../../../services/assessment.service';
-import { MatDetailResponse, MaturityDomain, MaturityAssessment, MaturityComponent } from '../../../models/mat-detail.model';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { MaturityDomain, MaturityAssessment, MaturityComponent } from '../../../models/mat-detail.model';
 import { ACETService } from '../../../services/acet.service';
 import { NavigationService } from '../../../services/navigation/navigation.service';
 import { LayoutService } from '../../../services/layout.service';
+import { TranslocoService } from '@ngneat/transloco';
 
 
 @Component({
@@ -41,7 +41,9 @@ export class AcetDetailComponent implements OnInit {
     readonly collapseAll = "Collapse All";
     matDetails: any;
     matRange: any;
-    matRangeString: any;
+    // matRangeString: any;
+    matRangeStartString: any;
+    matRangeEndString: any;
     expand: string;
     expanded: boolean;
     overallIrp: string;
@@ -49,11 +51,7 @@ export class AcetDetailComponent implements OnInit {
     bottomExpected: string;
 
     domainDataList: any = [];
-    sortDomainListKey: string[] = ["Cyber Risk Management & Oversight",
-        "Threat Intelligence & Collaboration",
-        "Cybersecurity Controls",
-        "External Dependency Management",
-        "Cyber Incident Management and Resilience"]
+    sortDomainListKey: string[] = [];
 
     sortedDomainList: any = [];
 
@@ -64,21 +62,30 @@ export class AcetDetailComponent implements OnInit {
         private assessSvc: AssessmentService,
         public navSvc: NavigationService,
         public acetSvc: ACETService,
-        public layoutSvc: LayoutService
+        public layoutSvc: LayoutService,
+        private tSvc: TranslocoService
     ) { }
 
     ngOnInit() {
+        this.tSvc.langChanges$.subscribe((event) => {
+            this.loadMatDetails();
+        });
         this.expand = this.collapseAll;
         this.expanded = true;
-        this.loadMatDetails();
         this.getMatRange();
         this.getOverallIrp();
-        //this.getTargetBand();
     }
 
     loadMatDetails() {
+        if (this.tSvc.getActiveLang() == "es") {
+            this.sortDomainListKey = this.acetSvc.spanishSortDomainListKey;
+        }
+        else {
+            this.sortDomainListKey = this.acetSvc.englishSortDomainListKey;
+        }
         this.acetSvc.getMatDetailList().subscribe(
             (data: any) => {
+                this.domainDataList = [];
                 data.forEach((domain: MaturityDomain) => {
                     var domainData = {
                         domainName: domain.domainName,
@@ -105,8 +112,8 @@ export class AcetDetailComponent implements OnInit {
 
                             var sectionInfo = {
                                 "name": component.componentName,
-                                "assessedMaturityLevel": this.updateMaturity(component.assessedMaturityLevel),    
-                                "levelDisplay": this.acetSvc.translateMaturity(this.updateMaturity(component.assessedMaturityLevel)),           
+                                "assessedMaturityLevel": this.updateMaturity(component.assessedMaturityLevel),
+                                "levelDisplay": this.acetSvc.translateMaturity(this.updateMaturity(component.assessedMaturityLevel)),
                                 "data": sectionData
                             }
                             assesmentData.sections.push(sectionInfo);
@@ -126,6 +133,8 @@ export class AcetDetailComponent implements OnInit {
                 })
                 this.domainDataList = this.sortedDomainList;
 
+                // clearing the list so it doesn't keep building on old data
+                this.sortedDomainList = [];
             },
             error => {
                 console.log('Error getting all documents: ' + (<Error>error).name + (<Error>error).message);
@@ -162,7 +171,9 @@ export class AcetDetailComponent implements OnInit {
                 var dataArray = data as string[];
                 this.matRange = dataArray;
                 if (dataArray.length > 1) {
-                    this.matRangeString = dataArray[0] + " - " + dataArray[dataArray.length - 1];
+                    // this.matRangeString = dataArray[0] + " - " + dataArray[dataArray.length - 1];
+                    this.matRangeStartString = dataArray[0].toLowerCase();
+                    this.matRangeEndString = dataArray[dataArray.length - 1].toLowerCase();
                     this.bottomExpected = dataArray[0];
                 }
 

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 //
 ////////////////////////////////
 import { Component, OnInit } from '@angular/core';
-import { Router } from '../../../../../../node_modules/@angular/router';
 import { AssessmentService } from '../../../../services/assessment.service';
 import { AnalysisService } from '../../../../services/analysis.service';
 import { ConfigService } from '../../../../services/config.service';
@@ -68,10 +67,10 @@ export class RankedQuestionsComponent implements OnInit {
       row.rank = i++;
       switch (row.answerText) {
         case 'U':
-          row.displayAnswer = this.questionsSvc.answerDisplayLabel(0, 'U');
+          row.displayAnswer = this.questionsSvc.answerDisplayLabel('', 'U');
           break;
         case 'N':
-          row.displayAnswer = this.questionsSvc.answerDisplayLabel(0, 'N');
+          row.displayAnswer = this.questionsSvc.answerDisplayLabel('', 'N');
           break;
       }
     }

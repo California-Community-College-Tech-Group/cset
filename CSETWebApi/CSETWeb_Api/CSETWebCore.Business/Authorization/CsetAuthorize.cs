@@ -1,18 +1,15 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
 using System;
-using System.IdentityModel.Tokens.Jwt;
+using System.Diagnostics.Contracts;
+
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using CSETWebCore.DataLayer.Model;
-using CSETWebCore.Helpers;
 using CSETWebCore.Interfaces.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +22,11 @@ namespace CSETWebCore.Business.Authorization
     {
         public void OnAuthorization(AuthorizationFilterContext context)
         {
+            if (SkipAuthorization(context))
+            {
+                return;
+            }
+
             var svc = context.HttpContext.RequestServices;
             var token = (ITokenManager)svc.GetService(typeof(ITokenManager));
             string tokenString = context.HttpContext.Request.Scheme;
@@ -47,11 +49,18 @@ namespace CSETWebCore.Business.Authorization
             {
                 tokenString = authHeaderValue[0];
             }
-   
+
             if (string.IsNullOrEmpty(tokenString) || !token.IsTokenValid(tokenString))
             {
                 context.Result = new UnauthorizedResult();
             }
+        }
+
+        private bool SkipAuthorization(AuthorizationFilterContext context)
+        {
+            Contract.Assert(context != null);
+
+            return context.ActionDescriptor.EndpointMetadata.OfType<AllowAnonymousAttribute>().Any();
         }
     }
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////
 //
-//   Copyright 2023 Battelle Energy Alliance, LLC
+//   Copyright 2024 Battelle Energy Alliance, LLC
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 //  SOFTWARE.
 //
 ////////////////////////////////
-import { AfterViewInit, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, ViewChild, ViewEncapsulation, isDevMode } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { NgbAccordion } from '@ng-bootstrap/ng-bootstrap';
@@ -34,7 +34,6 @@ import { SetBuilderService } from './../../services/set-builder.service';
 
 
 @Component({
-  moduleId: module.id,
   selector: 'acet-layout-main',
   templateUrl: './acet-layout-main.component.html',
   styleUrls: ['./acet-layout-main.component.scss'],
@@ -42,10 +41,11 @@ import { SetBuilderService } from './../../services/set-builder.service';
   // eslint-disable-next-line
   host: { class: 'd-flex flex-column flex-11a w-100 h-100' }
 })
-export class AcetLayoutMainComponent implements OnInit, AfterViewInit {
+export class AcetLayoutMainComponent {
   docUrl: string;
   dialogRef: MatDialogRef<any>;
   isFooterVisible: boolean = false;
+  devMode: boolean = isDevMode();
 
   @ViewChild('acc') accordion: NgbAccordion;
 
@@ -59,15 +59,6 @@ export class AcetLayoutMainComponent implements OnInit, AfterViewInit {
     public dialog: MatDialog,
     public router: Router
   ) { }
-
-
-  ngOnInit() { }
-
-  ngAfterViewInit() {
-    setTimeout(() => {
-      this.isFooterOpen();
-    }, 200);
-  }
 
   /**
    * Indicates if the user is currently within the Module Builder pages.

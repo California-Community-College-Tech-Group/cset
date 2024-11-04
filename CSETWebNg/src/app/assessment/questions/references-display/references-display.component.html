@@ -1,6 +1,6 @@
 <!----------------------
 
-   Copyright 2023 Battelle Energy Alliance, LLC
+   Copyright 2024 Battelle Energy Alliance, LLC
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -21,26 +21,37 @@
   SOFTWARE.
 -------------------------->
 <div *ngIf="areNoReferenceDocumentsAvailable()" class="mb-4">
-    (no reference documents available)
+    ({{ 'extras.no reference documents available' | transloco }})
 </div>
 
-<div *ngFor="let reftext of tab?.referenceTextList" [innerHTML]="reftext" class="mb-4">
+<div *ngIf="question?.csfMappings?.length > 0" class="mb-4">
+    <div class="sub-header-1">NIST Cybersecurity Framework (CSF) Reference</div>
+    <div>
+        <span *ngFor="let c of question.csfMappings; let i = index">
+            {{c}}{{i === question.csfMappings.length - 1 ? '' : ', '}}
+        </span>
+    </div>
 </div>
 
-<h6 *ngIf="sourceDocuments.length > 0" class="font-weight-bold">Source Documents</h6>
-<div *ngFor="let doc of sourceDocuments; let lastDoc = last" class="mb-1" [class.mb-4]="lastDoc">
-    {{doc.title}}: 
-    <ng-container *ngFor="let b of doc.bookmarks; let l = last">
-        <a href="{{documentUrl(doc, b)}}" 
-        rel="noopener noreferrer" target="_blank">{{bookmarkDisplay(b)}}</a><ng-container *ngIf="!l">, </ng-container>
-    </ng-container>
+<div *ngIf="question?.ttp?.length > 0 || !!question?.riskAddressed" class="mb-4">
+    <div class="sub-header-1">{{'reports.core.cpg.report.ttp or risk addressed' | transloco}}</div>
+    <div>
+        {{question.riskAddressed}}
+    </div>
+    <ul>
+        <li *ngFor="let t of question.ttp"><a href="{{t.referenceUrl}}" target="_blank">{{t.description}}</a></li>
+    </ul>
 </div>
 
-<h6 *ngIf="additionalDocuments.length > 0" class="font-weight-bold">Additional Documents</h6>
-<div *ngFor="let doc of additionalDocuments; let lastDoc = last" class="mb-1" [class.mb-4]="lastDoc">
-    {{doc.title}}:
-    <ng-container *ngFor="let b of doc.bookmarks; let l = last">
-        <a href="{{documentUrl(doc, b)}}" 
-        rel="noopener noreferrer" target="_blank">{{bookmarkDisplay(b)}}</a><ng-container *ngIf="!l">, </ng-container>
-    </ng-container>
+
+<div *ngFor="let reftext of tab?.referenceTextList" [innerHTML]="replaceRefDocUrl(reftext)" class="mb-4">
 </div>
+
+
+<div *ngIf="sourceDocuments.length > 0" class="sub-header-1">{{ 'extras.source documents' | transloco }}</div>
+<app-references-section [q]="question" [documents]="sourceDocuments"></app-references-section>
+
+
+<div *ngIf="additionalDocuments.length > 0" class="sub-header-1">{{'extras.additional documents' | transloco }}
+</div>
+<app-references-section [q]="question" [documents]="additionalDocuments"></app-references-section>

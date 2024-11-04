@@ -1,6 +1,6 @@
 //////////////////////////////// 
 // 
-//   Copyright 2023 Battelle Energy Alliance, LLC  
+//   Copyright 2024 Battelle Energy Alliance, LLC  
 // 
 // 
 //////////////////////////////// 
@@ -29,7 +29,7 @@ namespace CSETWebCore.Interfaces.Question
         Dictionary<string, SETS> DictionaryStandards { get; set; }
         int DocumentCount { get; set; }
         ICollection<DOCUMENT_FILE> DocumentLibrary { get; }
-        int FindingCount { get; set; }
+        int ObservationCount { get; set; }
         bool FrameworkExpanderVisibility { get; }
         string FrameworkName { get; set; }
         bool IsAnswerAlt { get; set; }
@@ -58,17 +58,11 @@ namespace CSETWebCore.Interfaces.Question
         int NercRankNumber { get; set; }
         //NERC_RISK_RANKING NERC_Rank { get; }
 
-        //TODO: Need to come back to this
-        //NetworkComponent NetworkComponent { get; set; }
         NEW_REQUIREMENT NEW_REQUIREMENT { get; }
         //ObservableCollection<ParameterContainer> Parameters { get; set; }
 
-        //TODO: Need to come back to this
-        //ProfileCategory ProfileCategory { get; }
         string ProfileComments { get; }
 
-        //TODO: need to come back to this 
-        //ProfileQuestion ProfileQuestionData { get; set; }
         string ProfileReferences { get; }
         NEW_QUESTION Question { get; }
         AnswerEnum QuestionAnswer { get; set; }
